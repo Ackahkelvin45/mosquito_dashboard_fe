@@ -38,8 +38,11 @@ const raleway = Raleway({
 });
 
 export const metadata: Metadata = {
-  title: "Dashboard App",
+  title: "Mosquito Dashboard ",
   description: "Next.js Dashboard",
+  icons: {
+    icon: '/images/logo.png',
+  },
 };
 
 export default function RootLayout({
