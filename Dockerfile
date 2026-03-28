@@ -18,7 +18,7 @@ RUN npm run build
 FROM nginx:alpine
 
 # Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/mosquito_frontend.conf
 
 # Copy built assets from stage 1
 COPY --from=build /app/dist /usr/share/nginx/html
