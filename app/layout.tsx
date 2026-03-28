@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, Montserrat, Mulish, Open_Sans, Raleway } from "next/font/google";
 import "./globals.css";
+import QueryProvider from "./providers/QueryProvider";
+import { Query } from "@tanstack/react-query";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,7 +40,7 @@ const raleway = Raleway({
 });
 
 export const metadata: Metadata = {
-  title: "Mosquito Dashboard ",
+  title: "Mosquito Dashboard",
   description: "Next.js Dashboard",
   icons: {
     icon: '/images/logo.png',
@@ -54,8 +56,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${montserrat.variable} ${mulish.variable} ${openSans.variable} ${raleway.variable} antialiased`}
+      suppressHydrationWarning={true}
     >
-      <body>{children}</body>
+      <body>
+        <QueryProvider>
+        {children}
+        </QueryProvider></body>
     </html>
   );
 }

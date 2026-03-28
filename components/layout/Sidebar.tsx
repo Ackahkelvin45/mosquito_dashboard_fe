@@ -5,8 +5,9 @@ import logo from '../../public/images/logo.png'
 import name from '../../public/images/name.png'
 import Image from 'next/image'
 import profile from '../../public/images/profile.png'
-import { LayoutDashboard, Map,ChartNoAxesCombined, Settings } from 'lucide-react'
+import { LayoutDashboard, Map, ChartNoAxesCombined } from 'lucide-react'
 import Link from 'next/link'
+import { useCurrentUser } from '@/hooks/authentication'
 const navItems = [
   {
     label: 'Dashboard',
@@ -43,6 +44,14 @@ const navItems = [
 
 function Sidebar() {
   const pathname = usePathname()
+  const { data: user, isLoading } = useCurrentUser()
+
+  const displayName = user
+    ? [user.first_name, user.last_name].filter(Boolean).join(' ') || 'User'
+    : ''
+  const initials = user
+    ? [user.first_name?.[0], user.last_name?.[0]].filter(Boolean).join('').toUpperCase() || '?'
+    : '--'
 
   return (
     <div className="w-[250px] h-screen  fixed  top-0 left-0  z-50  font-raleway flex flex-col shadow-2xl overflow-hidden">
@@ -101,7 +110,7 @@ function Sidebar() {
       <div className="flex items-center gap-3 px-6 py-5">
         <Image
           src={profile}
-          alt="Ackah Kelvin"
+          alt={displayName || 'Profile'}
           className="w-11 h-11 rounded-full object-cover border-2 border-white/25 shrink-0 bg-white/10"
           onError={(e) => {
             const img = e.target as HTMLImageElement
@@ -110,13 +119,22 @@ function Sidebar() {
             if (fallback) fallback.style.display = 'flex'
           }}
         />
-        {/* Fallback avatar */}
+        {/* Fallback avatar with user initials */}
         <div className="hidden w-11 h-11 rounded-full bg-white/20 items-center justify-center text-white font-bold text-sm shrink-0">
-          AK
+          {initials}
         </div>
-        <div>
-          <p className="text-white font-semibold text-sm leading-tight">Ackah Kelvin</p>
-          <p className="text-white/45 text-xs mt-0.5">ackahkelvin@gmail.com</p>
+        <div className="min-w-0 flex-1">
+          {isLoading ? (
+            <>
+              <p className="text-white font-semibold text-sm leading-tight animate-pulse">Loading...</p>
+              <p className="text-white/45 text-xs mt-0.5">...</p>
+            </>
+          ) : (
+            <>
+              <p className="text-white font-semibold text-sm leading-tight truncate">{displayName || 'User'}</p>
+              <p className="text-white/45 text-xs mt-0.5 truncate">{user?.email ?? '—'}</p>
+            </>
+          )}
         </div>
       </div>
       </div>
