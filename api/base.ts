@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/store/authStore"
 
-const API_URL = "http://localhost:8000"
+const API_URL = process.env.NEXT_BACKEND_API_URL || "http://localhost:8000"
 
 function toHeaderRecord(h: RequestInit["headers"]): Record<string, string> {
   if (!h) return {}
