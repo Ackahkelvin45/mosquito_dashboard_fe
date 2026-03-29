@@ -5,7 +5,7 @@ import logo from '../../public/images/logo.png'
 import name from '../../public/images/name.png'
 import Image from 'next/image'
 import profile from '../../public/images/profile.png'
-import { LayoutDashboard, Map, ChartNoAxesCombined } from 'lucide-react'
+import { LayoutDashboard, Map, ChartNoAxesCombined, Satellite } from 'lucide-react'
 import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/authentication'
 const navItems = [
@@ -29,6 +29,13 @@ const navItems = [
     <ChartNoAxesCombined />
     ),
     href: '/historical-data',
+  },
+   {
+    label: 'Devices',
+    icon: (
+    <Satellite />
+    ),
+    href: '/devices',
   },
   {
     label: 'Settings',
