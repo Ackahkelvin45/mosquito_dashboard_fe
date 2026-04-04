@@ -22,7 +22,7 @@ export type CreateDeviceClusterPayload = {
 
 export async function createDevice(data: CreateDevicePayload) {
     try {
-        const res = await apiFetch("/devices/", {
+        const res = await apiFetch("/devices", {
             method: "POST",
             body: JSON.stringify(data),
         });
@@ -35,7 +35,7 @@ export async function createDevice(data: CreateDevicePayload) {
 
 export async function createDeviceCluster(data: CreateDeviceClusterPayload) {
     try {
-        const res = await apiFetch("/devices/clusters/", {
+        const res = await apiFetch("/devices/clusters", {
             method: "POST",
             body: JSON.stringify(data),
         });
