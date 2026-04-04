@@ -15,7 +15,7 @@ export const useCurrentUser = () => {
 export const useLogin = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: { email: string; password: string ,user_id: number}) => loginUser(data),
+    mutationFn: (data: { email: string; password: string }) => loginUser(data),
     onSuccess: (data: LoginResult) => {
       if (data.success) { 
         useAuthStore.getState().setAuth(data.access_token,data.refresh_token,data.user_id)
