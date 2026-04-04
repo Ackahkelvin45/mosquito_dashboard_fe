@@ -4,11 +4,12 @@ import React, { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
-import { useCreateDevice } from "@/hooks/device"
+import { useCreateDevice, useClusters } from "@/hooks/device"
 
 export default function AddDevicePage() {
   const router = useRouter()
   const { mutate: createDevice, isPending, isError, error } = useCreateDevice()
+  const { data: clusters, isLoading: isClustersLoading } = useClusters()
 
   const [formError, setFormError] = useState<string | null>(null)
   const [form, setForm] = useState({
@@ -19,10 +20,11 @@ export default function AddDevicePage() {
     description: "",
     gmap_link: "",
     device_uuid: "",
+    cluster_id: "",
   })
 
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
@@ -30,6 +32,11 @@ export default function AddDevicePage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setFormError(null)
+
+    if (!form.cluster_id) {
+        setFormError("Please select a device cluster.")
+        return
+    }
 
     createDevice(
       {
@@ -40,6 +47,7 @@ export default function AddDevicePage() {
         description: form.description,
         gmap_link: form.gmap_link,
         device_uuid: form.device_uuid,
+        cluster_id: parseInt(form.cluster_id),
       },
       {
         onSuccess: () => {
@@ -223,24 +231,57 @@ export default function AddDevicePage() {
           </div>
         </div>
 
-        {/* Row 3 — Device UUID */}
-        <div>
-          <label
-            htmlFor="device_uuid"
-            className="text-dark text-sm mb-2 font-medium block"
-          >
-            Device UUID
-          </label>
-          <input
-            type="text"
-            id="device_uuid"
-            name="device_uuid"
-            placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
-            value={form.device_uuid}
-            onChange={handleChange}
-            required
-            className="w-full py-2.5 px-3 border border-gray focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-md"
-          />
+        {/* Row 3 — Device UUID & Cluster */}
+        <div className="grid grid-cols-2 gap-5">
+            <div>
+                <label
+                    htmlFor="device_uuid"
+                    className="text-dark text-sm mb-2 font-medium block"
+                >
+                    Device UUID
+                </label>
+                <input
+                    type="text"
+                    id="device_uuid"
+                    name="device_uuid"
+                    placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+                    value={form.device_uuid}
+                    onChange={handleChange}
+                    required
+                    className="w-full py-2.5 px-3 border border-gray focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-md"
+                />
+            </div>
+
+            <div>
+                <label
+                    htmlFor="cluster_id"
+                    className="text-dark text-sm mb-2 font-medium block"
+                >
+                    Device Cluster
+                </label>
+                <select
+                    id="cluster_id"
+                    name="cluster_id"
+                    value={form.cluster_id}
+                    onChange={handleChange}
+                    required
+                    className="w-full py-2.5 px-3 border border-gray bg-white focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-md disabled:bg-gray-50 transition-colors"
+                >
+                    <option value="" disabled>Select cluster...</option>
+                    {isClustersLoading ? (
+                        <option value="" disabled>Loading clusters...</option>
+                    ) : (
+                        clusters?.map((cluster: any) => (
+                            <option key={cluster.id} value={cluster.id}>
+                                {cluster.name}
+                            </option>
+                        ))
+                    )}
+                </select>
+                {clusters && clusters.length === 0 && !isClustersLoading && (
+                    <p className="text-[11px] text-orange-600 mt-1">No clusters found. Please create one first.</p>
+                )}
+            </div>
         </div>
 
         {/* Row 4 — Google Maps Link */}
@@ -291,7 +332,7 @@ export default function AddDevicePage() {
           </Link>
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isPending || isClustersLoading}
             className="py-2.5 px-6 flex items-center justify-center gap-3 bg-linear-to-r from-secondary to-primary font-semibold text-white text-sm rounded-md disabled:opacity-70 disabled:cursor-not-allowed transition-opacity"
           >
             {isPending ? <div className="spinner1" /> : "Add Device"}

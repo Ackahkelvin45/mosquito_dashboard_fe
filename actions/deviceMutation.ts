@@ -8,11 +8,34 @@ export type CreateDevicePayload = {
     longitude: number;
     description: string;
     gmap_link: string;
+    cluster_id: number;
 };
+
+export type CreateDeviceClusterPayload = {
+    name: string;
+    description: string;
+    password: string;
+    public: boolean;
+    cluster_admins: number[];
+};
+
 
 export async function createDevice(data: CreateDevicePayload) {
     try {
-        const res = await apiFetch("/devices/create", {
+        const res = await apiFetch("/devices/", {
+            method: "POST",
+            body: JSON.stringify(data),
+        });
+        return res;
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
+}
+
+export async function createDeviceCluster(data: CreateDeviceClusterPayload) {
+    try {
+        const res = await apiFetch("/devices/clusters/", {
             method: "POST",
             body: JSON.stringify(data),
         });
