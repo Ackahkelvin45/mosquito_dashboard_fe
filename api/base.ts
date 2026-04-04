@@ -49,7 +49,7 @@ export async function apiFetch(
 
     if (refreshRes.ok) {
       const data = await refreshRes.json()
-      setAuth(data.access_token, data.refresh_token)
+      setAuth(data.access_token, data.refresh_token,data?.user_id)
       headers["Authorization"] = `Bearer ${data.access_token}`
       res = await fetch(`${API_URL}${endpoint}`, { ...options, headers, credentials: "include" })
     } else {
