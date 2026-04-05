@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createDevice, type CreateDevicePayload, createDeviceCluster, type CreateDeviceClusterPayload } from "@/actions/deviceMutation"
-import { getDevices, getClusters, getClusterById } from "@/queries/device/deviceQueries"
+import { getDevices, getClusters, getClusterById, getDeviceById } from "@/queries/device/deviceQueries"
 
 export const useCreateDevice = () => {
     const queryClient = useQueryClient()
@@ -26,6 +26,14 @@ export const useDevices = () => {
     return useQuery({
         queryKey: ["devices"],
         queryFn: getDevices,
+    })
+}
+
+export const useDevice = (id: string | number) => {
+    return useQuery({
+        queryKey: ["device", id],
+        queryFn: () => getDeviceById(id),
+        enabled: !!id,
     })
 }
 

@@ -2,6 +2,8 @@
 
 import { PencilLine ,Trash2} from "lucide-react";
 import React from "react";
+import Link from "next/link";
+
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
@@ -45,6 +47,7 @@ export default function DeviceTable({
         <table className="w-full text-left border-collapse">
           <thead className="bg-[#DAE3F8]/30 font-raleway">
             <tr className="text-gray-700 text-sm">
+              <th className="px-6 py-5 font-bold">ID</th>
               <th className="px-6 py-5 font-bold">Name</th>
               <th className="px-6 py-5 font-bold">Region</th>
               <th className="px-6 py-5 font-bold text-center">Coordinates</th>
@@ -61,6 +64,9 @@ export default function DeviceTable({
                     className="border-t border-secondary/15 text-sm even:bg-[#F2F5FA]/30"
                   >
                     <td className="px-5 py-5">
+                      <Skeleton width={40} height={14} />
+                    </td>
+                    <td className="px-5 py-5">
                       <Skeleton width={120} height={14} />
                     </td>
                     <td className="px-5 py-5">
@@ -75,6 +81,7 @@ export default function DeviceTable({
                     <td className="px-5 py-5 flex justify-end">
                       <Skeleton width={50} height={14} />
                     </td>
+                    <td className="px-5 py-5"></td>
                   </tr>
                 ))
               : data.map((row, index) => (
@@ -82,6 +89,11 @@ export default function DeviceTable({
                     key={row.id ?? index}
                     className="border-t border-secondary/15 text-sm even:bg-[#F2F5FA]/30"
                   >
+                    <td className="px-5 py-5 font-raleway font-semibold">
+                      <Link href={`/devices/${row.id}`} className="text-primary hover:underline">
+                        #{row.id}
+                      </Link>
+                    </td>
                     <td className="px-5 py-5 font-raleway font-medium">
                       {row.name}
                     </td>
@@ -110,7 +122,7 @@ export default function DeviceTable({
             {!isLoading && data.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={7}
                   className="px-6 py-10 text-center text-sm text-gray-400"
                 >
                   No devices found.

@@ -9,6 +9,12 @@ export async function getDevices(){
     })
 }
 
+export async function getDeviceById(id: string | number) {
+    return apiFetch(`/devices/${id}`, {
+        method: "GET",
+    })
+}
+
 export async function getClusters(){
     return apiFetch("/devices/clusters",{
         method: "GET",
