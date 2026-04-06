@@ -63,5 +63,6 @@ export async function apiFetch(
     throw new Error(json?.detail || `API error: ${res.status}`)
   }
 
-  return res.json()
+  const text = await res.text()
+  return text ? JSON.parse(text) : null
 }

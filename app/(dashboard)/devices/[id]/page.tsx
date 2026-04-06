@@ -169,7 +169,13 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
       {/* Map Section */}
       <div className="relative w-full mb-8 rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
         <div className="h-[320px] w-full">
-          <MapWithNoSSR position={mapCenter} zoom={13} />
+          <MapWithNoSSR 
+            position={mapCenter} 
+            zoom={13} 
+            devices={[device]} 
+            selectedDevice={device} 
+            onMarkerClick={() => {}}
+          />
         </div>
       </div>
 
@@ -205,6 +211,8 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
             iconBg="rgba(21, 101, 192, 0.15)"
             lines={[
               { label: "Internal", value: `${device.latest_reading?.internal_pressure || 0} hPa` },
+
+              { label: "External", value: `${device.latest_reading?.external_pressure || 0} hPa` },
             ]}
           />
           <SensorMetricCard

@@ -1,9 +1,10 @@
 "use client";
 
 import { PencilLine ,Trash2} from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-
+import ApproveDeleteDeviceModal from "../modal/ApproveDeleteDeviceModal";
+import { useDeleteDevice } from "@/hooks/device";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
@@ -41,6 +42,19 @@ export default function DeviceTable({
   data = [],
   isLoading = false,
 }: DeviceTableProps) {
+  const [deviceToDelete, setDeviceToDelete] = useState<DeviceRow | null>(null);
+  const deleteDeviceMutation = useDeleteDevice();
+
+  const handleConfirmDelete = () => {
+    if (deviceToDelete) {
+      deleteDeviceMutation.mutate(deviceToDelete.id, {
+        onSuccess: () => {
+          setDeviceToDelete(null);
+        },
+      });
+    }
+  };
+
   return (
     <div className="bg-white">
       <div className="overflow-hidden rounded-2xl mt-4 border border-secondary/15">
@@ -108,11 +122,11 @@ export default function DeviceTable({
                       {row.total_mosquito_count}
                     </td>
                     <td className="px-5 py-5  flex gap-2   justify-center items-center g font-mulish text-right font-semibold text-black">
-                      <button>
+                      <Link href={`/devices/${row.id}/edit`}>
                         <PencilLine size={16} className="text-primary"/>
-                      </button>
+                      </Link>
 
-                      <button>
+                      <button onClick={() => setDeviceToDelete(row)}>
                         <Trash2 size={16} className="text-red-500"/>
                       </button>
                     </td>   
@@ -132,6 +146,14 @@ export default function DeviceTable({
           </tbody>
         </table>
       </div>
+
+      <ApproveDeleteDeviceModal
+        isOpen={!!deviceToDelete}
+        deviceName={deviceToDelete?.name || ""}
+        isPending={deleteDeviceMutation.isPending}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeviceToDelete(null)}
+      />
     </div>
   );
 }
