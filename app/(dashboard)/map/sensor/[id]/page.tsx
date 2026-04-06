@@ -51,15 +51,23 @@ const MapWithNoSSR = dynamic(
   }
 );
 
+import { useDevice } from "@/hooks/device";
+
 export default function SensorDetailPage() {
   const params = useParams();
   const id = params?.id as string | undefined;
+  const { data: device, isLoading } = useDevice(id || "");
   const [activeTab, setActiveTab] = useState<"readings" | "graphs">("readings");
   const [mapLayerOn, setMapLayerOn] = useState(true);
 
   const mapCenter: [number, number] = useMemo(
-    () => [5.6037, -0.187],
-    []
+    () => {
+        if (device?.latitude && device?.longitude) {
+            return [device.latitude, device.longitude];
+        }
+        return [5.6037, -0.187];
+    },
+    [device]
   );
 
   return (
@@ -89,7 +97,13 @@ export default function SensorDetailPage() {
       {/* Map */}
       <div className="relative w-full mt-2 rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-sm">
         <div className="h-[400px] w-full">
-          <MapWithNoSSR position={mapCenter} zoom={9} />
+          <MapWithNoSSR 
+            position={mapCenter} 
+            zoom={9} 
+            devices={device ? [device] : []} 
+            selectedDevice={device} 
+            onMarkerClick={() => {}}
+          />
         </div>
        
       </div>
@@ -181,8 +195,8 @@ export default function SensorDetailPage() {
                 icon={temperatureIcon.src}
                 iconBg="rgba(21, 101, 192, 0.15)"
                 lines={[
-                  { label: "external ", value: "29.4 °C" },
-                  { label: "Internal ", value: "30.5 °C" },
+                  { label: "external", value: `${device?.latest_reading?.external_temperature || 0} °C` },
+                  { label: "Internal", value: `${device?.latest_reading?.internal_temperature || 0} °C` },
                 ]}
               />
               <SensorMetricCard
@@ -190,8 +204,8 @@ export default function SensorDetailPage() {
                 icon={humidityIcon.src}
                 iconBg="rgba(21, 101, 192, 0.15)"
                 lines={[
-                  { label: "external ", value: "45.8 %" },
-                  { label: "Internal ", value: "50.6 %" },
+                  { label: "external", value: `${device?.latest_reading?.external_humidity || 0} %` },
+                  { label: "Internal", value: `${device?.latest_reading?.internal_humidity || 0} %` },
                 ]}
               />
               <SensorMetricCard
@@ -199,15 +213,15 @@ export default function SensorDetailPage() {
                 icon={pressureIcon.src}
                 iconBg="rgba(21, 101, 192, 0.15)"
                 lines={[
-                  { label: "external ", value: "1010.2 hPa" },
-                  { label: "Internal ", value: "1012.3 hPa" },
+                  { label: "external", value: `${device?.latest_reading?.external_pressure || 0} hPa` },
+                  { label: "Internal", value: `${device?.latest_reading?.internal_pressure || 0} hPa` },
                 ]}
               />
               <SensorMetricCard
                 title="Battery"
                 icon={batteryIcon.src}
                 iconBg="rgba(251, 191, 36, 0.2)"
-                lines={[{ label: "Reading ", value: "3.7 V" }]}
+                lines={[{ label: "Reading", value: `${device?.latest_reading?.battery_voltage || 0} V` }]}
               />
             </div>
           </div>
