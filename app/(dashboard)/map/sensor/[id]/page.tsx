@@ -1,19 +1,10 @@
 "use client";
-
-import {
-  Thermometer,
-  Droplets,
-  Gauge,
-  Battery,
-  Maximize2,
-  Wifi,
-  ZoomIn,
-  ZoomOut,
-} from "lucide-react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import SensorMetricCard from "@/components/cards/SensorMetricCard";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 import humidityIcon from '@/public/images/humidity.png'
 import temperatureIcon from '@/public/images/temperature.png'
 import pressureIcon from '@/public/images/pressure.png'
@@ -26,18 +17,6 @@ import TemperatureTrendChart from "@/components/Charts/TemperatureTrendChart";
 import HumidityTrendChart from "@/components/Charts/HumidityTrendChart";
 import PressureTrendChart from "@/components/Charts/PressureTrendChart";
 import BatteryTrendChart from "@/components/Charts/BatteryTrendChart";
-
-const speciesData = [
-  { species: "Young Male Aedes", date: "01 Dec 2023, 2:00 pm", count: 69 },
-  { species: "Old Male Aedes", date: "01 Dec 2023, 2:00 pm", count: 69 },
-  { species: "Young Female Aedes", date: "01 Dec 2023, 2:00 pm", count: 69 },
-  { species: "Old Female Aedes", date: "01 Dec 2023, 2:00 pm", count: 69 },
-  { species: "Young Male Anopheles", date: "01 Dec 2023, 2:00 pm", count: 69 },
-  { species: "Old Male Anopheles", date: "01 Dec 2023, 2:00 pm", count: 90 },
-  { species: "Young Female Anopheles", date: "01 Dec 2023, 2:00 pm", count: 69 },
-  { species: "Old Female Anopheles", date: "01 Dec 2023, 2:00 pm", count: 69 },
-  { species: "Young Male Culex", date: "01 Dec 2023, 2:00 pm", count: 69 },
-];
 
 const MapWithNoSSR = dynamic(
   () => import("@/components/map/MapClient").then((m) => m.default),
@@ -52,20 +31,113 @@ const MapWithNoSSR = dynamic(
 );
 
 import { useDevice } from "@/hooks/device";
+import { useMosquitoEventsByDeviceUuid } from "@/hooks/mosquito";
+import type { MosquitoEvent } from "@/queries/mosquito_data/mosquitoDeviceQueries";
+
+function formatTimestamp(iso: string | undefined): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  return date.toLocaleString("en-GB", {
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
+
+function normalizeCoordinate(value: unknown, maxAbs: number): number | null {
+  const numeric = typeof value === "number" ? value : Number.parseFloat(String(value));
+  if (!Number.isFinite(numeric)) return null;
+  if (Math.abs(numeric) <= maxAbs) return numeric;
+  const divisors = [1_000_000, 100_000, 10_000, 1_000];
+  for (const divisor of divisors) {
+    const scaled = numeric / divisor;
+    if (Number.isFinite(scaled) && Math.abs(scaled) <= maxAbs) return scaled;
+  }
+  return null;
+}
 
 export default function SensorDetailPage() {
   const params = useParams();
   const id = params?.id as string | undefined;
   const { data: device, isLoading } = useDevice(id || "");
   const [activeTab, setActiveTab] = useState<"readings" | "graphs">("readings");
-  const [mapLayerOn, setMapLayerOn] = useState(true);
+
+  const deviceUuid = device?.device_uuid ?? "";
+  const { data: mosquitoEvents = [], isLoading: isMosquitoLoading } = useMosquitoEventsByDeviceUuid(deviceUuid);
+
+  const { mosquitoTableRows, totalMosquitoCount } = useMemo(() => {
+    const events = (Array.isArray(mosquitoEvents) ? mosquitoEvents : []) as MosquitoEvent[];
+    const rows: { species: string; ageGroup: string; sex: string; iso: string }[] = [];
+    let total = 0;
+
+    for (const event of events) {
+      const batchIso = typeof event.timestamp === "string" ? event.timestamp : "";
+      const individuals = Array.isArray(event.individual_readings) ? event.individual_readings : [];
+      const single = event.mosquito_reading;
+
+      const batchCount = typeof event.count === "number" ? event.count : 0;
+      if (batchCount > 0) total += batchCount;
+
+      // Newer API shape: one mosquito_reading per event.
+      if (single && typeof single === "object") {
+        if (!batchCount) total += 1;
+        const genus = single?.genus ?? "";
+        const species = single?.species ?? "";
+        const ageGroup = single?.age_group ?? "—";
+        const sex = single?.sex ?? "—";
+        const iso = typeof single?.detection_timestamp === "string" ? single.detection_timestamp : batchIso;
+        rows.push({
+          species: species || genus || "Unknown",
+          ageGroup: ageGroup || "—",
+          sex: sex || "—",
+          iso,
+        });
+        continue;
+      }
+
+      if (individuals.length === 0) {
+        if (batchCount > 0 || batchIso) {
+          rows.push({
+            species: "Unknown",
+            ageGroup: "—",
+            sex: "—",
+            iso: batchIso,
+          });
+        }
+        continue;
+      }
+
+      // Prefer total from individuals if backend didn't set count
+      if (!batchCount) total += individuals.length;
+
+      for (const reading of individuals) {
+        const genus = reading?.genus ?? "";
+        const species = reading?.species ?? "";
+        const ageGroup = reading?.age_group ?? "—";
+        const sex = reading?.sex ?? "—";
+        const iso = typeof reading?.detection_timestamp === "string" ? reading.detection_timestamp : batchIso;
+        rows.push({
+          species: species || genus || "Unknown",
+          ageGroup: ageGroup || "—",
+          sex: sex || "—",
+          iso,
+        });
+      }
+    }
+
+    rows.sort((a, b) => {
+      const aTime = a.iso ? new Date(a.iso).getTime() : 0;
+      const bTime = b.iso ? new Date(b.iso).getTime() : 0;
+      return bTime - aTime;
+    });
+    return { mosquitoTableRows: rows, totalMosquitoCount: total };
+  }, [mosquitoEvents]);
 
   const mapCenter: [number, number] = useMemo(
     () => {
-        if (device?.latitude && device?.longitude) {
-            return [device.latitude, device.longitude];
-        }
-        return [5.6037, -0.187];
+        const lat = normalizeCoordinate(device?.latitude, 90);
+        const lng = normalizeCoordinate(device?.longitude, 180);
+        if (lat !== null && lng !== null) return [lat, lng];
+        return [5.6037, -0.187]; // Ghana fallback
     },
     [device]
   );
@@ -74,23 +146,33 @@ export default function SensorDetailPage() {
     <div className="flex flex-col font-raleway gap-4 w-full ">
          <div className="flex-row  justify-between flex items-center gap-2">
 
-        <span className="font-semibold">Sensor 20</span>
+        <div className="flex flex-col">
+          <span className="font-semibold">
+            {isLoading ? <Skeleton width={180} height={16} /> : (device?.name ?? `Sensor ${id ?? ""}`)}
+          </span>
+          {isLoading ? (
+            <span className="text-xs text-gray-400">
+              <Skeleton width={260} height={12} />
+            </span>
+          ) : device && (
+            <span className="text-xs text-gray-400">
+              {device.region} • {device.device_uuid} • Last activity: {formatTimestamp(device.last_activity)}
+            </span>
+          )}
+        </div>
 
 
-        <div className=" text-sm  flex flex-row gap-3 items-center">
-
-            <span>Satatus:</span>
-
-<svg width="37" height="30" viewBox="0 0 37 30" fill="none" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink">
-<rect y="-11" width="37" height="52" fill="url(#pattern0_45_1190)"/>
-<defs>
-<pattern id="pattern0_45_1190" patternContentUnits="objectBoundingBox" width="1" height="1">
-<use xlinkHref="#image0_45_1190" transform="matrix(0.01 0 0 0.00711538 0 0.144231)"/>
-</pattern>
-<image id="image0_45_1190" width="100" height="100" preserveAspectRatio="none" xlinkHref="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAACXBIWXMAAAsTAAALEwEAmpwYAAAFXElEQVR4nO2cXUxcRRTH74MfiR8vGvuirX33I0Z958HQnQGkagomMGcpSwX64ItIBbSaSMFIk9paWgRjTKmrsjsDS7VYa1OEtDHiU60I3caXNjxYbH21iow5y9KSFfbeXXZnlr3nl/wTshCYOX9m7syZM9dxCIIgCIIgCIIgCIIgCIIgCIIgCIIgCIIgCIIgCIJwByIVW4QM7ATJeoXi34Hil0GyG0Lxv0FxXQwS2BfJbiT7dhr7ClFWt3Nk22anEKgbCWwFxfeC4rO2gwW2zZLsV5DszRpZ9qhxI4JR9qRQbBAUW7AdCCgwCcX+FZJ9BVH+bN6NaIhsewAU7wfJF213HApdki/iP61QpZvyYgZI/rKQ7E/rHVUbS0Lx60HFduTMiKpI1V1C8o9sdww2uiTrbex/5s51mSEGS+8Fyb6x3hlVNDoTilXen+XIKLkPJP+hADqhi0vsPP6jZ2QGDi2/j4xQrFLvGd+lu6Za9IELb+ve6c6E8Gv8DL+HP5Pl7z/z6hi727Mhfn1m1A2X647JZj0Q369j1wb16PzxtBq5dkwPxHt0+2SzDg6XZfb3JOv1ZEZttKzadmDAgtommnT4ap+rCWvp86t9um2iMUNTeE36kaFKNyVTA9ovCp14QffNvpe1Eanqm+nWDaPbPS+J6yPsoTUNAcmO2Q4QGNTusep1jYq1FL5yVDefrPJqyiermlE3UvaUn3bgu8eq9dDcxzk3Y1lDcwPeTJF8sWaEP7HK6OAR20ECg9NUPkbGaiMlNOphJSb5FymjI7AVk2K2AwWGlMtnhpuOzHR7aBNbwOOL26NjKYWu/aD2iSZjZiyrbeIV13bVKt6x0pBZv+wzwgamqlR9duWol33K9JIZkYottgNlSh2TzcbNWFbHZJNr+2oVe8RJHLsWQLBMaCC+35oh/fEe1/YJxYO49+i1HSgTCo1u95QOyZcwzVIfez59OyU/5CQLEnSxa8/4LmtmLKv1bIPbCDnlgGK/2Q6WCe376XXrhnROtbi18zKOkOu2g2VCH/z8jnVDDlzYm76dks3jCLlpO1gmdHi607ohh395N20bheR/kSHzBWYITVnHC27K8sVDvWuqxboh+358zdND3RfL3tbxBuuGtJ4NeVj2+mVjGKtMbM5smRH73evG0E+pk0s91gzpj7/v3kZZBg6W0tsOlCm1W0wuYtrfU3IxUdyApfQFEDDIszAFjqd4ps0Ie0m/S3bxdrWJDLxlO1im1D7RaNyQN753P6ACydpuGYKXTPx016NvptuYGUdmujy0iS387xYWKDZkO1BgSFg3ZWLqWipycK/REoqFV70V5acyoOaTVYlSnXyZ8eVcv6cyICwuCUYDj61eKKf4p7YDBYZNycdIyahQTrIBZy2wrNEvuS1ICuumsFQnl88ML9PUkhn8Dxh+7sE1DUlMXYrtsB0ksCAs1cHqkPWMCk+rqZUaDryU1oxbU5dP0imQItwrYHUIFiR4SbNgOgR34Ljpy/g6gmIHnUwu7AjJxmwHCCwK8054Bo7Hrpg2x/MUFH6Nn2GisD7bCzuSf10yXnKHk/H9QsXO2w4MFJmEYucaT1Tck5EZK03x+0iBXEqy01lf+ky5b+jLZwrkzAjc37GDGU9Tbqsvvy2JIQfCpW1QsRedvL1aQ/JDfrq6AOt8tUbaK2u5QqjyxxMvn5H8H+sdV4X58plaFXjaMQ1WzuO9Biyltx0IsC3JLgrJ2wvm3Vl42oXV20LyD4Xi3wrJLi09c4qp7ovdxD4l+3YKp288dg1Gyh+2HX+CIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCIAiCcDYC/wGARvs8/cGYpAAAAABJRU5ErkJggg=="/>
-</defs>
-</svg>
-
+        <div className="text-sm flex flex-row gap-3 items-center">
+          <span>Status:</span>
+          {isLoading ? (
+            <Skeleton width={70} height={14} />
+          ) : (
+            <span
+              className={`font-semibold ${device?.latest_reading ? "text-green-600" : "text-gray-400"}`}
+            >
+              {device?.latest_reading ? "Online" : "No data"}
+            </span>
+          )}
         </div>
          
         </div>
@@ -142,9 +224,18 @@ export default function SensorDetailPage() {
             {/* Mosquito Species and Age Count */}
             <div>
               <div className="flex flex-wrap items-center border-b border-gray pb-2 justify-between gap-4 mb-4">
-                <h2 className="text-lg font-raleway font-semibold  text-gray-800">
-                  Mosquito Species and Age Count
-                </h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-lg font-raleway font-semibold text-gray-800">
+                    Mosquito Events
+                  </h2>
+                  {isMosquitoLoading ? (
+                    <Skeleton width={80} height={20} />
+                  ) : (
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">
+                      Total: {totalMosquitoCount}
+                    </span>
+                  )}
+                </div>
                 <select className="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-0  text-gray-700 bg-white y focus:border-primary outline-none">
                   <option>Hour</option>
                   <option>Day</option>
@@ -155,34 +246,53 @@ export default function SensorDetailPage() {
                 <table className="w-full text-left border-collapse border-secondary/15  font-raleway">
                   <thead className="bg-[#DAE3F8]/30">
                     <tr className="text-gray-700 text-sm">
-                      <th className="px-5 py-4 font-semibold">
-                        Species & Age Group
-                      </th>
-                      <th className="px-5 py-4 font-semibold text-center">
-                        Date
-                      </th>
-                      <th className="px-5 py-4 font-semibold text-right">
-                        Count
-                      </th>
+                      <th className="px-5 py-4 font-semibold">Species</th>
+                      <th className="px-5 py-4 font-semibold text-center">Age Group</th>
+                      <th className="px-5 py-4 font-semibold text-center">Sex</th>
+                      <th className="px-5 py-4 font-semibold text-right">Date</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white">
-                    {speciesData.map((row, index) => (
-                      <tr
-                        key={`${row.species}-${index}`}
-                        className="border-t  border-secondary/15  text-sm even:bg-[#F2F5FA]/30"
-                      >
-                        <td className="px-5 py-4 font-medium text-gray-800">
-                          {row.species}
-                        </td>
-                        <td className="px-5 py-4 text-gray-600 text-center">
-                          {row.date}
-                        </td>
-                        <td className="px-5 py-4 font-semibold text-gray-900 text-right">
-                          {row.count}
+                    {isMosquitoLoading
+                      ? Array.from({ length: 6 }).map((_, i) => (
+                          <tr
+                            key={i}
+                            className="border-t border-secondary/15 text-sm even:bg-[#F2F5FA]/30"
+                          >
+                            <td className="px-5 py-4">
+                              <Skeleton width={180} height={14} />
+                            </td>
+                            <td className="px-5 py-4 text-center">
+                              <Skeleton width={80} height={14} />
+                            </td>
+                            <td className="px-5 py-4 text-center">
+                              <Skeleton width={70} height={14} />
+                            </td>
+                            <td className="px-5 py-4 flex justify-end">
+                              <Skeleton width={120} height={14} />
+                            </td>
+                          </tr>
+                        ))
+                      : mosquitoTableRows.map((row, index) => (
+                          <tr
+                            key={`${row.species}-${row.iso}-${index}`}
+                            className="border-t  border-secondary/15  text-sm even:bg-[#F2F5FA]/30"
+                          >
+                            <td className="px-5 py-4 font-medium text-gray-800">
+                              {row.species}
+                            </td>
+                            <td className="px-5 py-4 text-gray-600 text-center">{row.ageGroup}</td>
+                            <td className="px-5 py-4 text-gray-600 text-center">{row.sex}</td>
+                            <td className="px-5 py-4 text-gray-600 text-right">{formatTimestamp(row.iso)}</td>
+                          </tr>
+                        ))}
+                    {!isMosquitoLoading && mosquitoTableRows.length === 0 && (
+                      <tr className="border-t border-secondary/15 text-sm">
+                        <td className="px-5 py-6 text-gray-500 text-center" colSpan={4}>
+                          No mosquito events for this device yet.
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>

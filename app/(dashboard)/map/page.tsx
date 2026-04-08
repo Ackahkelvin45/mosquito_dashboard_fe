@@ -82,6 +82,38 @@ type Device = {
   latest_reading?: LatestReading;
 };
 
+function normalizeCoordinate(value: unknown, maxAbs: number): number | null {
+  const numeric = typeof value === "number" ? value : Number.parseFloat(String(value));
+  if (!Number.isFinite(numeric)) return null;
+  if (Math.abs(numeric) <= maxAbs) return numeric;
+
+  // Some devices/backends store coordinates as scaled integers (e.g. microdegrees).
+  const divisors = [1_000_000, 100_000, 10_000, 1_000];
+  for (const divisor of divisors) {
+    const scaled = numeric / divisor;
+    if (Number.isFinite(scaled) && Math.abs(scaled) <= maxAbs) return scaled;
+  }
+
+  return null;
+}
+
+function getDeviceLatLng(device: Device | null): [number, number] | null {
+  if (!device) return null;
+  const lat = normalizeCoordinate(device.latitude, 90);
+  const lng = normalizeCoordinate(device.longitude, 180);
+  if (lat === null || lng === null) return null;
+  return [lat, lng];
+}
+
+function extractDevices(value: unknown): Device[] {
+  if (Array.isArray(value)) return value as Device[];
+  if (value && typeof value === "object") {
+    const maybe = value as { data?: unknown };
+    if (Array.isArray(maybe.data)) return maybe.data as Device[];
+  }
+  return [];
+}
+
 function DeviceStatusTab({ device }: { device: Device | null }) {
   if (!device) {
     return (
@@ -246,7 +278,7 @@ export default function MapPage() {
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
 
   const { data: devicesRaw, isLoading } = useDevices();
-  const devices: Device[] = Array.isArray(devicesRaw) ? devicesRaw : (devicesRaw as any)?.data ?? [];
+  const devices = extractDevices(devicesRaw);
 
   const filteredDevices = devices.filter(
     (d) =>
@@ -261,8 +293,8 @@ export default function MapPage() {
 
   const tabs: { label: string; value: TabValue; icon: (active: boolean) => React.ReactNode }[] = [
     { label: "Count", value: "count", icon: (active) => <CountIcon active={active} /> },
-    { label: "Device Status", value: "device-status", icon: (_active) => <Activity size={16} /> },
-    { label: "Environmental Data", value: "environmental-data", icon: (_active) => <Thermometer size={16} /> },
+    { label: "Device Status", value: "device-status", icon: () => <Activity size={16} /> },
+    { label: "Environmental Data", value: "environmental-data", icon: () => <Thermometer size={16} /> },
   ];
 
   const Map = useMemo(
@@ -284,16 +316,14 @@ export default function MapPage() {
 
   // Default center: Ghana
   const defaultCenter: [number, number] = [5.6037, -0.187];
-  const position: [number, number] = selectedDevice
-    ? [selectedDevice.latitude, selectedDevice.longitude]
-    : defaultCenter;
+  const position = getDeviceLatLng(selectedDevice) ?? defaultCenter;
 
   return (
     <div className="h-full w-full font-raleway relative">
       {/* Map fills full area */}
       <div className="absolute rounded-lg inset-0">
         <Map
-          position={defaultCenter}
+          position={position}
           zoom={8}
           devices={filteredDevices}
           selectedDevice={selectedDevice}
@@ -424,10 +454,10 @@ export default function MapPage() {
                 </span>
                 {selectedDevice && (
                   <Link
-                    href={`/devices/${selectedDevice.id}`}
+                    href={`/map/sensor/${selectedDevice.id}`}
                     className="text-sm font-semibold text-primary flex items-center gap-1.5 transition-colors hover:underline"
                   >
-                    View Dashboard <span>→</span>
+                    View Sensor <span>→</span>
                   </Link>
                 )}
               </div>
