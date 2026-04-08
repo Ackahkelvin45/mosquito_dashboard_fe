@@ -19,6 +19,7 @@ export type MosquitoIndividualReading = {
 	sex: string | null;
 	id: number;
 	batch_id: number;
+	device_uuid?: string;
 	[key: string]: unknown;
 };
 

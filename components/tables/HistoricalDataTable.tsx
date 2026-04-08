@@ -49,7 +49,7 @@ export default function HistoricalDataTable({
     return list.map((event) => {
       const reading = event.mosquito_reading;
       return {
-        device: reading?.device_uuid ?? String(event.device_id ?? "—"),
+        device: (typeof reading?.device_uuid === "string" ? reading.device_uuid : undefined) ?? String(event.device_id ?? "—"),
         date: formatDate(event.timestamp ?? reading?.detection_timestamp),
         sex: reading?.sex ?? "—",
         ageGroup: reading?.age_group ?? "—",
