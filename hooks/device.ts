@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createDevice, type CreateDevicePayload, createDeviceCluster, type CreateDeviceClusterPayload, deleteDevice, updateDevice, type UpdateDevicePayload } from "@/actions/deviceMutation"
-import { getDevices, getClusters, getClusterById, getDeviceById } from "@/queries/device/deviceQueries"
+import { getDevices, type GetDevicesFilters, getClusters, getClusterById, getDeviceById } from "@/queries/device/deviceQueries"
+
+function getId(value: unknown): string | number | null {
+    if (!value || typeof value !== "object") return null
+    const id = (value as Record<string, unknown>).id
+    if (typeof id === "string" || typeof id === "number") return id
+    return null
+}
 
 export const useCreateDevice = () => {
     const queryClient = useQueryClient()
@@ -28,19 +35,25 @@ export const useDeleteDevice = () => {
     return useMutation({
         mutationFn: (deviceId: string | number) => deleteDevice(deviceId),
         onSuccess: (_, deletedDeviceId) => {
-            queryClient.setQueryData(["devices"], (oldData: any) => {
-                if (!oldData) return oldData;
+            queryClient.setQueryData(["devices"], (oldData: unknown) => {
+                if (!oldData) return oldData
                 if (Array.isArray(oldData)) {
-                    return oldData.filter((device: any) => device.id !== deletedDeviceId);
-                } else if (oldData.data && Array.isArray(oldData.data)) {
-                    return {
-                        ...oldData,
-                        data: oldData.data.filter((device: any) => device.id !== deletedDeviceId)
-                    };
+                    return oldData.filter((device) => getId(device) !== deletedDeviceId)
                 }
-                return oldData;
-            });
-            queryClient.invalidateQueries({ queryKey: ["devices"] });
+
+                if (typeof oldData === "object" && oldData !== null) {
+                    const record = oldData as Record<string, unknown>
+                    const data = record.data
+                    if (Array.isArray(data)) {
+                    return {
+                        ...record,
+                        data: data.filter((device) => getId(device) !== deletedDeviceId),
+                    }
+                    }
+                }
+                return oldData
+            })
+            queryClient.invalidateQueries({ queryKey: ["devices"] })
         },
     })
 }
@@ -55,10 +68,10 @@ export const useCreateCluster = () => {
     })
 }
 
-export const useDevices = () => {
+export const useDevices = (filters?: GetDevicesFilters) => {
     return useQuery({
-        queryKey: ["devices"],
-        queryFn: getDevices,
+        queryKey: ["devices", filters ?? null],
+        queryFn: () => getDevices(filters),
     })
 }
 

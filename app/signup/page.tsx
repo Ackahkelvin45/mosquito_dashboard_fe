@@ -41,7 +41,7 @@ export default function SignupPage() {
         email,
         password,
         is_active: true,
-        role: requestToBeResearcher ? "admin" : "user"
+        role: requestToBeResearcher ? "ADMIN" : "USER"
       },
       {
         onSuccess: async (data) => {

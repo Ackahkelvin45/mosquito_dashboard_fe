@@ -40,7 +40,7 @@ export async function apiFetch(
   if (!skipAuth && res.status === 401) {
     const { refreshToken } = useAuthStore.getState()
 
-    const refreshRes = await fetch(`${API_URL}/refresh`, {
+    const refreshRes = await fetch(`${API_URL}/auth/refresh-token`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },

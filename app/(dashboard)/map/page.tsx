@@ -4,7 +4,7 @@ import { Activity, Logs, X, Search, Thermometer, BatteryCharging, Clock, Gauge, 
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useDevices } from "@/hooks/device";
+import { useClusters, useDevices } from "@/hooks/device";
 import type React from "react";
 
 // ------- MapClient props type (mirrors MapClient.jsx interface) -------
@@ -80,6 +80,11 @@ type Device = {
   cluster_id: number;
   device_uuid: string;
   latest_reading?: LatestReading;
+};
+
+type Cluster = {
+  id: number;
+  name: string;
 };
 
 function normalizeCoordinate(value: unknown, maxAbs: number): number | null {
@@ -275,16 +280,29 @@ export default function MapPage() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabValue>("device-status");
   const [query, setQuery] = useState("");
+  const [selectedClusterId, setSelectedClusterId] = useState<string>("all");
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
 
   const { data: devicesRaw, isLoading } = useDevices();
   const devices = extractDevices(devicesRaw);
 
-  const filteredDevices = devices.filter(
-    (d) =>
-      d.name.toLowerCase().includes(query.toLowerCase()) ||
-      d.region.toLowerCase().includes(query.toLowerCase())
-  );
+  const { data: clustersRaw } = useClusters();
+  const clusters: Cluster[] = Array.isArray(clustersRaw) ? (clustersRaw as Cluster[]) : [];
+
+  const clusterFilteredDevices =
+    selectedClusterId === "all"
+      ? devices
+      : devices.filter((d) => String(d.cluster_id) === selectedClusterId);
+
+  const filteredDevices = clusterFilteredDevices.filter((d) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      d.name.toLowerCase().includes(q) ||
+      d.region.toLowerCase().includes(q) ||
+      d.device_uuid.toLowerCase().includes(q)
+    );
+  });
 
   const handleMarkerClick = (device: Device) => {
     setSelectedDevice(device);
@@ -336,25 +354,26 @@ export default function MapPage() {
         className={`absolute top-4 z-[1000] transition-all duration-300 ease-in-out
           ${isOpen ? "left-[420px] right-4" : "left-20 right-4"}`}
       >
-        <div className="w-[350px]">
-          <div className="flex items-center bg-white rounded-full shadow-lg px-4 py-2.5 gap-3">
-            <Search size={18} className="text-gray-400 shrink-0" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search device, region..."
-              className="flex-1 text-sm text-gray-700 placeholder-gray-400 outline-none bg-transparent"
-            />
-            {isLoading && (
-              <span className="text-xs text-gray-400 animate-pulse">Loading…</span>
-            )}
-            {query && (
-              <button onClick={() => setQuery("")} className="text-gray-400 hover:text-gray-600 transition-colors">
-                <X size={16} />
-              </button>
-            )}
-          </div>
+        <div className="flex items-start gap-3">
+          <div className="w-[350px]">
+            <div className="flex items-center bg-white rounded-full shadow-lg px-4 py-2.5 gap-3">
+              <Search size={18} className="text-gray-400 shrink-0" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search name, region, UUID..."
+                className="flex-1 text-sm text-gray-700 placeholder-gray-400 outline-none bg-transparent"
+              />
+              {isLoading && (
+                <span className="text-xs text-gray-400 animate-pulse">Loading…</span>
+              )}
+              {query && (
+                <button onClick={() => setQuery("")} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <X size={16} />
+                </button>
+              )}
+            </div>
           {/* Dropdown search results */}
           {query && filteredDevices.length > 0 && (
             <div className="mt-1 bg-white rounded-xl shadow-lg overflow-hidden max-h-48 overflow-y-auto">
@@ -373,6 +392,22 @@ export default function MapPage() {
               ))}
             </div>
           )}
+          </div>
+
+          <div className="w-[220px]">
+            <select
+              value={selectedClusterId}
+              onChange={(e) => setSelectedClusterId(e.target.value)}
+              className="w-full bg-white rounded-full shadow-lg px-4 py-2.5 text-sm text-gray-700 outline-none border border-transparent focus:border-primary"
+            >
+              <option value="all">All clusters</option>
+              {clusters.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.name || `Cluster #${c.id}`}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

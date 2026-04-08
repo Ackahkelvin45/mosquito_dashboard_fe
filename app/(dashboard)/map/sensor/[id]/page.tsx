@@ -31,8 +31,8 @@ const MapWithNoSSR = dynamic(
 );
 
 import { useDevice } from "@/hooks/device";
-import { useMosquitoEventsByDeviceUuid } from "@/hooks/mosquito";
-import type { MosquitoEvent } from "@/queries/mosquito_data/mosquitoDeviceQueries";
+import { useMosquitoEventsByDeviceUuidWithFilters } from "@/hooks/mosquito";
+import type { MosquitoEvent, MosquitoRange } from "@/queries/mosquito_data/mosquitoDeviceQueries";
 
 function formatTimestamp(iso: string | undefined): string {
   if (!iso) return "—";
@@ -40,6 +40,7 @@ function formatTimestamp(iso: string | undefined): string {
   return date.toLocaleString("en-GB", {
     day: "2-digit", month: "short", year: "numeric",
     hour: "2-digit", minute: "2-digit",
+    hour12:true
   });
 }
 
@@ -60,13 +61,14 @@ export default function SensorDetailPage() {
   const id = params?.id as string | undefined;
   const { data: device, isLoading } = useDevice(id || "");
   const [activeTab, setActiveTab] = useState<"readings" | "graphs">("readings");
+  const [range, setRange] = useState<MosquitoRange>("month");
 
   const deviceUuid = device?.device_uuid ?? "";
-  const { data: mosquitoEvents = [], isLoading: isMosquitoLoading } = useMosquitoEventsByDeviceUuid(deviceUuid);
+  const { data: mosquitoEvents = [], isLoading: isMosquitoLoading } = useMosquitoEventsByDeviceUuidWithFilters(deviceUuid, { range });
 
   const { mosquitoTableRows, totalMosquitoCount } = useMemo(() => {
     const events = (Array.isArray(mosquitoEvents) ? mosquitoEvents : []) as MosquitoEvent[];
-    const rows: { species: string; ageGroup: string; sex: string; iso: string }[] = [];
+    const rows: { species: string; genus: string; ageGroup: string; sex: string; iso: string }[] = [];
     let total = 0;
 
     for (const event of events) {
@@ -80,16 +82,18 @@ export default function SensorDetailPage() {
       // Newer API shape: one mosquito_reading per event.
       if (single && typeof single === "object") {
         if (!batchCount) total += 1;
-        const genus = single?.genus ?? "";
-        const species = single?.species ?? "";
+        const genus = single?.genus ?? "—";
+        const species = single?.species ?? "—";
         const ageGroup = single?.age_group ?? "—";
         const sex = single?.sex ?? "—";
-        const iso = typeof single?.detection_timestamp === "string" ? single.detection_timestamp : batchIso;
+        // Show event.timestamp primarily (user asked for timestamp)
+        const iso = batchIso || (typeof single?.detection_timestamp === "string" ? single.detection_timestamp : "");
         rows.push({
-          species: species || genus || "Unknown",
-          ageGroup: ageGroup || "—",
-          sex: sex || "—",
-          iso,
+          species,
+          genus,
+          ageGroup,
+          sex,
+          iso: iso || "",
         });
         continue;
       }
@@ -97,7 +101,8 @@ export default function SensorDetailPage() {
       if (individuals.length === 0) {
         if (batchCount > 0 || batchIso) {
           rows.push({
-            species: "Unknown",
+            species: "—",
+            genus: "—",
             ageGroup: "—",
             sex: "—",
             iso: batchIso,
@@ -110,16 +115,17 @@ export default function SensorDetailPage() {
       if (!batchCount) total += individuals.length;
 
       for (const reading of individuals) {
-        const genus = reading?.genus ?? "";
-        const species = reading?.species ?? "";
+        const genus = reading?.genus ?? "—";
+        const species = reading?.species ?? "—";
         const ageGroup = reading?.age_group ?? "—";
         const sex = reading?.sex ?? "—";
-        const iso = typeof reading?.detection_timestamp === "string" ? reading.detection_timestamp : batchIso;
+        const iso = batchIso || (typeof reading?.detection_timestamp === "string" ? reading.detection_timestamp : "");
         rows.push({
-          species: species || genus || "Unknown",
-          ageGroup: ageGroup || "—",
-          sex: sex || "—",
-          iso,
+          species,
+          genus,
+          ageGroup,
+          sex,
+          iso: iso || "",
         });
       }
     }
@@ -236,10 +242,15 @@ export default function SensorDetailPage() {
                     </span>
                   )}
                 </div>
-                <select className="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-0  text-gray-700 bg-white y focus:border-primary outline-none">
-                  <option>Hour</option>
-                  <option>Day</option>
-                  <option>Week</option>
+                <select
+                  value={range}
+                  onChange={(e) => setRange(e.target.value as MosquitoRange)}
+                  className="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-0  text-gray-700 bg-white y focus:border-primary outline-none"
+                >
+                  <option value="hour">Hour</option>
+                  <option value="day">Day</option>
+                  <option value="week">Week</option>
+                  <option value="month">Month</option>
                 </select>
               </div>
               <div className="overflow-hidden rounded-xl border border-secondary/15 ">
@@ -247,9 +258,10 @@ export default function SensorDetailPage() {
                   <thead className="bg-[#DAE3F8]/30">
                     <tr className="text-gray-700 text-sm">
                       <th className="px-5 py-4 font-semibold">Species</th>
+                      <th className="px-5 py-4 font-semibold text-center">Genus</th>
                       <th className="px-5 py-4 font-semibold text-center">Age Group</th>
                       <th className="px-5 py-4 font-semibold text-center">Sex</th>
-                      <th className="px-5 py-4 font-semibold text-right">Date</th>
+                      <th className="px-5 py-4 font-semibold text-right">Timestamp</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white">
@@ -261,6 +273,9 @@ export default function SensorDetailPage() {
                           >
                             <td className="px-5 py-4">
                               <Skeleton width={180} height={14} />
+                            </td>
+                            <td className="px-5 py-4 text-center">
+                              <Skeleton width={90} height={14} />
                             </td>
                             <td className="px-5 py-4 text-center">
                               <Skeleton width={80} height={14} />
@@ -275,12 +290,13 @@ export default function SensorDetailPage() {
                         ))
                       : mosquitoTableRows.map((row, index) => (
                           <tr
-                            key={`${row.species}-${row.iso}-${index}`}
+                            key={`${row.species}-${row.genus}-${row.iso}-${index}`}
                             className="border-t  border-secondary/15  text-sm even:bg-[#F2F5FA]/30"
                           >
                             <td className="px-5 py-4 font-medium text-gray-800">
                               {row.species}
                             </td>
+                            <td className="px-5 py-4 text-gray-600 text-center">{row.genus}</td>
                             <td className="px-5 py-4 text-gray-600 text-center">{row.ageGroup}</td>
                             <td className="px-5 py-4 text-gray-600 text-center">{row.sex}</td>
                             <td className="px-5 py-4 text-gray-600 text-right">{formatTimestamp(row.iso)}</td>
@@ -288,7 +304,7 @@ export default function SensorDetailPage() {
                         ))}
                     {!isMosquitoLoading && mosquitoTableRows.length === 0 && (
                       <tr className="border-t border-secondary/15 text-sm">
-                        <td className="px-5 py-6 text-gray-500 text-center" colSpan={4}>
+                        <td className="px-5 py-6 text-gray-500 text-center" colSpan={5}>
                           No mosquito events for this device yet.
                         </td>
                       </tr>

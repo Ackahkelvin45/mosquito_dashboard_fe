@@ -2,7 +2,7 @@
 
 import React, { useMemo } from "react";
 import { useMosquitoEvents } from "@/hooks/mosquito";
-import type { MosquitoEvent } from "@/queries/mosquito_data/mosquitoDeviceQueries";
+import type { GetAllMosquitoEventsFilters, MosquitoEvent } from "@/queries/mosquito_data/mosquitoDeviceQueries";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 
@@ -24,6 +24,7 @@ function formatDate(iso: string | undefined): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    hour12: true
   });
 }
 
@@ -31,15 +32,17 @@ interface HistoricalDataTableProps {
   data?: HistoricalDataRow[];
   title?: string;
   isLoading?: boolean;
+  filters?: GetAllMosquitoEventsFilters;
 }
 
 export default function HistoricalDataTable({
   data,
   title = "Historical Data",
   isLoading: isLoadingProp,
+  filters,
 }: HistoricalDataTableProps) {
   const shouldFetch = !data;
-  const { data: events = [], isLoading: isLoadingQuery, error } = useMosquitoEvents(shouldFetch);
+  const { data: events = [], isLoading: isLoadingQuery, error } = useMosquitoEvents(filters, shouldFetch);
   const isLoading = isLoadingProp ?? (shouldFetch ? isLoadingQuery : false);
 
   const rows: HistoricalDataRow[] = useMemo(() => {
@@ -67,7 +70,7 @@ export default function HistoricalDataTable({
         {!isLoading && error && <span className="text-xs text-red-500">Failed to load</span>}
       </div>
 
-      <div className="overflow-hidden rounded-2xl mt-4 border border-secondary/15">
+      <div className="overflow-x-auto rounded-2xl mt-4 border border-secondary/15">
         <table className="w-full text-left border-collapse">
           <thead className="bg-[#DAE3F8]/30 font-raleway">
             <tr className="text-gray-700 text-sm">
@@ -111,18 +114,18 @@ export default function HistoricalDataTable({
                     key={index}
                     className="border-t border-secondary/15 text-sm even:bg-[#F2F5FA]/30"
                   >
-                    <td className="px-5 py-5 font-raleway font-medium">
+                    <td className="px-5 whitespace-nowrap py-5 font-raleway font-medium">
                       {row.device}
                     </td>
-                    <td className="px-5 py-5 font-raleway text-center">
+                    <td className="px-5 whitespace-nowrap py-5 font-raleway text-center">
                       {row.date}
                     </td>
-                    <td className="px-5 py-5 font-raleway text-center">
+                    <td className="px-5 whitespace-nowrap py-5 font-raleway text-center">
                       {row.sex}
                     </td>
-                    <td className="px-5 py-5 font-raleway text-center">{row.ageGroup}</td>
-                    <td className="px-5 py-5 font-raleway text-center">{row.genus}</td>
-                    <td className="px-5 py-5 font-raleway text-right">{row.species}</td>
+                    <td className="px-5 py-5  whitespace-nowrap font-raleway text-center">{row.ageGroup}</td>
+                    <td className="px-5 py-5  whitespace-nowrap font-raleway text-center">{row.genus}</td>
+                    <td className="px-5 py-5 whitespace-nowrap font-raleway text-right">{row.species}</td>
                   </tr>
                 ))}
             {!isLoading && rows.length === 0 && (
