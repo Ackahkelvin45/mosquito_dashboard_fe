@@ -2,7 +2,7 @@ import React from 'react'
 
 interface CardProps {
   title: string
-  value: string
+  value: React.ReactNode
   icon: React.ReactNode
   bgColor: string
   description?: string

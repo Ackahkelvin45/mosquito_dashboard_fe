@@ -10,42 +10,80 @@ import {
   Tooltip,
 } from "recharts";
 import { useState } from "react";
+import Skeleton from "react-loading-skeleton";
 
-const data = [
-  { week: "Week 1", on: 1, off: 1 },
-  { week: "Week 1", on: 1.1, off: 1.05 },
-  { week: "Week 1", on: 1.0, off: 1.02 },
-  { week: "Week 1", on: 0.4, off: 0.45 },
-  { week: "Week 2", on: 1.1, off: 0.95 },
-  { week: "Week 2", on: 1.05, off: 1.15 },
-  { week: "Week 2", on: 0.3, off: 0.4 },
-  { week: "Week 3", on: 1.2, off: 1.1 },
-  { week: "Week 3", on: 0.5, off: 1.25 },
-  { week: "Week 3", on: 1.1, off: 0.4 },
-  { week: "Week 4", on: 1.0, off: 1.2 },
-  { week: "Week 4", on: 0.35, off: 1.3 },
-  { week: "Week 4", on: 1.05, off: 1.2 },
-];
+export type SensorStatusGroupBy = "hour" | "day" | "week" | "month";
 
-export default function SensorStatusChart() {
-  const [range, setRange] = useState("Month");
+export type SensorStatusPoint = {
+  xLabel: string;
+  tooltipLabel?: string;
+  on_count: number;
+  off_count: number;
+};
+
+function StatusTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload?: SensorStatusPoint } & Record<string, unknown>>;
+}) {
+  if (!active || !payload?.length) return null;
+  const point = payload?.[0]?.payload;
+  if (!point) return null;
 
   return (
-    <div className="bg-white rounded-lg  font-raleway shadow-md p-8 w-full ">
+    <div className="px-4 py-2.5 rounded-2xl bg-white text-sm shadow-lg border border-gray-200">
+      <div className="text-gray-500 text-xs mb-0.5">{point.tooltipLabel ?? point.xLabel}</div>
+      <div className="flex gap-3">
+        <span className="text-green-600 font-semibold">On: {point.on_count}</span>
+        <span className="text-red-500 font-semibold">Off: {point.off_count}</span>
+      </div>
+    </div>
+  );
+}
+
+export default function SensorStatusChart({
+  data = [],
+  groupBy,
+  onGroupByChange,
+  isLoading,
+}: {
+  data?: SensorStatusPoint[];
+  groupBy?: SensorStatusGroupBy;
+  onGroupByChange?: (value: SensorStatusGroupBy) => void;
+  isLoading?: boolean;
+}) {
+  const [range, setRange] = useState<SensorStatusGroupBy>("month");
+  const effectiveRange = groupBy ?? range;
+
+  const maxValue = Math.max(
+    0,
+    ...data.map((p) => Math.max(p.on_count ?? 0, p.off_count ?? 0))
+  );
+  const yMax = Math.max(1, Math.ceil(maxValue * 1.2));
+
+  return (
+    <div className="bg-white rounded-lg font-raleway shadow-md p-8 w-full">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-base  font-semibold ">
-          Sensor Status overtime
+        <h2 className="text-base font-semibold ">
+          Sensor Status Over Time
         </h2>
 
         <select
-          value={range}
-          onChange={(e) => setRange(e.target.value)}
+          value={effectiveRange}
+          onChange={(e) => {
+            const next = e.target.value as SensorStatusGroupBy;
+            if (onGroupByChange) onGroupByChange(next);
+            else setRange(next);
+          }}
           className="border border-gray rounded-lg focus:ring-0 focus:outline-none focus:border-primary px-4 py-2 text-gray-700"
         >
-          <option>Month</option>
-          <option>Week</option>
-          <option>Year</option>
+          <option value="hour">Hour</option>
+          <option value="day">Day</option>
+          <option value="week">Week</option>
+          <option value="month">Month</option>
         </select>
       </div>
 
@@ -53,45 +91,48 @@ export default function SensorStatusChart() {
 
       {/* Chart */}
       <div style={{ width: "100%", height: 350 }}>
-        <ResponsiveContainer>
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="5 5" vertical={false} />
-            <XAxis
-              dataKey="week"
-              tick={{ fill: "#6B7280" }}
-              axisLine={false}
-              tickLine={false}
-              fontSize={12}
-            />
-            <YAxis
-              domain={[0, 1.4]}
-              ticks={[0.4, 1]}
-              tickFormatter={(value) => (value >= 1 ? "On" : "off")}
-              tick={{ fill: "#6B7280" }}
-              axisLine={false}
-              tickLine={false}
-              fontSize={12}
-            />
-            <Tooltip />
+        {isLoading ? (
+          <div className="w-full h-full flex items-center justify-center bg-gray-50/30 rounded-xl">
+             <Skeleton width="100%" height="100%" />
+          </div>
+        ) : (
+          <ResponsiveContainer>
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="5 5" vertical={false} />
+              <XAxis
+                dataKey="xLabel"
+                tick={{ fill: "#6B7280" }}
+                axisLine={false}
+                tickLine={false}
+                fontSize={12}
+              />
+              <YAxis
+                domain={[0, yMax]}
+                allowDecimals={false}
+                tick={{ fill: "#6B7280" }}
+                axisLine={false}
+                tickLine={false}
+                fontSize={12}
+              />
+              <Tooltip content={<StatusTooltip />} />
 
-            <Line
-              type="monotone"
-              dataKey="off"
-              stroke="#EF4444"
-              strokeWidth={3}
-              dot={false}
-            
-               
-            />
-            <Line
-              type="monotone"
-              dataKey="on"
-              stroke="#22C55E"
-              strokeWidth={3}
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+              <Line
+                type="monotone"
+                dataKey="off_count"
+                stroke="#EF4444"
+                strokeWidth={3}
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="on_count"
+                stroke="#22C55E"
+                strokeWidth={3}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Legend */}

@@ -1,16 +1,193 @@
-import React from 'react'
+"use client"
+
+import React, { useMemo, useState } from 'react'
 import Card from '@/components/cards/Card'
 import MosquitoMonitoringChart from '@/components/Charts/MosquitoMonitoringChart'
 import MosquitoBreakdown from '@/components/tables/MosquitoBreakdownTable'
 import MosquitoGenderDistribution from '@/components/Charts/MosquitoGenderDistribution'
 import SensorStatusChart from '@/components/Charts/SensorStatusChart'
 import MosquitoBarChart from '@/components/Charts/MosquitoRegionBarChart'
+import {
+  useDashboardTotals,
+  useMosquitoChart,
+  useMosquitoBreakdown,
+  useGenderDistribution,
+  useRegionBreakdown,
+  useSensorStatus
+} from '@/hooks/dashboard'
+import type { DashboardChartPoint, DashboardGroupBy } from '@/queries/dashboard/dashboardQueries'
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 
 function Dashboard() {
+  const [totalsGroupBy, setTotalsGroupBy] = useState<DashboardGroupBy>("month")
+  const [chartGroupBy, setChartGroupBy] = useState<DashboardGroupBy>("month")
+  const [genderGroupBy, setGenderGroupBy] = useState<DashboardGroupBy>("month")
+  const [regionGroupBy, setRegionGroupBy] = useState<DashboardGroupBy>("month")
+  const [sensorStatusGroupBy, setSensorStatusGroupBy] = useState<DashboardGroupBy>("month")
+  const [breakdownGroupBy, setBreakdownGroupBy] = useState<DashboardGroupBy>("month")
+
+  const { data: totalsData, isLoading: totalsLoading, isFetching: totalsFetching } = useDashboardTotals(totalsGroupBy)
+  const { data: chartData, isLoading: chartLoading, isFetching: chartFetching } = useMosquitoChart(chartGroupBy)
+  const { data: genderData, isLoading: genderLoading, isFetching: genderFetching } = useGenderDistribution(genderGroupBy)
+  const { data: breakdownDataResponse, isLoading: breakdownLoading, isFetching: breakdownFetching } = useMosquitoBreakdown(breakdownGroupBy)
+  const { data: regionDataResponse, isLoading: regionLoading, isFetching: regionFetching } = useRegionBreakdown(regionGroupBy)
+  const { data: sensorStatusResponse, isLoading: sensorStatusLoading, isFetching: sensorStatusFetching } = useSensorStatus(sensorStatusGroupBy)
+
+  const isTotalsLoading = totalsLoading || totalsFetching
+  const isChartLoading = chartLoading || chartFetching
+  const isGenderLoading = genderLoading || genderFetching
+  const isBreakdownLoading = breakdownLoading || breakdownFetching
+  const isRegionLoading = regionLoading || regionFetching
+  const isSensorStatusLoading = sensorStatusLoading || sensorStatusFetching
+
+  const totals = totalsData
+  const chart = chartData
+  const breakdownData = breakdownDataResponse
+  const regionData = regionDataResponse
+
+  const monitoringData = useMemo(() => {
+    const points = (Array.isArray(chart?.data) ? chart?.data : []) as DashboardChartPoint[]
+
+    const getCount = (p: DashboardChartPoint): number => {
+      const record = p as Record<string, unknown>
+      const raw =
+        record.count ??
+        record.value ??
+        record.total ??
+        record.mosquito_count
+      if (typeof raw === "number") return raw
+      if (typeof raw === "string") {
+        const n = Number(raw)
+        return Number.isFinite(n) ? n : 0
+      }
+      return 0
+    }
+
+    const getTimestampIso = (p: DashboardChartPoint): string | null => {
+      const record = p as Record<string, unknown>
+      const ts = record.timestamp
+      if (typeof ts === "string") return ts
+
+      const label = record.label
+      if (typeof label === "string" && /^\d{4}-\d{2}-\d{2}$/.test(label)) {
+        return `${label}T00:00:00Z`
+      }
+      return null
+    }
+
+    const formatShort = (iso: string): string => {
+      const date = new Date(iso)
+      if (Number.isNaN(date.getTime())) return "—"
+
+      if (chartGroupBy === "hour" || chartGroupBy === "day") {
+        return new Intl.DateTimeFormat("en-GB", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }).format(date).toLowerCase()
+      }
+
+      const parts = new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+      }).formatToParts(date)
+      const day = parts.find((p) => p.type === "day")?.value ?? "—"
+      const month = parts.find((p) => p.type === "month")?.value ?? "—"
+      return `${day} ${month}`
+    }
+
+    const formatLong = (iso: string): string => {
+      const date = new Date(iso)
+      if (Number.isNaN(date.getTime())) return "—"
+
+      const dateParts = new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).formatToParts(date)
+      const day = dateParts.find((p) => p.type === "day")?.value ?? "—"
+      const month = dateParts.find((p) => p.type === "month")?.value ?? "—"
+      const year = dateParts.find((p) => p.type === "year")?.value ?? "—"
+      const time = new Intl.DateTimeFormat("en-GB", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }).format(date).toLowerCase()
+
+      return `${day} ${month}, ${year}, ${time}`
+    }
+
+    return points.map((p) => ({
+      xLabel: (() => {
+        const iso = getTimestampIso(p)
+        return iso ? formatShort(iso) : "—"
+      })(),
+      tooltipLabel: (() => {
+        const iso = getTimestampIso(p)
+        return iso ? formatLong(iso) : "—"
+      })(),
+      count: getCount(p),
+    }))
+  }, [chart?.data, chartGroupBy])
+
+  const sensorStatusData = useMemo(() => {
+    const points = sensorStatusResponse?.data ?? []
+
+    const formatShort = (iso: string): string => {
+      const date = new Date(iso)
+      if (Number.isNaN(date.getTime())) return "—"
+
+      if (sensorStatusGroupBy === "hour" || sensorStatusGroupBy === "day") {
+        return new Intl.DateTimeFormat("en-GB", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        }).format(date).toLowerCase()
+      }
+
+      const parts = new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+      }).formatToParts(date)
+      const day = parts.find((p) => p.type === "day")?.value ?? "—"
+      const month = parts.find((p) => p.type === "month")?.value ?? "—"
+      return `${day} ${month}`
+    }
+
+    const formatLong = (iso: string): string => {
+      const date = new Date(iso)
+      if (Number.isNaN(date.getTime())) return "—"
+
+      const dateParts = new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).formatToParts(date)
+      const day = dateParts.find((p) => p.type === "day")?.value ?? "—"
+      const month = dateParts.find((p) => p.type === "month")?.value ?? "—"
+      const year = dateParts.find((p) => p.type === "year")?.value ?? "—"
+      const time = new Intl.DateTimeFormat("en-GB", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }).format(date).toLowerCase()
+
+      return `${day} ${month}, ${year}, ${time}`
+    }
+
+    return points.map((p) => ({
+      xLabel: formatShort(p.timestamp),
+      tooltipLabel: formatLong(p.timestamp),
+      on_count: p.on_count ?? 0,
+      off_count: p.off_count ?? 0,
+    }))
+  }, [sensorStatusResponse?.data, sensorStatusGroupBy])
+
   const cards = [
     {
       title: 'Total Mosquito Count',
-      value: '3500',
+      value: isTotalsLoading ? <Skeleton width={90} height={24} /> : String(totals?.total_mosquito_count ?? 0),
       icon: <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M0.0725671 20.7875C0.0364734 20.9225 -0.0357141 21.2575 0.0210047 21.5125C0.0828797 21.7975 0.227255 22.0525 0.428348 22.2325L4.641 25.9625C5.22882 26.4825 6.05382 26.6375 6.80147 26.3725L9.51882 25.4025L13.0973 27.7675C13.0973 27.7675 13.1127 27.7775 13.1179 27.7825C13.3602 27.9225 13.6335 28.0025 13.9171 28.0025C14.2007 28.0025 14.474 27.9275 14.7369 27.7725L18.3154 25.4075L21.0379 26.3775C21.7855 26.6425 22.6105 26.4875 23.1983 25.9675L27.411 22.2375C27.6121 22.0575 27.7616 21.8025 27.8183 21.5175C27.8699 21.2625 27.7977 20.9225 27.7668 20.7925C27.7565 20.7475 27.7358 20.7025 27.7101 20.6575L20.1819 8.1475C20.976 7.7575 21.239 6.8725 20.9193 6.1875C20.6048 5.5125 20.151 4.5325 19.7076 3.5675C19.5013 3.1175 18.9805 2.7675 18.4701 2.7275L18.1298 1.6225C17.9648 1.0925 17.5162 0.6875 16.9593 0.5675L14.639 0.0775001C14.5204 0.0525001 14.4018 0.0325 14.2832 0.0225C14.0408 -0.0075 13.7985 -0.0075 13.5562 0.0225C13.4376 0.0375 13.319 0.0525001 13.2004 0.0775001L10.8801 0.5675C10.3232 0.6875 9.8746 1.0875 9.7096 1.6225L9.36929 2.7275C8.85882 2.7725 8.33804 3.1175 8.13179 3.5675C7.68835 4.5325 7.22944 5.5125 6.92007 6.1875C6.60554 6.8575 6.84788 7.7425 7.65741 8.1475L0.12413 20.6525C0.0983483 20.6925 0.0828798 20.7375 0.067411 20.7875H0.0725671ZM14.1904 26.9225C14.0357 27.0125 13.8294 27.0175 13.6696 26.9275L10.1633 24.6125L13.0044 10.5775L13.6387 10.8625C13.7727 10.9225 13.9326 10.9225 14.0666 10.8625L14.8401 10.5225L17.6863 24.6125L14.1904 26.9225ZM26.7923 21.0925C26.8129 21.1875 26.8232 21.2875 26.8232 21.3175C26.8077 21.3925 26.7716 21.4575 26.7304 21.4975L22.5177 25.2275C22.2187 25.4925 21.7907 25.5725 21.4091 25.4375L18.7124 24.4725L15.8094 10.1025L19.2641 8.5825L26.7923 21.0925ZM11.1018 1.5375L13.4273 1.0475C13.5098 1.0275 13.5923 1.0175 13.6799 1.0075C13.8398 0.9875 14.0048 0.9875 14.1749 1.0075C14.2574 1.0175 14.3399 1.0275 14.4224 1.0475L16.7427 1.5375C16.9335 1.5775 17.0882 1.7175 17.1449 1.9025L17.3976 2.7175H10.4469L10.6996 1.9025C10.7563 1.7175 10.911 1.5825 11.1018 1.5375ZM7.8585 6.5925C8.17304 5.9175 8.62679 4.9375 9.07538 3.9725C9.1321 3.8475 9.3435 3.7175 9.48272 3.7175H18.3669C18.5062 3.7175 18.7176 3.8475 18.7743 3.9725C19.2229 4.9375 19.6766 5.9175 19.986 6.5925C20.0943 6.8225 19.986 7.1175 19.754 7.2375C19.0269 7.5975 19.7437 7.2725 13.8501 9.8625L8.08538 7.2375C7.85335 7.1225 7.74507 6.8275 7.85335 6.5925H7.8585ZM1.05741 21.0875L8.58554 8.5825L12.0402 10.1375L9.14241 24.4625L6.44569 25.4275C6.06413 25.5625 5.63616 25.4825 5.3371 25.2175L1.12444 21.4875C1.08319 21.4525 1.0471 21.3825 1.03679 21.3175C1.03679 21.2775 1.0471 21.1775 1.06257 21.0825L1.05741 21.0875Z" fill="#1565C0"/>
       </svg>
@@ -19,8 +196,8 @@ function Dashboard() {
     },
     {
       title: 'Active Traps',
-      value: '70',
-      valueSuffix: '/80',
+      value: isTotalsLoading ? <Skeleton width={60} height={24} /> : String(totals?.active_devices ?? 0),
+      valueSuffix: isTotalsLoading ? undefined : `/${totals?.total_devices ?? 0}`,
       description: 'traps ON vs total traps',
       icon: <svg width="28" height="26" viewBox="0 0 28 26" fill="none" xmlns="http://www.w3.org/2000/svg">
       <g clipPath="url(#clip0_103_563)">
@@ -39,7 +216,7 @@ function Dashboard() {
     },
     {
       title: 'Avg Humidity',
-      value: '48.3%',
+      value: isTotalsLoading ? <Skeleton width={70} height={24} /> : `${(totals?.average_humidity ?? 0).toFixed(1)}%`,
       icon: <svg width="29" height="28" viewBox="0 0 29 28" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M9.62036 24.1309C5.56772 24.1309 2.27124 20.9481 2.27124 17.0352C2.27124 13.393 8.07124 6.23167 8.73394 5.42776C8.89819 5.22815 9.14458 5.11057 9.40796 5.10784C9.67417 5.1051 9.92056 5.21448 10.0905 5.40862C10.133 5.45784 11.1582 6.63362 12.4184 8.28518C12.7044 8.66253 12.6223 9.19299 12.2315 9.46917C11.8407 9.74534 11.2913 9.66604 11.0052 9.2887C10.402 8.49573 9.84692 7.81213 9.43911 7.31721C7.47935 9.83284 4.02427 14.741 4.02427 17.0352C4.02427 20.0129 6.53345 22.4383 9.62036 22.4383C12.7073 22.4383 15.2165 20.0129 15.2165 17.0352C15.2165 16.5676 15.6101 16.1875 16.0944 16.1875C16.5787 16.1875 16.9723 16.5676 16.9723 17.0352C16.9695 20.9481 13.673 24.1309 9.62036 24.1309Z" fill="#1A1A1A"/>
       <path d="M10.3001 12.8188C9.50999 14.4512 8.97473 15.9824 8.97473 17.15C8.97473 21.6508 12.7527 25.2985 17.4142 25.2985C22.0757 25.2985 25.8536 21.6508 25.8536 17.15C25.8536 16.8 25.7998 16.4145 25.6979 16.0043C16.4315 16.9313 17.6294 10.675 10.3001 12.8188Z" fill="#00B36A"/>
@@ -51,7 +228,8 @@ function Dashboard() {
     },
     {
       title: 'Avg Internal Temp',
-      value: '29.1°C',
+      value: isTotalsLoading ? <Skeleton width={60} height={24} /> : `${(totals?.average_internal_temp ?? 0).toFixed(1)} °C`,
+
       icon: <svg width="34" height="29" viewBox="0 0 34 29" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M22.9632 6.55337H21.748C21.3861 6.55337 21.0906 6.30132 21.0906 5.99263C21.0906 5.68394 21.3861 5.43188 21.748 5.43188H22.9632C23.3251 5.43188 23.6207 5.68394 23.6207 5.99263C23.6207 6.30132 23.3251 6.55337 22.9632 6.55337ZM22.9632 8.65757H21.748C21.3861 8.65757 21.0906 8.40552 21.0906 8.09683C21.0906 7.78813 21.3861 7.53608 21.748 7.53608H22.9632C23.3251 7.53608 23.6207 7.78813 23.6207 8.09683C23.6207 8.40552 23.3251 8.65757 22.9632 8.65757ZM22.9632 10.7618H21.748C21.3861 10.7618 21.0906 10.5097 21.0906 10.201C21.0906 9.89233 21.3861 9.64028 21.748 9.64028H22.9632C23.3251 9.64028 23.6207 9.89233 23.6207 10.201C23.6207 10.5069 23.3251 10.7618 22.9632 10.7618Z" fill="#1A1A1A"/>
       <path d="M20.0314 16.7005V4.51711C20.0314 3.04729 18.6302 1.85217 16.907 1.85217C15.1837 1.85217 13.7826 3.04729 13.7826 4.51711V16.7005C11.7572 17.6464 10.3826 19.4816 10.3826 21.5858C10.3826 24.6557 13.3111 27.1507 16.907 27.1507C20.5029 27.1507 23.4314 24.6529 23.4314 21.5858C23.4314 19.4816 22.0535 17.6464 20.0314 16.7005ZM16.9037 25.9811C14.0615 25.9811 11.7472 24.0072 11.7472 21.5829C11.7472 20.1584 12.5441 18.8925 13.7792 18.0882C14.191 17.8192 14.6525 17.6011 15.1472 17.4482V4.51711C15.1472 3.69016 15.9341 3.01897 16.9037 3.01897C17.8732 3.01897 18.6601 3.69016 18.6601 4.51711V17.4482C19.1548 17.6011 19.6164 17.8192 20.0281 18.0882C21.2599 18.8925 22.0601 20.1584 22.0601 21.5829C22.0601 24.01 19.7492 25.9811 16.9037 25.9811Z" fill="#1A1A1A"/>
@@ -75,7 +253,7 @@ function Dashboard() {
     },
     {
       title: 'Regions Monitored',
-      value: '19',
+      value:  isTotalsLoading ? <Skeleton width={70} height={24} /> : (totals?.total_regions_monitored ?? 0),
       icon:<svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M19.7324 5.95355C19.9496 5.97549 20.1353 6.0219 20.2846 6.05986C20.3546 6.07758 20.4466 6.10079 20.4976 6.10754C20.6866 5.96241 20.9039 5.69494 20.8976 5.47177C20.6963 5.39415 20.3618 5.24944 20.1078 4.8609C19.8564 4.46518 19.8125 4.08929 19.7805 3.81507C19.7619 3.65813 19.7475 3.5341 19.7007 3.41049C19.632 3.23077 19.6269 3.03249 19.6864 2.84982C19.7235 2.73507 19.7682 2.63635 19.8125 2.54016L18.1406 3.0675V5.51565C18.2562 5.5553 18.3718 5.59496 18.4756 5.63166C18.9055 5.78565 19.2455 5.90672 19.7324 5.95355Z" fill="#45AAB8"/>
       <path d="M0.84375 4.64058V7.23765C1.09603 7.23596 1.34494 7.22246 1.65459 7.20558L1.99505 7.18702C2.17434 7.17732 2.35238 7.11615 2.55825 7.04569C2.83711 6.94951 3.15394 6.84151 3.53447 6.84151C3.84033 6.84151 4.1407 6.91449 4.41956 7.05413C4.9448 7.31021 5.211 7.71183 5.42489 8.03373C5.54048 8.20796 5.64047 8.35857 5.76703 8.46446C6.06614 8.71548 6.32053 8.80534 6.67322 8.92937C7.02169 9.05255 7.41698 9.19177 7.87345 9.49805C8.25061 9.7516 8.56364 9.98279 8.8598 10.2309V1.09937L1.39598 3.84915C1.06523 3.97065 0.84375 4.28874 0.84375 4.64058Z" fill="#45AAB8"/>
@@ -94,21 +272,43 @@ function Dashboard() {
       ,
       bgColor: 'rgba(21, 101, 192, 0.2)',
     },
+   
   ]
 
   return (
     <div className="flex flex-col gap-4">
 
         <div className='flex flex-row gap-4'>
-        <div className="w-[65%]">
-        <MosquitoMonitoringChart />
-      </div>
-      <div className="grid grid-cols-2 gap-4 w-[35%]">
-          {cards.map((card) => (
-            <Card
-              key={card.title}
-              title={card.title}
-              value={card.value}
+        <div className="w-[65%] ">
+
+<span className="block text-xl font-semibold font-mulish mb-6 text-primary px-2">
+  Dashboard
+</span>          
+        <MosquitoMonitoringChart
+          data={monitoringData}
+          groupBy={chartGroupBy}
+          onGroupByChange={(value) => { setChartGroupBy(value); }}
+          isLoading={isChartLoading}
+        />
+	      </div>
+	      <div className="grid grid-cols-2 gap-4 w-[35%]">
+	          <div className="col-span-2 flex justify-end">
+	            <select
+	              value={totalsGroupBy}
+	              onChange={(e) => setTotalsGroupBy(e.target.value as DashboardGroupBy)}
+	              className="border border-gray rounded-lg px-3 py-2 text-sm text-text-dark focus:ring-0 focus:outline-none bg-white focus:border-primary"
+	            >
+	              <option value="hour">Last hour</option>
+	              <option value="day">Last day</option>
+	              <option value="week">Last week</option>
+	              <option value="month">Last month</option>
+	            </select>
+	          </div>
+	          {cards.map((card) => (
+	            <Card
+	              key={card.title}
+	              title={card.title}
+	              value={card.value}
               valueSuffix={card.valueSuffix}
               valueClassName={card.valueClassName}
               description={card.description}
@@ -122,23 +322,51 @@ function Dashboard() {
         <div className='flex flex-row gap-4 mt-2'>
 
             <div className='w-[65%]'>
-                <MosquitoBreakdown/>
-
+                <MosquitoBreakdown
+                  data={breakdownData}
+                  groupBy={breakdownGroupBy}
+                  onGroupByChange={(val) => setBreakdownGroupBy(val)}
+                  isLoading={isBreakdownLoading}
+                />
             </div>
-            <div className='w-[35%]'>
-                <MosquitoGenderDistribution/>
-            </div>
+	            <div className='w-[35%]'>
+	                <MosquitoGenderDistribution
+	                  male={genderData?.male}
+	                  female={genderData?.female}
+	                  groupBy={genderGroupBy}
+	                  onGroupByChange={(value) => setGenderGroupBy(value)}
+                    isLoading={isGenderLoading}
+	                />
+	            </div>
 </div>
     
 <div className='flex flex-row gap-4 mt-2 '>
 
-    <div className='w-[50%]'>
-        <SensorStatusChart/>
+	    <div className='w-[50%]'>
+	        <SensorStatusChart
+	          data={sensorStatusData.length > 0 ? sensorStatusData : undefined}
+	          groupBy={sensorStatusGroupBy}
+	          onGroupByChange={(value) => setSensorStatusGroupBy(value)}
+            isLoading={isSensorStatusLoading}
+	        />
 
-    </div>
-    <div className='w-[50%]'>
-        <MosquitoBarChart/>
-    </div>
+	    </div>
+	    <div className='w-[50%]'>
+	        <MosquitoBarChart
+	          data={(() => {
+	            const list = regionData?.data ?? []
+	            return list.length > 0
+	              ? list.map((d) => ({
+	                  region: (d.region ?? "").trim() || "Unknown",
+	                  count: d.count ?? 0,
+	                }))
+	              : undefined
+	          })()}
+	          groupBy={regionGroupBy}
+	          onGroupByChange={(value) => setRegionGroupBy(value)}
+            isLoading={isRegionLoading}
+	        />
+	    </div>
 
     </div>
     </div>

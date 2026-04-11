@@ -7,88 +7,135 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import { useState } from "react";
+import Skeleton from "react-loading-skeleton";
 
-const data = [
-  { name: "Male", value: 200, color: "#3DBB5D" },
-  { name: "Female", value: 142, color: "#F04362" },
-];
+export type GenderGroupBy = "hour" | "day" | "week" | "month";
 
-const total = data.reduce((acc, item) => acc + item.value, 0);
+export default function MosquitoGenderDistribution({
+  male,
+  female,
+  groupBy,
+  onGroupByChange,
+  isLoading,
+}: {
+  male?: number;
+  female?: number;
+  groupBy?: GenderGroupBy;
+  onGroupByChange?: (value: GenderGroupBy) => void;
+  isLoading?: boolean;
+}) {
+  const [range, setRange] = useState<GenderGroupBy>("month");
+  const effectiveRange = groupBy ?? range;
 
-export default function MosquitoGenderDistribution() {
+  const data = [
+    { name: "Male", value: typeof male === "number" ? male : 0, color: "#3DBB5D" },
+    { name: "Female", value: typeof female === "number" ? female : 0, color: "#F04362" },
+  ];
+  const total = data.reduce((acc, item) => acc + item.value, 0);
+
   return (
-    <div className="bg-white rounded-lg font-raleway  p-3 border border-gray-200 w-full">
+    <div className="bg-white rounded-lg font-raleway p-3 border border-gray-200 w-full">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-sm  font-semibold text-gray-800">
+        <h2 className="text-sm font-semibold text-gray-800">
           Mosquito Gender Distribution
         </h2>
 
-        <select className="border border-gray  focus:ring-0 focus:outline-none focus:border-primary rounded-xl px-4 py-2 text-sm  bg-white">
-          <option>Hour</option>
-          <option>Day</option>
-          <option>Week</option>
+        <select
+          value={effectiveRange}
+          onChange={(e) => {
+            const next = e.target.value as GenderGroupBy;
+            if (onGroupByChange) onGroupByChange(next);
+            else setRange(next);
+          }}
+          className="border border-gray focus:ring-0 focus:outline-none focus:border-primary rounded-xl px-4 py-2 text-sm bg-white"
+        >
+          <option value="hour">Hour</option>
+          <option value="day">Day</option>
+          <option value="week">Week</option>
+          <option value="month">Month</option>
         </select>
       </div>
 
       <hr className="mb-8 border-gray-200" />
 
-      <div className="flex items-center justify-between">
-        {/* Legend */}
-        <div className="space-y-8">
-          {data.map((item) => (
-            <div key={item.name} className="flex items-center gap-4">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="text-sm font-medium text-gray-700 ">
-                {item.name}
-              </span>
-              <span className="text-xs text-gray-400">
-                {item.value}
-              </span>
-            </div>
-          ))}
+      {isLoading ? (
+        <div className="flex items-center justify-between pb-8">
+          <div className="space-y-8 w-1/3 p-4">
+            {[1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-4">
+                <Skeleton circle width={12} height={12} />
+                <div className="flex flex-col gap-1">
+                  <Skeleton width={60} height={14} />
+                  <Skeleton width={40} height={10} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="w-[350px] h-[400px] flex items-center justify-center">
+            <Skeleton circle width={200} height={200} />
+          </div>
         </div>
+      ) : (
+        <div className="flex items-center justify-between">
+          {/* Legend */}
+          <div className="space-y-8">
+            {data.map((item) => (
+              <div key={item.name} className="flex items-center gap-4">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: item.color }}
+                />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-700 ">
+                    {item.name}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {item.value.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
 
-        {/* Pie Chart */}
-        <div className="w-[350px] h-[400px] relative">
-          <ResponsiveContainer>
-            <PieChart>
-              <Tooltip
-                formatter={(value?: number, name?: string) => {
-                  const num = value ?? 0
-                  return [
-                    `${num} (${Math.round((num / total) * 100)}%)`,
-                    name ?? '',
-                  ]
-                }}
-                contentStyle={{
-                  borderRadius: "12px",
-                  border: "1px solid #E5E7EB",
-                  fontSize: "12px",
-                }}
-              />
+          {/* Pie Chart */}
+          <div className="w-[350px] h-[400px] relative">
+            <ResponsiveContainer>
+              <PieChart>
+                <Tooltip
+                  formatter={(value?: number, name?: string) => {
+                    const num = value ?? 0;
+                    if (!total) return [`${num} (0%)`, name ?? ""];
+                    return [
+                      `${num} (${Math.round((num / total) * 100)}%)`,
+                      name ?? "",
+                    ];
+                  }}
+                  contentStyle={{
+                    borderRadius: "12px",
+                    border: "1px solid #E5E7EB",
+                    fontSize: "12px",
+                  }}
+                />
 
-              <Pie
-                data={data}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={0}
-                outerRadius={100}
-                paddingAngle={0}
-              >
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-
-      
+                <Pie
+                  data={data}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={0}
+                  outerRadius={100}
+                  paddingAngle={0}
+                >
+                  {data.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
