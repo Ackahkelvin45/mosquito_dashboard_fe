@@ -9,19 +9,14 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import type { ChartGroupBy, EnvironmentalPoint } from "@/queries/device/deviceChartsQueries";
 
-const data = [
-  { month: "Jan", external: 95,  internal: 50  },
-  { month: "Feb", external: 340,  internal: 62  },
-  { month: "Mar", external: 82,  internal: 42  },
-  { month: "Apr", external: 228,  internal: 35  },
-  { month: "May", external: 300,  internal: 38  },
-  { month: "Jun", external: 205, internal: 155  },
-  { month: "Jul", external: 155, internal: 296  },
-  { month: "Aug", external: 150, internal: 156  },
-  { month: "Sep", external: 100, internal: 18  },
-  { month: "Oct", external: 65,  internal: 108 },
-];
+interface Props {
+  data?: EnvironmentalPoint[];
+  groupBy: ChartGroupBy;
+  onGroupByChange: (v: ChartGroupBy) => void;
+  isLoading?: boolean;
+}
 
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
@@ -30,12 +25,9 @@ function CustomTooltip({ active, payload, label }: any) {
       <div className="font-bold mb-1.5">{label}</div>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="flex items-center gap-2 mb-1">
-          <span
-            className="w-2 h-2 rounded-full inline-block"
-            style={{ background: p.color }}
-          />
+          <span className="w-2 h-2 rounded-full inline-block" style={{ background: p.color }} />
           <span className="opacity-75">{p.name}:</span>
-          <span className="font-semibold">{p.value}</span>
+          <span className="font-semibold">{p.value ?? "—"}</span>
         </div>
       ))}
     </div>
@@ -47,81 +39,84 @@ const legendItems = [
   { color: "#166534", label: "Internal" },
 ];
 
-export default function HumidityTrendChart() {
+const GROUP_BY_OPTIONS: { label: string; value: ChartGroupBy }[] = [
+  { label: "Year", value: "year" },
+  { label: "Month", value: "month" },
+  { label: "Week", value: "week" },
+];
+
+export default function HumidityTrendChart({ data = [], groupBy, onGroupByChange, isLoading }: Props) {
   return (
     <div className="bg-white rounded-2xl p-6 font-raleway shadow-sm border border-gray-100 w-full">
-      {/* Header */}
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-base font-bold text-[#1a1a2e]">Humidity Trend</h2>
-        <select className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none cursor-pointer">
-          <option>Year</option>
-          <option>Month</option>
-          <option>Week</option>
+        <select
+          value={groupBy}
+          onChange={(e) => onGroupByChange(e.target.value as ChartGroupBy)}
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none cursor-pointer"
+        >
+          {GROUP_BY_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
         </select>
       </div>
 
       <hr className="border-t border-gray-100 my-3" />
 
-      {/* Chart */}
-      <div className="h-[360px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 20, right: 20, left: 10, bottom: 0 }}>
-            <CartesianGrid vertical={false} stroke="#f0f0f0" strokeWidth={1} />
-
-            <XAxis
-              dataKey="month"
-              tick={{ fill: "#9ca3af", fontSize: 12 }}
-              axisLine={false}
-              tickLine={false}
-              interval={0}
-            />
-
-            <YAxis
-              tick={{ fill: "#9ca3af", fontSize: 12 }}
-              axisLine={false}
-              tickLine={false}
-              domain={[0, 600]}
-              ticks={[0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500]}
-            />
-
-            <Tooltip
-              content={<CustomTooltip />}
-              wrapperStyle={{ outline: "none" }}
-              cursor={{ stroke: "#9ca3af", strokeWidth: 1, strokeDasharray: "5 5" }}
-            />
-
-            <Line
-              type="monotone"
-              dataKey="external"
-              name="External"
-              stroke="#a3e635"
-              strokeWidth={2.5}
-              dot={false}
-              activeDot={{ r: 6, fill: "#a3e635", strokeWidth: 0 }}
-              isAnimationActive={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="internal"
-              name="Internal"
-              stroke="#166534"
-              strokeWidth={2.5}
-              dot={false}
-              activeDot={{ r: 6, fill: "#166534", strokeWidth: 0 }}
-              isAnimationActive={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+      <div className="h-90">
+        {isLoading ? (
+          <div className="h-full w-full animate-pulse rounded-xl bg-gray-100" />
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data} margin={{ top: 20, right: 20, left: 10, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke="#f0f0f0" strokeWidth={1} />
+              <XAxis
+                dataKey="label"
+                tick={{ fill: "#9ca3af", fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fill: "#9ca3af", fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                content={<CustomTooltip />}
+                wrapperStyle={{ outline: "none" }}
+                cursor={{ stroke: "#9ca3af", strokeWidth: 1, strokeDasharray: "5 5" }}
+              />
+              <Line
+                type="monotone"
+                dataKey="external"
+                name="External"
+                stroke="#a3e635"
+                strokeWidth={2.5}
+                dot={false}
+                activeDot={{ r: 6, fill: "#a3e635", strokeWidth: 0 }}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="internal"
+                name="Internal"
+                stroke="#166534"
+                strokeWidth={2.5}
+                dot={false}
+                activeDot={{ r: 6, fill: "#166534", strokeWidth: 0 }}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
-      {/* Legend */}
       <div className="flex justify-center gap-6 mt-4">
         {legendItems.map(({ color, label }) => (
           <div key={label} className="flex items-center gap-2 text-sm text-gray-500">
-            <span
-              className="w-2.5 h-2.5 rounded-full inline-block"
-              style={{ background: color }}
-            />
+            <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: color }} />
             {label}
           </div>
         ))}

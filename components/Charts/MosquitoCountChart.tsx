@@ -9,21 +9,14 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import type { ChartGroupBy, MosquitoCountPoint } from "@/queries/device/deviceChartsQueries";
 
-const data = [
-  { month: "JAN", count: 200 },
-  { month: "FEB", count: 242 },
-  { month: "MAR", count: 175 },
-  { month: "APR", count: 215 },
-  { month: "MAY", count: 278 },
-  { month: "JUN", count: 235 },
-  { month: "JUL", count: 265 },
-  { month: "AUG", count: 258 },
-  { month: "SEP", count: 248 },
-  { month: "OCT", count: 210 },
-  { month: "NOV", count: 185 },
-  { month: "DEC", count: 263 },
-];
+interface Props {
+  data?: MosquitoCountPoint[];
+  groupBy: ChartGroupBy;
+  onGroupByChange: (v: ChartGroupBy) => void;
+  isLoading?: boolean;
+}
 
 function SpeechBubbleTooltip({
   active,
@@ -41,80 +34,84 @@ function SpeechBubbleTooltip({
         <div className="text-xl font-bold">
           {payload[0].value.toLocaleString()}
         </div>
-
-        {/* Tail */}
         <div className="absolute -right-2 top-1/2 -translate-y-1/2 border-y-8 border-y-transparent border-l-8 border-l-[#1a2332]" />
       </div>
     </div>
   );
 }
 
-export default function MosquitoCountChart() {
+const GROUP_BY_OPTIONS: { label: string; value: ChartGroupBy }[] = [
+  { label: "Year", value: "year" },
+  { label: "Month", value: "month" },
+  { label: "Week", value: "week" },
+];
+
+export default function MosquitoCountChart({ data = [], groupBy, onGroupByChange, isLoading }: Props) {
   return (
     <div className="w-full rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-      {/* Header */}
       <div className="mb-5 flex items-center justify-between">
         <h2 className="text-base font-bold text-slate-900">
           Mosquito Count Over Time
         </h2>
 
-        <select className="cursor-pointer appearance-none rounded-xl border border-gray-200 bg-white px-4 py-1.5 text-sm text-slate-900 outline-none focus:border-green-500">
-          <option>Year</option>
-          <option>Month</option>
-          <option>Week</option>
+        <select
+          value={groupBy}
+          onChange={(e) => onGroupByChange(e.target.value as ChartGroupBy)}
+          className="cursor-pointer appearance-none rounded-xl border border-gray-200 bg-white px-4 py-1.5 text-sm text-slate-900 outline-none focus:border-green-500"
+        >
+          {GROUP_BY_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
         </select>
       </div>
 
-      {/* Chart */}
       <div className="h-[320px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-            <defs>
-              <linearGradient id="mosquitoGreen" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#22c55e" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="#22c55e" stopOpacity={0.03} />
-              </linearGradient>
-            </defs>
+        {isLoading ? (
+          <div className="h-full w-full animate-pulse rounded-xl bg-gray-100" />
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="mosquitoGreen" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#22c55e" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#22c55e" stopOpacity={0.03} />
+                </linearGradient>
+              </defs>
 
-            <CartesianGrid
-              vertical={false}
-              stroke="#f1f5f9"
-              strokeWidth={1}
-            />
+              <CartesianGrid vertical={false} stroke="#f1f5f9" strokeWidth={1} />
 
-            <XAxis
-              dataKey="month"
-              tick={{ fill: "#9ca3af", fontSize: 12 }}
-              axisLine={false}
-              tickLine={false}
-              interval={0}
-            />
+              <XAxis
+                dataKey="label"
+                tick={{ fill: "#9ca3af", fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+              />
 
-            <YAxis
-              domain={[0, 350]}
-              ticks={[0, 50, 100, 150, 200, 250, 300]}
-              tick={{ fill: "#9ca3af", fontSize: 12 }}
-              axisLine={false}
-              tickLine={false}
-            />
+              <YAxis
+                tick={{ fill: "#9ca3af", fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+              />
 
-            <Tooltip
-              content={<SpeechBubbleTooltip />}
-              cursor={{ stroke: "#16a34a", strokeWidth: 1.5 }}
-              wrapperStyle={{ outline: "none" }}
-            />
+              <Tooltip
+                content={<SpeechBubbleTooltip />}
+                cursor={{ stroke: "#16a34a", strokeWidth: 1.5 }}
+                wrapperStyle={{ outline: "none" }}
+              />
 
-            <Area
-              type="monotone"
-              dataKey="count"
-              stroke="#15803d"
-              strokeWidth={2.5}
-              fill="url(#mosquitoGreen)"
-              dot={false}
-              activeDot={{ r: 6, fill: "#15803d", strokeWidth: 0 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+              <Area
+                type="monotone"
+                dataKey="count"
+                stroke="#15803d"
+                strokeWidth={2.5}
+                fill="url(#mosquitoGreen)"
+                dot={false}
+                activeDot={{ r: 6, fill: "#15803d", strokeWidth: 0 }}
+                connectNulls={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

@@ -30,9 +30,10 @@ const MapWithNoSSR = dynamic(
   }
 );
 
-import { useDevice } from "@/hooks/device";
+import { useDevice, useDeviceCharts } from "@/hooks/device";
 import { useMosquitoEventsByDeviceUuidWithFilters } from "@/hooks/mosquito";
 import type { MosquitoEvent, MosquitoRange } from "@/queries/mosquito_data/mosquitoDeviceQueries";
+import type { ChartGroupBy } from "@/queries/device/deviceChartsQueries";
 
 function formatTimestamp(iso: string | undefined): string {
   if (!iso) return "—";
@@ -62,9 +63,11 @@ export default function SensorDetailPage() {
   const { data: device, isLoading } = useDevice(id || "");
   const [activeTab, setActiveTab] = useState<"readings" | "graphs">("readings");
   const [range, setRange] = useState<MosquitoRange>("month");
+  const [chartGroupBy, setChartGroupBy] = useState<ChartGroupBy>("month");
 
   const deviceUuid = device?.device_uuid ?? "";
   const { data: mosquitoEvents = [], isLoading: isMosquitoLoading } = useMosquitoEventsByDeviceUuidWithFilters(deviceUuid, { range });
+  const { data: charts, isLoading: isChartsLoading } = useDeviceCharts(id || "", chartGroupBy);
 
   const { mosquitoTableRows, totalMosquitoCount } = useMemo(() => {
     const events = (Array.isArray(mosquitoEvents) ? mosquitoEvents : []) as MosquitoEvent[];
@@ -354,15 +357,55 @@ export default function SensorDetailPage() {
         )}
 
         {activeTab === "graphs" && (
-          <div className="py-8 text-center gap-10 flex flex-col text-gray-500 font-raleway">
-            <MosquitoCountChart />
-            <MosquitoTrendChart />
-            <MosquitoGenderChart/>
-            <ActiveStatusTrendChart/>
-            <TemperatureTrendChart/>
-            <HumidityTrendChart/>
-            <PressureTrendChart/>
-            <BatteryTrendChart/>
+          <div className="py-8 gap-10 flex flex-col font-raleway">
+            <MosquitoCountChart
+              data={charts?.mosquito_count?.data}
+              groupBy={chartGroupBy}
+              onGroupByChange={setChartGroupBy}
+              isLoading={isChartsLoading}
+            />
+            <MosquitoTrendChart
+              data={charts?.mosquito_trend?.data}
+              groupBy={chartGroupBy}
+              onGroupByChange={setChartGroupBy}
+              isLoading={isChartsLoading}
+            />
+            <MosquitoGenderChart
+              data={charts?.mosquito_gender?.data}
+              groupBy={chartGroupBy}
+              onGroupByChange={setChartGroupBy}
+              isLoading={isChartsLoading}
+            />
+            <ActiveStatusTrendChart
+              data={charts?.sensor_status?.data}
+              groupBy={chartGroupBy}
+              onGroupByChange={setChartGroupBy}
+              isLoading={isChartsLoading}
+            />
+            <TemperatureTrendChart
+              data={charts?.temperature?.data}
+              groupBy={chartGroupBy}
+              onGroupByChange={setChartGroupBy}
+              isLoading={isChartsLoading}
+            />
+            <HumidityTrendChart
+              data={charts?.humidity?.data}
+              groupBy={chartGroupBy}
+              onGroupByChange={setChartGroupBy}
+              isLoading={isChartsLoading}
+            />
+            <PressureTrendChart
+              data={charts?.pressure?.data}
+              groupBy={chartGroupBy}
+              onGroupByChange={setChartGroupBy}
+              isLoading={isChartsLoading}
+            />
+            <BatteryTrendChart
+              data={charts?.battery?.data}
+              groupBy={chartGroupBy}
+              onGroupByChange={setChartGroupBy}
+              isLoading={isChartsLoading}
+            />
           </div>
         )}
       </div>

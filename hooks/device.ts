@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createDevice, type CreateDevicePayload, createDeviceCluster, type CreateDeviceClusterPayload, deleteDevice, updateDevice, type UpdateDevicePayload } from "@/actions/deviceMutation"
 import { getDevices, type GetDevicesFilters, getClusters, getClusterById, getDeviceById } from "@/queries/device/deviceQueries"
+import { getDeviceCharts, type ChartGroupBy } from "@/queries/device/deviceChartsQueries"
 
 function getId(value: unknown): string | number | null {
     if (!value || typeof value !== "object") return null
@@ -95,5 +96,13 @@ export const useCluster = (id: string) => {
         queryKey: ["cluster", id],
         queryFn: () => getClusterById(id),
         enabled: !!id,
+    })
+}
+
+export const useDeviceCharts = (deviceId: string | number, groupBy: ChartGroupBy = "month") => {
+    return useQuery({
+        queryKey: ["device-charts", deviceId, groupBy],
+        queryFn: () => getDeviceCharts(deviceId, groupBy),
+        enabled: !!deviceId,
     })
 }

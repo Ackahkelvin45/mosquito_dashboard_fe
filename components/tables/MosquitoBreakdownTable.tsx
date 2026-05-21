@@ -43,7 +43,7 @@ export default function MosquitoBreakdown({
   const currentData = data ? data[activeCategory] : [];
 
   return (
-    <div className="bg-white rounded-2xl py-6  font-raleway shadow-sm border border-gray-100 w-full min-h-[520px] flex flex-col">
+    <div className="bg-white rounded-2xl py-6  font-raleway shadow-sm border border-gray-100 w-full min-h-[500px] flex flex-col">
       {/* Header */}
       <div className="flex justify-between items-center mb-6 pb-4 px-6  border-b border-gray-50">
         <div>
@@ -90,7 +90,7 @@ export default function MosquitoBreakdown({
         <table className="w-full text-left border-collapse">
           {/* Header */}
           <thead className="bg-gray-50/50 border-b border-gray-100">
-            <tr className="text-gray-500 text-xs font-mulish  uppercase tracking-wider font-bold">
+            <tr className="text-gray-500 text-xs  uppercase tracking-wider font-bold">
               <th className="px-6 py-4">Category Name</th>
               <th className="px-6 py-4 text-right">Mosquito Count</th>
             </tr>
