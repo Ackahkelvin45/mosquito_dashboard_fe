@@ -49,6 +49,7 @@ const GROUP_BY_OPTIONS: { label: string; value: ChartGroupBy }[] = [
   { label: "Year", value: "year" },
   { label: "Month", value: "month" },
   { label: "Week", value: "week" },
+  { label: "Day", value: "day" },
 ];
 
 export default function MosquitoGenderChart({ data = [], groupBy, onGroupByChange, isLoading }: Props) {

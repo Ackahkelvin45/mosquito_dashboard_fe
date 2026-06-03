@@ -48,3 +48,19 @@ export const useSensorStatus = (groupBy: DashboardGroupBy) => {
 		select: (data) => data.sensor_status_chart,
 	})
 }
+
+export const useCorrelationChart = (groupBy: DashboardGroupBy) => {
+	return useQuery({
+		queryKey: ["dashboard", "correlation", groupBy],
+		queryFn: () => getDashboardData({ correlation_group_by: groupBy }),
+		select: (data) => data.correlation_chart,
+	})
+}
+
+export const useGenusHeatmap = (groupBy: DashboardGroupBy) => {
+	return useQuery({
+		queryKey: ["dashboard", "genus_heatmap", groupBy],
+		queryFn: () => getDashboardData({ genus_heatmap_group_by: groupBy }),
+		select: (data) => data.genus_heatmap,
+	})
+}

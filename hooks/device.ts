@@ -1,7 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { createDevice, type CreateDevicePayload, createDeviceCluster, type CreateDeviceClusterPayload, deleteDevice, updateDevice, type UpdateDevicePayload } from "@/actions/deviceMutation"
 import { getDevices, type GetDevicesFilters, getClusters, getClusterById, getDeviceById } from "@/queries/device/deviceQueries"
 import { getDeviceCharts, type ChartGroupBy } from "@/queries/device/deviceChartsQueries"
+import type { PaginationParams } from "@/lib/pagination"
 
 function getId(value: unknown): string | number | null {
     if (!value || typeof value !== "object") return null
@@ -69,10 +70,11 @@ export const useCreateCluster = () => {
     })
 }
 
-export const useDevices = (filters?: GetDevicesFilters) => {
+export const useDevices = (filters?: GetDevicesFilters, pagination?: PaginationParams) => {
     return useQuery({
-        queryKey: ["devices", filters ?? null],
-        queryFn: () => getDevices(filters),
+        queryKey: ["devices", filters ?? null, pagination ?? null],
+        queryFn: () => getDevices(filters, pagination),
+        placeholderData: keepPreviousData,
     })
 }
 
@@ -84,10 +86,10 @@ export const useDevice = (id: string | number) => {
     })
 }
 
-export const useClusters = () => {
+export const useClusters = (pagination?: PaginationParams) => {
     return useQuery({
-        queryKey: ["clusters"],
-        queryFn: getClusters,
+        queryKey: ["clusters", pagination ?? null],
+        queryFn: () => getClusters(pagination),
     })
 }
 

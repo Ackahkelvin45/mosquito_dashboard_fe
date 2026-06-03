@@ -9,6 +9,8 @@ export type GetDashboardFilters = {
   region_group_by?: DashboardGroupBy;
   sensor_status_group_by?: DashboardGroupBy;
   breakdown_group_by?: DashboardGroupBy;
+  correlation_group_by?: DashboardGroupBy;
+  genus_heatmap_group_by?: DashboardGroupBy;
   region?: string;
   cluster_id?: number;
   device_id?: number;
@@ -74,9 +76,44 @@ export type DashboardResponse = {
     window_start?: string;
     window_end?: string;
   };
+  correlation_chart?: CorrelationChart;
+  genus_heatmap?: GenusHeatmap;
   region?: string | null;
   cluster_id?: number | null;
   device_id?: number | null;
+};
+
+export type CorrelationPoint = {
+  label: string;
+  timestamp: string;
+  mosquito_count: number;
+  temperature: number | null;
+  humidity: number | null;
+};
+
+export type CorrelationChart = {
+  data: CorrelationPoint[];
+  temperature_correlation: number | null;
+  humidity_correlation: number | null;
+  group_by: DashboardGroupBy;
+  window_start: string;
+  window_end: string;
+};
+
+export type GenusHeatmapCell = {
+  genus: string;
+  label: string;
+  timestamp: string;
+  count: number;
+};
+
+export type GenusHeatmap = {
+  genera: string[];
+  buckets: string[];
+  data: GenusHeatmapCell[];
+  group_by: DashboardGroupBy;
+  window_start: string;
+  window_end: string;
 };
 
 export async function getDashboardData(filters?: GetDashboardFilters): Promise<DashboardResponse> {
@@ -87,6 +124,8 @@ export async function getDashboardData(filters?: GetDashboardFilters): Promise<D
   if (filters?.region_group_by) params.set("region_group_by", filters.region_group_by);
   if (filters?.sensor_status_group_by) params.set("sensor_status_group_by", filters.sensor_status_group_by);
   if (filters?.breakdown_group_by) params.set("breakdown_group_by", filters.breakdown_group_by);
+  if (filters?.correlation_group_by) params.set("correlation_group_by", filters.correlation_group_by);
+  if (filters?.genus_heatmap_group_by) params.set("genus_heatmap_group_by", filters.genus_heatmap_group_by);
   if (filters?.region) params.set("region", filters.region);
   if (typeof filters?.cluster_id === "number") params.set("cluster_id", String(filters.cluster_id));
   if (typeof filters?.device_id === "number") params.set("device_id", String(filters.device_id));

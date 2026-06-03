@@ -32,8 +32,11 @@ const MapWithNoSSR = dynamic(
 
 import { useDevice, useDeviceCharts } from "@/hooks/device";
 import { useMosquitoEventsByDeviceUuidWithFilters } from "@/hooks/mosquito";
+import { extractItems, MAX_PAGE_SIZE } from "@/lib/pagination";
 import type { MosquitoEvent, MosquitoRange } from "@/queries/mosquito_data/mosquitoDeviceQueries";
 import type { ChartGroupBy } from "@/queries/device/deviceChartsQueries";
+import DownloadCsvButton from "@/components/tables/DownloadCsvButton";
+import ColumnVisibilityDropdown, { useColumnVisibility } from "@/components/tables/ColumnVisibilityDropdown";
 
 function formatTimestamp(iso: string | undefined): string {
   if (!iso) return "—";
@@ -44,6 +47,55 @@ function formatTimestamp(iso: string | undefined): string {
     hour12:true
   });
 }
+
+type MosquitoTableRow = { species: string; genus: string; ageGroup: string; sex: string; iso: string };
+
+// A single column definition drives both the table cell and the CSV export,
+// so hiding a column hides it in both places.
+type MosquitoColumn = {
+  header: string;
+  thClass?: string;
+  tdClass?: string;
+  cell: (row: MosquitoTableRow) => React.ReactNode;
+  csv: (row: MosquitoTableRow) => string;
+};
+
+const MOSQUITO_COLUMNS: MosquitoColumn[] = [
+  {
+    header: "Genus",
+    tdClass: "px-5 py-4 font-medium text-gray-800",
+    cell: (r) => r.genus,
+    csv: (r) => r.genus,
+  },
+  {
+    header: "Species",
+    thClass: "text-center",
+    tdClass: "px-5 py-4 text-gray-600 text-center",
+    cell: (r) => r.species,
+    csv: (r) => r.species,
+  },
+  {
+    header: "Age Group",
+    thClass: "text-center",
+    tdClass: "px-5 py-4 text-gray-600 text-center",
+    cell: (r) => r.ageGroup,
+    csv: (r) => r.ageGroup,
+  },
+  {
+    header: "Sex",
+    thClass: "text-center",
+    tdClass: "px-5 py-4 text-gray-600 text-center",
+    cell: (r) => r.sex,
+    csv: (r) => r.sex,
+  },
+  {
+    header: "Timestamp",
+    thClass: "text-right",
+    tdClass: "px-5 py-4 text-gray-600 text-right",
+    cell: (r) => formatTimestamp(r.iso),
+    csv: (r) => formatTimestamp(r.iso),
+  },
+];
 
 function normalizeCoordinate(value: unknown, maxAbs: number): number | null {
   const numeric = typeof value === "number" ? value : Number.parseFloat(String(value));
@@ -66,11 +118,11 @@ export default function SensorDetailPage() {
   const [chartGroupBy, setChartGroupBy] = useState<ChartGroupBy>("month");
 
   const deviceUuid = device?.device_uuid ?? "";
-  const { data: mosquitoEvents = [], isLoading: isMosquitoLoading } = useMosquitoEventsByDeviceUuidWithFilters(deviceUuid, { range });
+  const { data: mosquitoEventsPage, isLoading: isMosquitoLoading } = useMosquitoEventsByDeviceUuidWithFilters(deviceUuid, { range }, { page_size: MAX_PAGE_SIZE });
   const { data: charts, isLoading: isChartsLoading } = useDeviceCharts(id || "", chartGroupBy);
 
   const { mosquitoTableRows, totalMosquitoCount } = useMemo(() => {
-    const events = (Array.isArray(mosquitoEvents) ? mosquitoEvents : []) as MosquitoEvent[];
+    const events = extractItems<MosquitoEvent>(mosquitoEventsPage);
     const rows: { species: string; genus: string; ageGroup: string; sex: string; iso: string }[] = [];
     let total = 0;
 
@@ -139,7 +191,10 @@ export default function SensorDetailPage() {
       return bTime - aTime;
     });
     return { mosquitoTableRows: rows, totalMosquitoCount: total };
-  }, [mosquitoEvents]);
+  }, [mosquitoEventsPage]);
+
+  const { selected, setSelected, visibleColumns } = useColumnVisibility(MOSQUITO_COLUMNS);
+  const mosquitoCsvColumns = visibleColumns.map((c) => ({ header: c.header, accessor: c.csv }));
 
   const mapCenter: [number, number] = useMemo(
     () => {
@@ -153,9 +208,9 @@ export default function SensorDetailPage() {
 
   return (
     <div className="flex flex-col font-raleway gap-4 w-full ">
-         <div className="flex-row  justify-between flex items-center gap-2">
+         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
 
-        <div className="flex flex-col">
+        <div className="flex flex-col min-w-0">
           <span className="font-semibold">
             {isLoading ? <Skeleton width={180} height={16} /> : (device?.name ?? `Sensor ${id ?? ""}`)}
           </span>
@@ -164,7 +219,7 @@ export default function SensorDetailPage() {
               <Skeleton width={260} height={12} />
             </span>
           ) : device && (
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400 break-words">
               {device.region} • {device.device_uuid} • Last activity: {formatTimestamp(device.last_activity)}
             </span>
           )}
@@ -177,9 +232,19 @@ export default function SensorDetailPage() {
             <Skeleton width={70} height={14} />
           ) : (
             <span
-              className={`font-semibold ${device?.latest_reading ? "text-green-600" : "text-gray-400"}`}
+              className={`font-semibold ${
+                !device?.latest_reading
+                  ? "text-gray-400"
+                  : device.latest_reading.trap_status
+                  ? "text-green-600"
+                  : "text-red-500"
+              }`}
             >
-              {device?.latest_reading ? "Online" : "No data"}
+              {!device?.latest_reading
+                ? "No data"
+                : device.latest_reading.trap_status
+                ? "Online"
+                : "Offline"}
             </span>
           )}
         </div>
@@ -245,26 +310,41 @@ export default function SensorDetailPage() {
                     </span>
                   )}
                 </div>
-                <select
-                  value={range}
-                  onChange={(e) => setRange(e.target.value as MosquitoRange)}
-                  className="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-0  text-gray-700 bg-white y focus:border-primary outline-none"
-                >
-                  <option value="hour">Hour</option>
-                  <option value="day">Day</option>
-                  <option value="week">Week</option>
-                  <option value="month">Month</option>
-                </select>
+                <div className="flex items-center gap-3">
+                  <ColumnVisibilityDropdown
+                    columns={MOSQUITO_COLUMNS}
+                    selected={selected}
+                    onChange={setSelected}
+                    disabled={isMosquitoLoading}
+                  />
+                  <DownloadCsvButton
+                    filename={`mosquito-events-${device?.device_uuid ?? id ?? ""}`}
+                    title="Mosquito Events"
+                    columns={mosquitoCsvColumns}
+                    rows={mosquitoTableRows}
+                    disabled={isMosquitoLoading}
+                  />
+                  <select
+                    value={range}
+                    onChange={(e) => setRange(e.target.value as MosquitoRange)}
+                    className="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-0  text-gray-700 bg-white y focus:border-primary outline-none"
+                  >
+                    <option value="hour">Hour</option>
+                    <option value="day">Day</option>
+                    <option value="week">Week</option>
+                    <option value="month">Month</option>
+                  </select>
+                </div>
               </div>
               <div className="overflow-hidden rounded-xl border border-secondary/15 ">
                 <table className="w-full text-left border-collapse border-secondary/15  font-raleway">
                   <thead className="bg-[#DAE3F8]/30">
                     <tr className="text-gray-700 text-sm">
-                      <th className="px-5 py-4 font-semibold">Species</th>
-                      <th className="px-5 py-4 font-semibold text-center">Genus</th>
-                      <th className="px-5 py-4 font-semibold text-center">Age Group</th>
-                      <th className="px-5 py-4 font-semibold text-center">Sex</th>
-                      <th className="px-5 py-4 font-semibold text-right">Timestamp</th>
+                      {visibleColumns.map((c) => (
+                        <th key={c.header} className={`px-5 py-4 font-semibold ${c.thClass ?? ""}`}>
+                          {c.header}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="bg-white">
@@ -274,21 +354,11 @@ export default function SensorDetailPage() {
                             key={i}
                             className="border-t border-secondary/15 text-sm even:bg-[#F2F5FA]/30"
                           >
-                            <td className="px-5 py-4">
-                              <Skeleton width={180} height={14} />
-                            </td>
-                            <td className="px-5 py-4 text-center">
-                              <Skeleton width={90} height={14} />
-                            </td>
-                            <td className="px-5 py-4 text-center">
-                              <Skeleton width={80} height={14} />
-                            </td>
-                            <td className="px-5 py-4 text-center">
-                              <Skeleton width={70} height={14} />
-                            </td>
-                            <td className="px-5 py-4 flex justify-end">
-                              <Skeleton width={120} height={14} />
-                            </td>
+                            {visibleColumns.map((c) => (
+                              <td key={c.header} className={c.tdClass ?? "px-5 py-4"}>
+                                <Skeleton width={100} height={14} />
+                              </td>
+                            ))}
                           </tr>
                         ))
                       : mosquitoTableRows.map((row, index) => (
@@ -296,18 +366,16 @@ export default function SensorDetailPage() {
                             key={`${row.species}-${row.genus}-${row.iso}-${index}`}
                             className="border-t  border-secondary/15  text-sm even:bg-[#F2F5FA]/30"
                           >
-                            <td className="px-5 py-4 font-medium text-gray-800">
-                              {row.species}
-                            </td>
-                            <td className="px-5 py-4 text-gray-600 text-center">{row.genus}</td>
-                            <td className="px-5 py-4 text-gray-600 text-center">{row.ageGroup}</td>
-                            <td className="px-5 py-4 text-gray-600 text-center">{row.sex}</td>
-                            <td className="px-5 py-4 text-gray-600 text-right">{formatTimestamp(row.iso)}</td>
+                            {visibleColumns.map((c) => (
+                              <td key={c.header} className={c.tdClass ?? "px-5 py-4"}>
+                                {c.cell(row)}
+                              </td>
+                            ))}
                           </tr>
                         ))}
                     {!isMosquitoLoading && mosquitoTableRows.length === 0 && (
                       <tr className="border-t border-secondary/15 text-sm">
-                        <td className="px-5 py-6 text-gray-500 text-center" colSpan={5}>
+                        <td className="px-5 py-6 text-gray-500 text-center" colSpan={visibleColumns.length}>
                           No mosquito events for this device yet.
                         </td>
                       </tr>
@@ -366,6 +434,7 @@ export default function SensorDetailPage() {
             />
             <MosquitoTrendChart
               data={charts?.mosquito_trend?.data}
+              seriesKeys={charts?.mosquito_trend?.series_keys}
               groupBy={chartGroupBy}
               onGroupByChange={setChartGroupBy}
               isLoading={isChartsLoading}

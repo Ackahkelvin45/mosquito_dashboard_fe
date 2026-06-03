@@ -5,25 +5,28 @@ import { Grid3X3, Search, X, Plus } from 'lucide-react'
 import Link from 'next/link'
 import DeviceClusterTable, { DeviceCluster } from '@/components/tables/DeviceClusterTable'
 import { useClusters } from '@/hooks/device'
+import { extractItems, MAX_PAGE_SIZE } from '@/lib/pagination'
 
 function DeviceClustersPage() {
   const [searchTerm, setSearchTerm] = useState('')
-  const { data: clusters, isLoading } = useClusters()
+  // Cluster search is client-side, so pull a full page (API caps at 100).
+  const { data: clustersRaw, isLoading } = useClusters({ page_size: MAX_PAGE_SIZE })
+  const clusters = extractItems<DeviceCluster>(clustersRaw)
 
-  const filteredData = (clusters ?? []).filter((cluster: DeviceCluster) => 
-    cluster.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredData = clusters.filter((cluster: DeviceCluster) =>
+    cluster.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (cluster.description && cluster.description.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   return (
-    <div className='w-full h-full flex flex-col bg-white font-raleway rounded-lg py-8 px-8'>
-        <div className='flex flex-row justify-between'>
-          <div className='flex flex-row gap-7 items-center'>
-              <div className='border border-gray-300 rounded-lg p-1'>
+    <div className='w-full h-full flex flex-col bg-white font-raleway rounded-lg py-6 px-4 sm:py-8 sm:px-8'>
+        <div className='flex flex-col sm:flex-row sm:justify-between gap-4'>
+          <div className='flex flex-row gap-4 sm:gap-7 items-center w-full sm:w-auto'>
+              <div className='border border-gray-300 rounded-lg p-1 shrink-0'>
                   <Grid3X3 strokeWidth={1.5} size={20} />
               </div>
 
-              <div className='relative w-[350px] text-sm'>
+              <div className='relative w-full sm:w-[350px] text-sm'>
                   <Search strokeWidth={1.5} size={20} className='absolute left-1 top-1/2 -translate-y-1/2 text-gray-500' />
                   <input
                       type='search'

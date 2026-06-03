@@ -7,13 +7,17 @@ import MosquitoBreakdown from '@/components/tables/MosquitoBreakdownTable'
 import MosquitoGenderDistribution from '@/components/Charts/MosquitoGenderDistribution'
 import SensorStatusChart from '@/components/Charts/SensorStatusChart'
 import MosquitoBarChart from '@/components/Charts/MosquitoRegionBarChart'
+import CorrelationChart from '@/components/Charts/CorrelationChart'
+import GenusHeatmap from '@/components/Charts/GenusHeatmap'
 import {
   useDashboardTotals,
   useMosquitoChart,
   useMosquitoBreakdown,
   useGenderDistribution,
   useRegionBreakdown,
-  useSensorStatus
+  useSensorStatus,
+  useCorrelationChart,
+  useGenusHeatmap
 } from '@/hooks/dashboard'
 import type { DashboardChartPoint, DashboardGroupBy } from '@/queries/dashboard/dashboardQueries'
 import Skeleton from "react-loading-skeleton";
@@ -26,6 +30,8 @@ function Dashboard() {
   const [regionGroupBy, setRegionGroupBy] = useState<DashboardGroupBy>("month")
   const [sensorStatusGroupBy, setSensorStatusGroupBy] = useState<DashboardGroupBy>("month")
   const [breakdownGroupBy, setBreakdownGroupBy] = useState<DashboardGroupBy>("month")
+  const [correlationGroupBy, setCorrelationGroupBy] = useState<DashboardGroupBy>("month")
+  const [genusHeatmapGroupBy, setGenusHeatmapGroupBy] = useState<DashboardGroupBy>("month")
 
   const { data: totalsData, isLoading: totalsLoading, isFetching: totalsFetching } = useDashboardTotals(totalsGroupBy)
   const { data: chartData, isLoading: chartLoading, isFetching: chartFetching } = useMosquitoChart(chartGroupBy)
@@ -33,6 +39,8 @@ function Dashboard() {
   const { data: breakdownDataResponse, isLoading: breakdownLoading, isFetching: breakdownFetching } = useMosquitoBreakdown(breakdownGroupBy)
   const { data: regionDataResponse, isLoading: regionLoading, isFetching: regionFetching } = useRegionBreakdown(regionGroupBy)
   const { data: sensorStatusResponse, isLoading: sensorStatusLoading, isFetching: sensorStatusFetching } = useSensorStatus(sensorStatusGroupBy)
+  const { data: correlationData, isLoading: correlationLoading, isFetching: correlationFetching } = useCorrelationChart(correlationGroupBy)
+  const { data: genusHeatmapData, isLoading: genusHeatmapLoading, isFetching: genusHeatmapFetching } = useGenusHeatmap(genusHeatmapGroupBy)
 
   const isTotalsLoading = totalsLoading || totalsFetching
   const isChartLoading = chartLoading || chartFetching
@@ -40,6 +48,8 @@ function Dashboard() {
   const isBreakdownLoading = breakdownLoading || breakdownFetching
   const isRegionLoading = regionLoading || regionFetching
   const isSensorStatusLoading = sensorStatusLoading || sensorStatusFetching
+  const isCorrelationLoading = correlationLoading || correlationFetching
+  const isGenusHeatmapLoading = genusHeatmapLoading || genusHeatmapFetching
 
   const totals = totalsData
   const chart = chartData
@@ -278,12 +288,12 @@ function Dashboard() {
   return (
     <div className="flex flex-col gap-4">
 
-        <div className='flex flex-row gap-4'>
-        <div className="w-[65%] ">
+        <div className='flex flex-col lg:flex-row gap-4'>
+        <div className="w-full lg:w-[65%]">
 
 <span className="block text-xl font-semibold font-mulish mb-6 text-primary px-2">
   Dashboard
-</span>          
+</span>
         <MosquitoMonitoringChart
           data={monitoringData}
           groupBy={chartGroupBy}
@@ -291,7 +301,7 @@ function Dashboard() {
           isLoading={isChartLoading}
         />
 	      </div>
-	      <div className="grid grid-cols-2 gap-4 w-[35%]">
+	      <div className="grid grid-cols-2 gap-4 w-full lg:w-[35%]">
 	          <div className="col-span-2 flex justify-end">
 	            <select
 	              value={totalsGroupBy}
@@ -319,9 +329,9 @@ function Dashboard() {
       </div>
         </div>
 
-        <div className='flex flex-row gap-4 mt-2'>
+        <div className='flex flex-col lg:flex-row gap-4 mt-2'>
 
-            <div className='w-[65%]'>
+            <div className='w-full lg:w-[65%]'>
                 <MosquitoBreakdown
                   data={breakdownData}
                   groupBy={breakdownGroupBy}
@@ -329,7 +339,7 @@ function Dashboard() {
                   isLoading={isBreakdownLoading}
                 />
             </div>
-	            <div className='w-[35%]'>
+	            <div className='w-full lg:w-[35%]'>
 	                <MosquitoGenderDistribution
 	                  male={genderData?.male}
 	                  female={genderData?.female}
@@ -340,9 +350,9 @@ function Dashboard() {
 	            </div>
 </div>
     
-<div className='flex flex-row gap-4 mt-2 '>
+<div className='flex flex-col lg:flex-row gap-4 mt-2 '>
 
-	    <div className='w-[50%]'>
+	    <div className='w-full lg:w-[50%]'>
 	        <SensorStatusChart
 	          data={sensorStatusData.length > 0 ? sensorStatusData : undefined}
 	          groupBy={sensorStatusGroupBy}
@@ -351,7 +361,7 @@ function Dashboard() {
 	        />
 
 	    </div>
-	    <div className='w-[50%]'>
+	    <div className='w-full lg:w-[50%]'>
 	        <MosquitoBarChart
 	          data={(() => {
 	            const list = regionData?.data ?? []
@@ -368,6 +378,28 @@ function Dashboard() {
 	        />
 	    </div>
 
+    </div>
+
+    <div className='mt-2'>
+        <CorrelationChart
+          data={correlationData?.data}
+          temperatureCorrelation={correlationData?.temperature_correlation}
+          humidityCorrelation={correlationData?.humidity_correlation}
+          groupBy={correlationGroupBy}
+          onGroupByChange={(value) => setCorrelationGroupBy(value)}
+          isLoading={isCorrelationLoading}
+        />
+    </div>
+
+    <div className='mt-2'>
+        <GenusHeatmap
+          genera={genusHeatmapData?.genera}
+          buckets={genusHeatmapData?.buckets}
+          data={genusHeatmapData?.data}
+          groupBy={genusHeatmapGroupBy}
+          onGroupByChange={(value) => setGenusHeatmapGroupBy(value)}
+          isLoading={isGenusHeatmapLoading}
+        />
     </div>
     </div>
   )

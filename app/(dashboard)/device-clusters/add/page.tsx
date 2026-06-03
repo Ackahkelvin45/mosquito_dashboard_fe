@@ -64,7 +64,7 @@ export default function AddDeviceClusterPage() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-white font-raleway rounded-lg py-8 px-8">
+    <div className="w-full h-full flex flex-col bg-white font-raleway rounded-lg py-6 px-4 sm:py-8 sm:px-8">
       {/* Header */}
       <div className="flex flex-row items-center gap-3 mb-8">
         <Link
@@ -143,7 +143,7 @@ export default function AddDeviceClusterPage() {
       {/* Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full">
         {/* Row 1 — Name & Password */}
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label htmlFor="name" className="text-dark text-sm mb-2 font-medium block">
               Cluster Name

@@ -28,44 +28,44 @@ function getDeviceLatLng(device) {
   return [lat, lng];
 }
 
-// Custom mosquito-trap marker icon
-const deviceIcon = L.divIcon({
-  className: "",
-  html: `
-    <div style="
-      width: 36px; height: 36px; background: linear-gradient(135deg, #3C2178, #5B4FA0);
-      border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
-      border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      display: flex; align-items: center; justify-content: center;
-    ">
-      <div style="
-        width: 10px; height: 10px; background: white;
-        border-radius: 50%; transform: rotate(45deg);
-      "></div>
-    </div>`,
-  iconSize: [36, 36],
-  iconAnchor: [18, 36],
-  popupAnchor: [0, -36],
-});
+// Status colors: green = active sensor, red = inactive sensor
+const STATUS_COLORS = {
+  active: { from: "#16a34a", to: "#22c55e", glow: "rgba(34,197,94,0.5)" },
+  inactive: { from: "#dc2626", to: "#ef4444", glow: "rgba(239,68,68,0.5)" },
+};
 
-const activeDeviceIcon = L.divIcon({
-  className: "",
-  html: `
-    <div style="
-      width: 36px; height: 36px; background: linear-gradient(135deg, #16a34a, #22c55e);
-      border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
-      border: 2px solid white; box-shadow: 0 2px 12px rgba(34,197,94,0.5);
-      display: flex; align-items: center; justify-content: center;
-    ">
+// Build a mosquito-trap marker icon colored by sensor status.
+// `selected` adds a stronger glow so the active selection stays distinguishable.
+function buildDeviceIcon({ isActive, selected }) {
+  const color = isActive ? STATUS_COLORS.active : STATUS_COLORS.inactive;
+  const shadow = selected
+    ? `0 2px 14px ${color.glow}`
+    : "0 2px 8px rgba(0,0,0,0.3)";
+  const border = selected ? "3px solid white" : "2px solid white";
+  return L.divIcon({
+    className: "",
+    html: `
       <div style="
-        width: 10px; height: 10px; background: white;
-        border-radius: 50%; transform: rotate(45deg);
-      "></div>
-    </div>`,
-  iconSize: [36, 36],
-  iconAnchor: [18, 36],
-  popupAnchor: [0, -36],
-});
+        width: 36px; height: 36px; background: linear-gradient(135deg, ${color.from}, ${color.to});
+        border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+        border: ${border}; box-shadow: ${shadow};
+        display: flex; align-items: center; justify-content: center;
+      ">
+        <div style="
+          width: 10px; height: 10px; background: white;
+          border-radius: 50%; transform: rotate(45deg);
+        "></div>
+      </div>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
+    popupAnchor: [0, -36],
+  });
+}
+
+// A sensor is active when its latest reading reports the trap as running.
+function isDeviceActive(device) {
+  return Boolean(device?.latest_reading?.trap_status);
+}
 
 function FlyToDevice({ device }) {
   const map = useMap();
@@ -102,12 +102,37 @@ export default function MapClient({ position, zoom, devices = [], selectedDevice
   }, [devices]);
 
   return (
-    <MapContainer
-      center={position}
-      zoom={zoom}
-      scrollWheelZoom={true}
-      style={{ height: "100%", width: "100%" }}
-    >
+    <div style={{ position: "relative", height: "100%", width: "100%" }}>
+      <div
+        className="font-mulish"
+        style={{
+          position: "absolute",
+          bottom: 16,
+          right: 16,
+          zIndex: 1000,
+          background: "rgba(255,255,255,0.95)",
+          borderRadius: 8,
+          padding: "8px 12px",
+          boxShadow: "0 1px 6px rgba(0,0,0,0.2)",
+          fontSize: 12,
+          color: "#374151",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+          <span style={{ width: 12, height: 12, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
+          Active sensor
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 12, height: 12, borderRadius: "50%", background: "#ef4444", display: "inline-block" }} />
+          Inactive sensor
+        </div>
+      </div>
+      <MapContainer
+        center={position}
+        zoom={zoom}
+        scrollWheelZoom={true}
+        style={{ height: "100%", width: "100%" }}
+      >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -117,7 +142,10 @@ export default function MapClient({ position, zoom, devices = [], selectedDevice
         <Marker
           key={device.id}
           position={latLng}
-          icon={selectedDevice?.id === device.id ? activeDeviceIcon : deviceIcon}
+          icon={buildDeviceIcon({
+            isActive: isDeviceActive(device),
+            selected: selectedDevice?.id === device.id,
+          })}
           eventHandlers={{
             click: () => onMarkerClick && onMarkerClick(device),
           }}
@@ -148,7 +176,8 @@ export default function MapClient({ position, zoom, devices = [], selectedDevice
         </Marker>
       ))} 
 
-      {selectedDevice && <FlyToDevice device={selectedDevice} />}
-    </MapContainer>
+        {selectedDevice && <FlyToDevice device={selectedDevice} />}
+      </MapContainer>
+    </div>
   );
 }

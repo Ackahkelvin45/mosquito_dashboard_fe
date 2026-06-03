@@ -4,6 +4,8 @@ import { PencilLine, Trash2 } from "lucide-react";
 import React from "react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import DownloadCsvButton from "./DownloadCsvButton";
+import type { CsvColumn } from "@/lib/csv";
 
 export type UserRow = {
   id: number;
@@ -31,14 +33,32 @@ interface UsersTableProps {
 
 const SKELETON_ROWS = 6;
 
+const CSV_COLUMNS: CsvColumn<UserRow>[] = [
+  { header: "ID", accessor: (r) => r.id },
+  { header: "First Name", accessor: (r) => r.first_name },
+  { header: "Last Name", accessor: (r) => r.last_name },
+  { header: "Email", accessor: (r) => r.email },
+  { header: "Role", accessor: (r) => r.role || "User" },
+  { header: "Date Joined", accessor: (r) => r.created_at },
+];
+
 export default function UsersTable({
   data = [],
   isLoading = false,
 }: UsersTableProps) {
   return (
     <div className="bg-white">
-      <div className="overflow-hidden rounded-2xl mt-4 border border-secondary/15">
-        <table className="w-full text-left border-collapse">
+      <div className="flex justify-end">
+        <DownloadCsvButton
+          filename="users"
+          title="Users"
+          columns={CSV_COLUMNS}
+          rows={data}
+          disabled={isLoading}
+        />
+      </div>
+      <div className="overflow-x-auto rounded-2xl mt-4 border border-secondary/15">
+        <table className="w-full min-w-[700px] text-left border-collapse">
           <thead className="bg-[#DAE3F8]/30 font-raleway">
             <tr className="text-gray-700 text-sm">
               <th className="px-6 py-5 font-bold">Name</th>

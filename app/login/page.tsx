@@ -40,7 +40,7 @@ export default function LoginPage() {
 
   return (
     <div className="w-full h-screen flex flex-row">
-      <div className="w-1/2 h-full flex justify-center bg-[#F5F5F5] items-center">
+      <div className="w-full lg:w-1/2 h-full flex justify-center bg-[#F5F5F5] items-center px-6">
         <div className="w-full max-w-md flex flex-col">
           <div className="flex flex-row justify-center gap-2 items-center">
             <div>
@@ -160,7 +160,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="w-1/2 h-full">
+      <div className="hidden lg:block lg:w-1/2 h-full">
         <Image src={loginiage} alt="login" className="w-full h-full object-cover" />
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { apiFetch } from "@/api/base";
+import { appendPagination, type PaginationParams } from "@/lib/pagination";
 
 export type GetDevicesFilters = {
     name?: string;
@@ -10,9 +11,11 @@ export type GetDevicesFilters = {
     longitude?: number;
     latitude?: number;
     cluster_id?: number;
+    /** true → devices currently on, false → devices off. Omit for all. */
+    trap_status?: boolean;
 };
 
-export async function getDevices(filters?: GetDevicesFilters){
+export async function getDevices(filters?: GetDevicesFilters, pagination?: PaginationParams){
     const params = new URLSearchParams();
     if (filters?.name) params.set("name", filters.name);
     if (filters?.region) params.set("region", filters.region);
@@ -23,12 +26,14 @@ export async function getDevices(filters?: GetDevicesFilters){
     if (typeof filters?.longitude === "number") params.set("longitude", String(filters.longitude));
     if (typeof filters?.latitude === "number") params.set("latitude", String(filters.latitude));
     if (typeof filters?.cluster_id === "number") params.set("cluster_id", String(filters.cluster_id));
+    if (typeof filters?.trap_status === "boolean") params.set("trap_status", String(filters.trap_status));
+    appendPagination(params, pagination);
 
     const query = params.toString();
 
     return apiFetch(`/devices${query ? `?${query}` : ""}`,{
         method: "GET",
-      
+
     })
 }
 
@@ -38,8 +43,11 @@ export async function getDeviceById(id: string | number) {
     })
 }
 
-export async function getClusters(){
-    return apiFetch("/devices/clusters",{
+export async function getClusters(pagination?: PaginationParams){
+    const params = new URLSearchParams();
+    appendPagination(params, pagination);
+    const query = params.toString();
+    return apiFetch(`/devices/clusters${query ? `?${query}` : ""}`,{
         method: "GET",
     })
 }

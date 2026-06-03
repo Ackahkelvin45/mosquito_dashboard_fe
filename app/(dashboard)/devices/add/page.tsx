@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import { useCreateDevice, useClusters } from "@/hooks/device"
+import { extractItems, MAX_PAGE_SIZE } from "@/lib/pagination"
 
 export default function AddDevicePage() {
   const router = useRouter()
   const { mutate: createDevice, isPending, isError, error } = useCreateDevice()
-  const { data: clusters, isLoading: isClustersLoading } = useClusters()
+  const { data: clustersRaw, isLoading: isClustersLoading } = useClusters({ page_size: MAX_PAGE_SIZE })
+  const clusters = extractItems<{ id: number; name: string }>(clustersRaw)
 
   const [formError, setFormError] = useState<string | null>(null)
   const [form, setForm] = useState({
@@ -65,7 +67,7 @@ export default function AddDevicePage() {
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-white font-raleway rounded-lg py-8 px-8">
+    <div className="w-full h-full flex flex-col bg-white font-raleway rounded-lg py-6 px-4 sm:py-8 sm:px-8">
 
       {/* Header */}
       <div className="flex flex-row items-center gap-3 mb-8">
@@ -148,7 +150,7 @@ export default function AddDevicePage() {
         className="flex flex-col gap-6 w-full "
       >
         {/* Row 1 — Name & Region */}
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label
               htmlFor="name"
@@ -189,7 +191,7 @@ export default function AddDevicePage() {
         </div>
 
         {/* Row 2 — Latitude & Longitude */}
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label
               htmlFor="latitude"
@@ -232,7 +234,7 @@ export default function AddDevicePage() {
         </div>
 
         {/* Row 3 — Device UUID & Cluster */}
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
                 <label
                     htmlFor="device_uuid"
@@ -271,14 +273,14 @@ export default function AddDevicePage() {
                     {isClustersLoading ? (
                         <option value="" disabled>Loading clusters...</option>
                     ) : (
-                        clusters?.map((cluster: any) => (
+                        clusters.map((cluster) => (
                             <option key={cluster.id} value={cluster.id}>
                                 {cluster.name}
                             </option>
                         ))
                     )}
                 </select>
-                {clusters && clusters.length === 0 && !isClustersLoading && (
+                {clusters.length === 0 && !isClustersLoading && (
                     <p className="text-[11px] text-orange-600 mt-1">No clusters found. Please create one first.</p>
                 )}
             </div>

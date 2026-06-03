@@ -18,10 +18,17 @@ export type MosquitoCountPoint = {
 export type MosquitoTrendPoint = {
   label: string;
   timestamp: string;
-  young_male: number;
-  old_male: number;
-  young_female: number;
-  old_female: number;
+  // Dynamic set of series keyed by "{age_group}_{sex}" — every point carries the
+  // same keys (listed in the wrapper's series_keys).
+  series: Record<string, number>;
+};
+
+export type MosquitoTrendChart = {
+  series_keys: string[];
+  data: MosquitoTrendPoint[];
+  group_by: ChartGroupBy;
+  window_start: string;
+  window_end: string;
 };
 
 export type MosquitoGenderPoint = {
@@ -55,7 +62,7 @@ export type DeviceChartsResponse = {
   group_by: ChartGroupBy;
   device_id: number;
   mosquito_count: ChartDataWrapper<MosquitoCountPoint>;
-  mosquito_trend: ChartDataWrapper<MosquitoTrendPoint>;
+  mosquito_trend: MosquitoTrendChart;
   mosquito_gender: ChartDataWrapper<MosquitoGenderPoint>;
   sensor_status: ChartDataWrapper<SensorStatusPoint>;
   temperature: ChartDataWrapper<EnvironmentalPoint>;

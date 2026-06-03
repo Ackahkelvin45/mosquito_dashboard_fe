@@ -1,16 +1,22 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, keepPreviousData } from "@tanstack/react-query"
 import {
 	getAllMosquitoEvents,
 	getMosquitoEventsByDeviceUuid,
 	type GetAllMosquitoEventsFilters,
 	type GetMosquitoEventsByDeviceUuidFilters,
 } from "@/queries/mosquito_data/mosquitoDeviceQueries"
+import type { PaginationParams } from "@/lib/pagination"
 
-export const useMosquitoEvents = (filters?: GetAllMosquitoEventsFilters, enabled = true) => {
+export const useMosquitoEvents = (
+	filters?: GetAllMosquitoEventsFilters,
+	pagination?: PaginationParams,
+	enabled = true
+) => {
 	return useQuery({
-		queryKey: ["mosquito-events", filters ?? {}],
-		queryFn: () => getAllMosquitoEvents(filters),
+		queryKey: ["mosquito-events", filters ?? {}, pagination ?? null],
+		queryFn: () => getAllMosquitoEvents(filters, pagination),
 		enabled,
+		placeholderData: keepPreviousData,
 	})
 }
 
@@ -24,11 +30,13 @@ export const useMosquitoEventsByDeviceUuid = (deviceUuid: string) => {
 
 export const useMosquitoEventsByDeviceUuidWithFilters = (
 	deviceUuid: string,
-	filters?: GetMosquitoEventsByDeviceUuidFilters
+	filters?: GetMosquitoEventsByDeviceUuidFilters,
+	pagination?: PaginationParams
 ) => {
 	return useQuery({
-		queryKey: ["mosquito-events", deviceUuid, filters ?? {}],
-		queryFn: () => getMosquitoEventsByDeviceUuid(deviceUuid, filters),
+		queryKey: ["mosquito-events", deviceUuid, filters ?? {}, pagination ?? null],
+		queryFn: () => getMosquitoEventsByDeviceUuid(deviceUuid, filters, pagination),
 		enabled: !!deviceUuid,
+		placeholderData: keepPreviousData,
 	})
 }

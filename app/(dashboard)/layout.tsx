@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuthStore } from "@/store/authStore"
 import Sidebar from "@/components/layout/Sidebar"
 import Navbar from "@/components/layout/Navbar"
+import InactivityTimeout from "@/components/auth/InactivityTimeout"
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -25,10 +26,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
+      <InactivityTimeout />
       <Sidebar />
       <Navbar />
       <main
-        className="p-4 pt-20 pl-[260px] bg-[#F5F5F5] min-h-screen overflow-y-auto"
+        className="p-4 pt-20 lg:pl-[260px] bg-[#F5F5F5] min-h-screen w-full overflow-x-hidden overflow-y-auto"
         style={{ flex: 1, overflow: "auto" }}
       >
         {children}

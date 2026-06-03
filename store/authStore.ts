@@ -26,6 +26,12 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-storage",
+      // Only persist the credentials, not transient UI state like _hasHydrated.
+      partialize: (state) => ({
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        user_id: state.user_id,
+      }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)
       },

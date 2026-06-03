@@ -1,27 +1,31 @@
 "use client"
 
-import React from 'react'
+import React, { useMemo, useState } from 'react'
 import { Grid3X3, Search, X } from 'lucide-react'
-import ReaseacherRequetsTable from '@/components/tables/ReaseacherRequetsTable'
+import ReaseacherRequetsTable, { type ResearcherRequest } from '@/components/tables/ReaseacherRequetsTable'
 import { useResearcherRequests } from '@/hooks/researcher'
+import Pagination from '@/components/Pagination'
+import { resolvePage, DEFAULT_PAGE_SIZE } from '@/lib/pagination'
 
 function ResearcherRequestsPage() {
-  const { data, isLoading } = useResearcherRequests()
+  const [page, setPage] = useState(1)
+  const { data, isLoading } = useResearcherRequests({ page, page_size: DEFAULT_PAGE_SIZE })
+  const requestsPage = useMemo(() => resolvePage<ResearcherRequest>(data, page, DEFAULT_PAGE_SIZE), [data, page])
 
   return (
-    <div className='w-full h-full flex flex-col bg-white font-raleway rounded-lg py-8 px-8'>
-        <div className='flex flex-row justify-between mb-6'>
-          <div className='flex flex-row gap-7 items-center flex-1'>
+    <div className='w-full h-full flex flex-col bg-white font-raleway rounded-lg py-6 px-4 sm:py-8 sm:px-8'>
+        <div className='flex flex-col lg:flex-row lg:justify-between mb-6 gap-4'>
+          <div className='flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:gap-7 sm:items-center flex-1'>
               <div>
                 <h1 className='text-xl font-bold text-secondary'>Researcher Requests</h1>
                 <p className='text-sm text-gray-500'>Review and approve researcher account applications.</p>
               </div>
 
-              <div className='border border-gray-300 rounded-lg p-1 ml-4'>
+              <div className='border border-gray-300 rounded-lg p-1 sm:ml-4 w-fit'>
                   <Grid3X3 strokeWidth={1.5} size={20} />
               </div>
 
-              <div className='relative w-[350px] text-sm'>
+              <div className='relative w-full sm:w-[350px] text-sm'>
                   <Search strokeWidth={1.5} size={20} className='absolute left-1 top-1/2 -translate-y-1/2 text-gray-500' />
                   <input
                       type='search'
@@ -45,7 +49,15 @@ function ResearcherRequestsPage() {
         </div>
 
         <div className='mt-6'>
-            <ReaseacherRequetsTable data={data ?? []} isLoading={isLoading} />
+            <ReaseacherRequetsTable data={requestsPage.items} isLoading={isLoading} />
+            <Pagination
+              page={requestsPage.page}
+              totalPages={requestsPage.total_pages}
+              total={requestsPage.total}
+              pageSize={requestsPage.page_size}
+              onPageChange={setPage}
+              isLoading={isLoading}
+            />
         </div>
     </div>
   )

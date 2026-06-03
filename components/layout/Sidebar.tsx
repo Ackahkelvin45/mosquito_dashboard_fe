@@ -5,14 +5,15 @@ import logo from '../../public/images/logo.png'
 import name from '../../public/images/name.png'
 import Image from 'next/image'
 import profile from '../../public/images/profile.png'
-import { 
-  LayoutDashboard, Map, ChartNoAxesCombined, Satellite, CirclePile, 
-  UserRoundPlus, ShieldUser, ChevronDown, ChevronRight, 
-  EllipsisVertical, LogOut, User
+import {
+  LayoutDashboard, Map, ChartNoAxesCombined, Satellite, CirclePile,
+  UserRoundPlus, ShieldUser, ChevronDown, ChevronRight,
+  EllipsisVertical, LogOut, User, X
 } from 'lucide-react'
 import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/authentication'
 import { useAuthStore } from '@/store/authStore'
+import { useUiStore } from '@/store/uiStore'
 import { useRouter } from 'next/navigation'
 
 interface NavItem {
@@ -78,6 +79,8 @@ function Sidebar() {
   const router = useRouter()
   const { data: user, isLoading } = useCurrentUser()
   const logoutAction = useAuthStore((state) => state.logout)
+  const isSidebarOpen = useUiStore((state) => state.isSidebarOpen)
+  const closeSidebar = useUiStore((state) => state.closeSidebar)
   const [openDropdown, setOpenDropdown] = React.useState<string | null>(null)
   const [isAccountMenuOpen, setIsAccountMenuOpen] = React.useState(false)
 
@@ -106,8 +109,22 @@ function Sidebar() {
     })
   }, [pathname])
 
+  // Close the mobile drawer whenever the route changes.
+  React.useEffect(() => {
+    closeSidebar()
+  }, [pathname, closeSidebar])
+
   return (
-    <div className="w-[250px] h-screen  fixed  top-0 left-0  z-50  font-raleway flex flex-col shadow-2xl overflow-hidden">
+    <>
+      {/* Mobile overlay */}
+      <div
+        onClick={closeSidebar}
+        className={`fixed inset-0 z-40 bg-black/40 lg:hidden transition-opacity duration-300
+          ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      />
+    <div className={`w-[250px] h-screen fixed top-0 left-0 z-50 font-raleway flex flex-col shadow-2xl overflow-hidden
+      transition-transform duration-300 ease-in-out lg:translate-x-0
+      ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Gradient base */}
       <div
         className="absolute inset-0 z-0"
@@ -128,9 +145,16 @@ function Sidebar() {
       />
       <div className="relative z-10 flex flex-1 flex-col">
 
-        <div className='flex bg-primary/30 flex-row  items-center px-7 gap-3 py-5'>
+        <div className='flex bg-primary/30 flex-row items-center px-7 gap-3 py-5'>
             <Image src={logo} alt='logo' className='invert brightness-0' width={30} height={30} />
             <Image src={name} alt='name' className='invert brightness-0' width={120} height={80} />
+            <button
+              onClick={closeSidebar}
+              aria-label="Close menu"
+              className='ml-auto p-1 rounded-md text-white/80 hover:bg-white/10 lg:hidden'
+            >
+              <X size={20} />
+            </button>
         </div>
       {/* Nav Items */}
       <nav className="flex-1 pt-5 overflow-y-auto">
@@ -273,6 +297,7 @@ function Sidebar() {
       </div>
     </div>
   </div>
+  </>
 )
 
 }

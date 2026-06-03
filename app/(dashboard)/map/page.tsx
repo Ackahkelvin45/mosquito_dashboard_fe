@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useClusters, useDevices } from "@/hooks/device";
+import { extractItems, MAX_PAGE_SIZE } from "@/lib/pagination";
 import type React from "react";
 
 // ------- MapClient props type (mirrors MapClient.jsx interface) -------
@@ -79,6 +80,7 @@ type Device = {
   total_mosquito_count: number;
   cluster_id: number;
   device_uuid: string;
+  is_active?: boolean;
   latest_reading?: LatestReading;
 };
 
@@ -111,12 +113,7 @@ function getDeviceLatLng(device: Device | null): [number, number] | null {
 }
 
 function extractDevices(value: unknown): Device[] {
-  if (Array.isArray(value)) return value as Device[];
-  if (value && typeof value === "object") {
-    const maybe = value as { data?: unknown };
-    if (Array.isArray(maybe.data)) return maybe.data as Device[];
-  }
-  return [];
+  return extractItems<Device>(value);
 }
 
 function DeviceStatusTab({ device }: { device: Device | null }) {
@@ -174,13 +171,13 @@ function DeviceStatusTab({ device }: { device: Device | null }) {
       </Row>
 
       <Row label="Connectivity">
-        {r ? (
+        {device.is_active ? (
           <span className="flex items-center gap-1 text-sm font-semibold text-green-600">
             <Wifi size={14} /> Online
           </span>
         ) : (
-          <span className="flex items-center gap-1 text-sm font-semibold text-gray-400">
-            <WifiOff size={14} /> No data
+          <span className="flex items-center gap-1 text-sm font-semibold text-red-500">
+            <WifiOff size={14} /> Offline
           </span>
         )}
       </Row>
@@ -281,13 +278,25 @@ export default function MapPage() {
   const [activeTab, setActiveTab] = useState<TabValue>("device-status");
   const [query, setQuery] = useState("");
   const [selectedClusterId, setSelectedClusterId] = useState<string>("all");
+  const [trapStatus, setTrapStatus] = useState<"all" | "on" | "off">("all");
+  const [createdAfter, setCreatedAfter] = useState("");
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
 
-  const { data: devicesRaw, isLoading } = useDevices();
+  // trap_status / created_after are applied server-side; cluster + search stay client-side.
+  const deviceFilters = useMemo(
+    () => ({
+      trap_status: trapStatus === "all" ? undefined : trapStatus === "on",
+      created_after: createdAfter ? new Date(`${createdAfter}T00:00:00Z`).toISOString() : undefined,
+    }),
+    [trapStatus, createdAfter]
+  );
+
+  // The map plots every device, so request a full page (API caps at 100).
+  const { data: devicesRaw, isLoading } = useDevices(deviceFilters, { page_size: MAX_PAGE_SIZE });
   const devices = extractDevices(devicesRaw);
 
-  const { data: clustersRaw } = useClusters();
-  const clusters: Cluster[] = Array.isArray(clustersRaw) ? (clustersRaw as Cluster[]) : [];
+  const { data: clustersRaw } = useClusters({ page_size: MAX_PAGE_SIZE });
+  const clusters: Cluster[] = extractItems<Cluster>(clustersRaw);
 
   const clusterFilteredDevices =
     selectedClusterId === "all"
@@ -352,10 +361,10 @@ export default function MapPage() {
       {/* Floating search bar */}
       <div
         className={`absolute top-4 z-[1000] transition-all duration-300 ease-in-out
-          ${isOpen ? "left-[420px] right-4" : "left-20 right-4"}`}
+          ${isOpen ? "hidden lg:block left-[420px] right-4" : "left-20 right-4"}`}
       >
-        <div className="flex items-start gap-3">
-          <div className="w-[350px]">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3">
+          <div className="w-full sm:w-[350px]">
             <div className="flex items-center bg-white rounded-full shadow-lg px-4 py-2.5 gap-3">
               <Search size={18} className="text-gray-400 shrink-0" />
               <input
@@ -394,7 +403,7 @@ export default function MapPage() {
           )}
           </div>
 
-          <div className="w-[220px]">
+          <div className="w-full sm:w-[220px]">
             <select
               value={selectedClusterId}
               onChange={(e) => setSelectedClusterId(e.target.value)}
@@ -408,6 +417,37 @@ export default function MapPage() {
               ))}
             </select>
           </div>
+
+          <div className="w-full sm:w-[150px]">
+            <select
+              value={trapStatus}
+              onChange={(e) => setTrapStatus(e.target.value as "all" | "on" | "off")}
+              className="w-full bg-white rounded-full shadow-lg px-4 py-2.5 text-sm text-gray-700 outline-none border border-transparent focus:border-primary"
+            >
+              <option value="all">All statuses</option>
+              <option value="on">Trap On</option>
+              <option value="off">Trap Off</option>
+            </select>
+          </div>
+
+          <div className="w-full sm:w-[180px] relative">
+            <input
+              type="date"
+              value={createdAfter}
+              onChange={(e) => setCreatedAfter(e.target.value)}
+              title="Created after"
+              className="w-full bg-white rounded-full shadow-lg px-4 py-2.5 text-sm text-gray-700 outline-none border border-transparent focus:border-primary"
+            />
+            {createdAfter && (
+              <button
+                onClick={() => setCreatedAfter("")}
+                className="absolute right-9 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                aria-label="Clear created after"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -415,7 +455,7 @@ export default function MapPage() {
       <div
         className={`absolute top-0 left-0 h-full z-[1000] shadow-lg bg-white
           transition-all duration-300 ease-in-out overflow-hidden flex flex-col
-          ${isOpen ? "w-[400px]" : "w-16"}`}
+          ${isOpen ? "w-full sm:w-[400px]" : "w-16"}`}
       >
         {/* Toggle button */}
         <div className={`w-full flex shrink-0 ${isOpen ? "justify-end" : "justify-center"} items-center p-4`}>

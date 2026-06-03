@@ -1,13 +1,18 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, keepPreviousData } from "@tanstack/react-query"
 import { apiFetch } from "@/api/base"
+import { appendPagination, type PaginationParams } from "@/lib/pagination"
 
-export const useResearcherRequests = () => {
+export const useResearcherRequests = (pagination?: PaginationParams) => {
   return useQuery({
-    queryKey: ["researcherRequests"],
+    queryKey: ["researcherRequests", pagination ?? null],
     queryFn: async () => {
-      return await apiFetch("/auth/researcher-requests/", { method: "GET" }, true)
+      const params = new URLSearchParams()
+      appendPagination(params, pagination)
+      const query = params.toString()
+      return await apiFetch(`/auth/researcher-requests${query ? `?${query}` : ""}`, { method: "GET" }, true)
     },
+    placeholderData: keepPreviousData,
   })
 }

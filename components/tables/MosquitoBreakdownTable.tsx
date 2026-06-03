@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import DownloadCsvButton from "./DownloadCsvButton";
+import type { CsvColumn } from "@/lib/csv";
 
 type BreakdownItem = {
   name: string;
@@ -31,16 +33,23 @@ export default function MosquitoBreakdown({
   onGroupByChange,
   isLoading,
 }: MosquitoBreakdownProps) {
-  const [activeCategory, setActiveCategory] = useState<Category>("species");
+  const [activeCategory, setActiveCategory] = useState<Category>("genus");
 
   const categories: { id: Category; label: string }[] = [
-    { id: "species", label: "Species" },
     { id: "genus", label: "Genus" },
+    { id: "species", label: "Species" },
     { id: "sex", label: "Sex" },
     { id: "age_group", label: "Age Group" },
   ];
 
   const currentData = data ? data[activeCategory] : [];
+  const activeLabel =
+    categories.find((c) => c.id === activeCategory)?.label ?? "Category";
+
+  const csvColumns: CsvColumn<BreakdownItem>[] = [
+    { header: activeLabel, accessor: (r) => r.name },
+    { header: "Mosquito Count", accessor: (r) => r.count },
+  ];
 
   return (
     <div className="bg-white rounded-2xl py-6  font-raleway shadow-sm border border-gray-100 w-full min-h-[500px] flex flex-col">
@@ -53,16 +62,25 @@ export default function MosquitoBreakdown({
           <p className="text-xs text-gray-400 mt-1">Detailed statistical overview</p>
         </div>
 
-        <select
-          value={groupBy}
-          onChange={(e) => onGroupByChange?.(e.target.value)}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white focus:border-primary transition-all cursor-pointer"
-        >
-          <option value="hour">Last hour</option>
-          <option value="day">Last day</option>
-          <option value="week">Last week</option>
-          <option value="month">Last month</option>
-        </select>
+        <div className="flex items-center gap-3">
+          <DownloadCsvButton
+            filename={`mosquito-breakdown-${activeCategory}`}
+            title={`Mosquito Breakdown — ${activeLabel}`}
+            columns={csvColumns}
+            rows={currentData}
+            disabled={isLoading}
+          />
+          <select
+            value={groupBy}
+            onChange={(e) => onGroupByChange?.(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white focus:border-primary transition-all cursor-pointer"
+          >
+            <option value="hour">Last hour</option>
+            <option value="day">Last day</option>
+            <option value="week">Last week</option>
+            <option value="month">Last month</option>
+          </select>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -87,7 +105,7 @@ export default function MosquitoBreakdown({
 
       {/* Table Container */}
       <div className="flex-1 overflow-x-auto w-full ">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full min-w-[600px] text-left border-collapse">
           {/* Header */}
           <thead className="bg-gray-50/50 border-b border-gray-100">
             <tr className="text-gray-500 text-xs  uppercase tracking-wider font-bold">

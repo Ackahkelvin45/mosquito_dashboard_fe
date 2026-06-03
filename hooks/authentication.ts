@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { getCurrentUser } from "@/queries/authentication/authenticationQueries"
-import { loginUser, type LoginResult, registerUser, type RegisterFormData, updateResearcherRequestStatus } from "@/actions/authentication/authenticationMutation"
+import { loginUser, type LoginResult, registerUser, type RegisterFormData, updateResearcherRequestStatus, requestPasswordReset, verifyPasswordResetOtp, resetPassword } from "@/actions/authentication/authenticationMutation"
 import { useAuthStore } from "@/store/authStore"
 
 export const useCurrentUser = () => {
@@ -28,6 +28,25 @@ export const useLogin = () => {
 export const useSignup = () => {
   return useMutation({
     mutationFn: (data: RegisterFormData) => registerUser(data),
+  })
+}
+
+export const useRequestPasswordReset = () => {
+  return useMutation({
+    mutationFn: (email: string) => requestPasswordReset(email),
+  })
+}
+
+export const useVerifyPasswordResetOtp = () => {
+  return useMutation({
+    mutationFn: ({ email, otp }: { email: string; otp: string }) => verifyPasswordResetOtp(email, otp),
+  })
+}
+
+export const useResetPassword = () => {
+  return useMutation({
+    mutationFn: ({ email, otp, new_password }: { email: string; otp: string; new_password: string }) =>
+      resetPassword(email, otp, new_password),
   })
 }
 

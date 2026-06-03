@@ -6,6 +6,8 @@ import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import ApproveRequestConfirmation from "@/components/modal/ApproveRequestConfirmation";
 import { useUpdateResearcherStatus } from "@/hooks/authentication";
+import DownloadCsvButton from "./DownloadCsvButton";
+import type { CsvColumn } from "@/lib/csv";
 
 export type ResearcherRequest = {
   id: number;
@@ -41,6 +43,15 @@ interface ReaseacherRequetsTableProps {
 }
 
 const SKELETON_ROWS = 6;
+
+const CSV_COLUMNS: CsvColumn<ResearcherRequest>[] = [
+  { header: "ID", accessor: (r) => r.id },
+  { header: "Researcher", accessor: (r) => `${r.user.first_name} ${r.user.last_name}`.trim() || r.user.email },
+  { header: "Email", accessor: (r) => r.user.email },
+  { header: "Status", accessor: (r) => r.status },
+  { header: "Cluster ID", accessor: (r) => r.cluster_id },
+  { header: "Date Requested", accessor: (r) => r.created_at },
+];
 
 export default function ReaseacherRequetsTable({
   data = [],
@@ -91,8 +102,17 @@ export default function ReaseacherRequetsTable({
       />
 
       <div className="bg-white">
-        <div className="overflow-hidden rounded-2xl mt-4 border border-secondary/15">
-          <table className="w-full text-left border-collapse">
+        <div className="flex justify-end">
+          <DownloadCsvButton
+            filename="researcher-requests"
+            title="Researcher Requests"
+            columns={CSV_COLUMNS}
+            rows={data}
+            disabled={isLoading}
+          />
+        </div>
+        <div className="overflow-x-auto rounded-2xl mt-4 border border-secondary/15">
+          <table className="w-full min-w-[700px] text-left border-collapse">
             <thead className="bg-[#DAE3F8]/30 font-raleway">
               <tr className="text-gray-700 text-sm">
                 <th className="px-6 py-5 font-bold">Researcher</th>

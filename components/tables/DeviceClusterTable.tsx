@@ -5,6 +5,8 @@ import React from "react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import Link from "next/link";
+import DownloadCsvButton from "./DownloadCsvButton";
+import type { CsvColumn } from "@/lib/csv";
 
 export type DeviceCluster = {
   id: number;
@@ -34,14 +36,34 @@ interface DeviceClusterTableProps {
 
 const SKELETON_ROWS = 6;
 
+const CSV_COLUMNS: CsvColumn<DeviceCluster>[] = [
+  { header: "ID", accessor: (r) => r.id },
+  { header: "Cluster Name", accessor: (r) => r.name },
+  { header: "Cluster UUID", accessor: (r) => r.cluster_uuid },
+  { header: "Description", accessor: (r) => r.description },
+  { header: "Visibility", accessor: (r) => (r.public ? "Public" : "Private") },
+  { header: "Devices", accessor: (r) => r.devices?.length || 0 },
+  { header: "Admins", accessor: (r) => r.admins?.length || 0 },
+  { header: "Created At", accessor: (r) => r.created_at },
+];
+
 export default function DeviceClusterTable({
   data = [],
   isLoading = false,
 }: DeviceClusterTableProps) {
   return (
     <div className="bg-white">
-      <div className="overflow-hidden rounded-2xl mt-4 border border-secondary/15">
-        <table className="w-full text-left border-collapse">
+      <div className="flex justify-end">
+        <DownloadCsvButton
+          filename="device-clusters"
+          title="Device Clusters"
+          columns={CSV_COLUMNS}
+          rows={data}
+          disabled={isLoading}
+        />
+      </div>
+      <div className="overflow-x-auto rounded-2xl mt-4 border border-secondary/15">
+        <table className="w-full min-w-[700px] text-left border-collapse">
           <thead className="bg-[#DAE3F8]/30 font-raleway">
             <tr className="text-gray-700 text-sm">
               <th className="px-6 py-5 font-bold">Cluster Name</th>

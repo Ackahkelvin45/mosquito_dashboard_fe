@@ -13,12 +13,53 @@ function toHeaderRecord(h: RequestInit["headers"]): Record<string, string> {
   return { ...h }
 }
 
+// A single in-flight refresh shared across all callers. Without this, several
+// requests hitting 401 at the same time would each POST /auth/refresh-token with
+// the same refresh token; because the backend rotates refresh tokens, only the
+// first succeeds and the rest fail with an already-used token, forcing a logout.
+let refreshPromise: Promise<string> | null = null
+
+async function refreshAccessToken(): Promise<string> {
+  const { refreshToken, setAuth, logout } = useAuthStore.getState()
+
+  if (!refreshToken) {
+    logout()
+    throw new Error("Not authenticated")
+  }
+
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      // The backend expects refresh_token as a query parameter, not a JSON body.
+      const refreshUrl = `${API_URL}/auth/refresh-token?refresh_token=${encodeURIComponent(refreshToken)}`
+      const refreshRes = await fetch(refreshUrl, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      }).catch(() => null)
+
+      if (!refreshRes || !refreshRes.ok) {
+        logout()
+        throw new Error("Not authenticated")
+      }
+
+      const data = await refreshRes.json()
+      setAuth(data.access_token, data.refresh_token, data?.user_id)
+      return data.access_token as string
+    })().finally(() => {
+      // Allow the next genuine 401 (after this new token also expires) to refresh again.
+      refreshPromise = null
+    })
+  }
+
+  return refreshPromise
+}
+
 export async function apiFetch(
   endpoint: string,
   options: RequestInit = {},
   skipAuth = false
 ) {
-  const { accessToken, logout, setAuth } = useAuthStore.getState()
+  const { accessToken } = useAuthStore.getState()
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -36,26 +77,12 @@ export async function apiFetch(
     throw new Error("Network error. Please check your connection.")
   }
 
-  // Refresh token logic, skip for login/signup
+  // On 401, refresh the access token (shared across concurrent calls) and retry once.
+  // Skipped for login/signup endpoints.
   if (!skipAuth && res.status === 401) {
-    const { refreshToken } = useAuthStore.getState()
-
-    const refreshRes = await fetch(`${API_URL}/auth/refresh-token`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    })
-
-    if (refreshRes.ok) {
-      const data = await refreshRes.json()
-      setAuth(data.access_token, data.refresh_token,data?.user_id)
-      headers["Authorization"] = `Bearer ${data.access_token}`
-      res = await fetch(`${API_URL}${endpoint}`, { ...options, headers, credentials: "include" })
-    } else {
-      logout()
-      throw new Error("Not authenticated")
-    }
+    const newAccessToken = await refreshAccessToken()
+    headers["Authorization"] = `Bearer ${newAccessToken}`
+    res = await fetch(`${API_URL}${endpoint}`, { ...options, headers, credentials: "include" })
   }
 
   if (!res.ok) {
