@@ -6,7 +6,7 @@ import name from '../../public/images/name.png'
 import Image from 'next/image'
 import profile from '../../public/images/profile.png'
 import {
-  LayoutDashboard, Map, ChartNoAxesCombined, Satellite, CirclePile,
+  House, Map, ChartNoAxesCombined, Satellite, CirclePile,
   UserRoundPlus, ShieldUser, Bell, ChevronDown, ChevronRight,
   EllipsisVertical, LogOut, User, X
 } from 'lucide-react'
@@ -28,8 +28,8 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    label: 'Dashboard',
-    icon: <LayoutDashboard size={19} />,
+    label: 'Home',
+    icon: <House size={19} />,
     href: '/',
   },
   {
