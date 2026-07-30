@@ -8,8 +8,10 @@ import {
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
+  ReferenceArea,
 } from "recharts";
 import type { ChartGroupBy, MosquitoCountPoint } from "@/queries/device/deviceChartsQueries";
+import { useChartZoom, ResetZoomButton, zoomAreaProps } from "./useChartZoom";
 
 interface Props {
   data?: MosquitoCountPoint[];
@@ -48,6 +50,8 @@ const GROUP_BY_OPTIONS: { label: string; value: ChartGroupBy }[] = [
 ];
 
 export default function MosquitoCountChart({ data = [], groupBy, onGroupByChange, isLoading }: Props) {
+  const zoom = useChartZoom(data);
+
   return (
     <div className="w-full rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
       <div className="mb-5 flex items-center justify-between">
@@ -66,12 +70,13 @@ export default function MosquitoCountChart({ data = [], groupBy, onGroupByChange
         </select>
       </div>
 
-      <div className="h-[320px]">
+      <div className="h-[320px] relative select-none cursor-crosshair">
+        <ResetZoomButton zoom={zoom} />
         {isLoading ? (
           <div className="h-full w-full animate-pulse rounded-xl bg-gray-100" />
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+            <AreaChart data={zoom.data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }} {...zoom.chartProps}>
               <defs>
                 <linearGradient id="mosquitoGreen" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#22c55e" stopOpacity={0.35} />
@@ -99,6 +104,10 @@ export default function MosquitoCountChart({ data = [], groupBy, onGroupByChange
                 cursor={{ stroke: "#16a34a", strokeWidth: 1.5 }}
                 wrapperStyle={{ outline: "none" }}
               />
+
+              {zoom.refArea && (
+                <ReferenceArea {...zoomAreaProps} x1={zoom.refArea.x1} x2={zoom.refArea.x2} />
+              )}
 
               <Area
                 type="monotone"

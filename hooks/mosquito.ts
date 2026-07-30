@@ -2,6 +2,7 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query"
 import {
 	getAllMosquitoEvents,
 	getMosquitoEventsByDeviceUuid,
+	getMosquitoFilterOptions,
 	type GetAllMosquitoEventsFilters,
 	type GetMosquitoEventsByDeviceUuidFilters,
 } from "@/queries/mosquito_data/mosquitoDeviceQueries"
@@ -17,6 +18,15 @@ export const useMosquitoEvents = (
 		queryFn: () => getAllMosquitoEvents(filters, pagination),
 		enabled,
 		placeholderData: keepPreviousData,
+	})
+}
+
+export const useMosquitoFilterOptions = () => {
+	return useQuery({
+		queryKey: ["mosquito-filter-options"],
+		queryFn: getMosquitoFilterOptions,
+		// Distinct values change rarely; keep them fresh for 5 minutes.
+		staleTime: 5 * 60 * 1000,
 	})
 }
 

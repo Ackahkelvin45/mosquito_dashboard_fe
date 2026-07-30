@@ -1,10 +1,12 @@
 "use client"
 
-import React, { useMemo, useState } from 'react'
-import { Grid3X3, Search, X } from 'lucide-react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Grid3X3, Search, SlidersHorizontal, X } from 'lucide-react'
 import Link from 'next/link'
 import DeviceTable, { type DeviceRow } from '@/components/tables/DeviceTable'
+import MultiSelectDropdown from '@/components/filters/MultiSelectDropdown'
 import { useClusters, useDevices } from '@/hooks/device'
+import { useRole } from '@/hooks/useRole'
 import Pagination from '@/components/Pagination'
 import { extractItems, resolvePage, MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE } from '@/lib/pagination'
 
@@ -13,41 +15,60 @@ type Cluster = {
   name: string
 }
 
-type SearchField = "name" | "region" | "device_uuid"
-
 function DevicesPage() {
-  const [searchField, setSearchField] = useState<SearchField>("name")
+  const { canFilterByCluster, canManageSystem } = useRole()
   const [searchValue, setSearchValue] = useState("")
-  const [clusterId, setClusterId] = useState<string>("all")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [clusterIds, setClusterIds] = useState<string[]>([])
+  const [trapStatuses, setTrapStatuses] = useState<string[]>([])
   const [latitude, setLatitude] = useState("")
   const [longitude, setLongitude] = useState("")
-  const [trapStatus, setTrapStatus] = useState<"all" | "on" | "off">("all")
   const [minCount, setMinCount] = useState("")
   const [maxCount, setMaxCount] = useState("")
   const [createdAfter, setCreatedAfter] = useState("")
+  const [showMoreFilters, setShowMoreFilters] = useState(false)
   const [page, setPage] = useState(1)
 
+  // The general search hits the API, so debounce keystrokes.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchValue.trim()), 350)
+    return () => clearTimeout(timer)
+  }, [searchValue])
+
+  // Close the More Filters dropdown when clicking outside it.
+  const moreFiltersRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!showMoreFilters) return
+    function handleMouseDown(e: MouseEvent) {
+      if (moreFiltersRef.current && !moreFiltersRef.current.contains(e.target as Node)) {
+        setShowMoreFilters(false)
+      }
+    }
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [showMoreFilters])
+
   const filters = useMemo(() => {
-    const trimmed = searchValue.trim()
     const lat = latitude === "" ? undefined : Number(latitude)
     const lng = longitude === "" ? undefined : Number(longitude)
     const min = minCount === "" ? undefined : Number(minCount)
     const max = maxCount === "" ? undefined : Number(maxCount)
 
     return {
-      name: searchField === "name" && trimmed ? trimmed : undefined,
-      region: searchField === "region" && trimmed ? trimmed : undefined,
-      device_uuid: searchField === "device_uuid" && trimmed ? trimmed : undefined,
-      cluster_id: clusterId === "all" ? undefined : Number(clusterId),
+      search: debouncedSearch || undefined,
+      // Multi-select: devices in ANY of the chosen clusters match.
+      cluster_id: clusterIds.length > 0 ? clusterIds.map(Number) : undefined,
       latitude: Number.isFinite(lat as number) ? (lat as number) : undefined,
       longitude: Number.isFinite(lng as number) ? (lng as number) : undefined,
-      trap_status: trapStatus === "all" ? undefined : trapStatus === "on",
+      // Trap status has two values, so "On" + "Off" (or nothing) selected
+      // means no filter; exactly one selection filters to that status.
+      trap_status: trapStatuses.length === 1 ? trapStatuses[0] === "on" : undefined,
       min_mosquito_count: Number.isFinite(min as number) ? (min as number) : undefined,
       max_mosquito_count: Number.isFinite(max as number) ? (max as number) : undefined,
       // created_after expects an ISO date-time; treat the picked day as its start (UTC).
       created_after: createdAfter ? new Date(`${createdAfter}T00:00:00Z`).toISOString() : undefined,
     }
-  }, [clusterId, latitude, longitude, searchField, searchValue, trapStatus, minCount, maxCount, createdAfter])
+  }, [clusterIds, latitude, longitude, debouncedSearch, trapStatuses, minCount, maxCount, createdAfter])
 
   // Reset to the first page whenever the filters change (render-phase reset,
   // per the React "you might not need an effect" guidance).
@@ -69,30 +90,28 @@ function DevicesPage() {
     const trimmed = searchValue.trim()
 
     if (trimmed) {
-      const label =
-        searchField === "name" ? `Name: ${trimmed}` :
-        searchField === "region" ? `Region: ${trimmed}` :
-        `UUID: ${trimmed}`
-      chips.push({ key: "search", label, clear: () => setSearchValue("") })
+      chips.push({ key: "search", label: `Search: ${trimmed}`, clear: () => setSearchValue("") })
     }
 
-    if (clusterId !== "all") {
-      const clusterName = clusters.find((c) => String(c.id) === clusterId)?.name
+    if (clusterIds.length > 0) {
+      const names = clusterIds.map(
+        (id) => clusters.find((c) => String(c.id) === id)?.name || `#${id}`
+      )
       chips.push({
         key: "cluster",
-        label: `Cluster: ${clusterName || `#${clusterId}`}`,
-        clear: () => setClusterId("all"),
+        label: `Clusters: ${names.join(", ")}`,
+        clear: () => setClusterIds([]),
       })
     }
 
     if (latitude !== "") chips.push({ key: "lat", label: `Latitude: ${latitude}`, clear: () => setLatitude("") })
     if (longitude !== "") chips.push({ key: "lng", label: `Longitude: ${longitude}`, clear: () => setLongitude("") })
 
-    if (trapStatus !== "all") {
+    if (trapStatuses.length > 0) {
       chips.push({
         key: "trap_status",
-        label: `Status: ${trapStatus === "on" ? "On" : "Off"}`,
-        clear: () => setTrapStatus("all"),
+        label: `Status: ${trapStatuses.map((s) => (s === "on" ? "On" : "Off")).join(", ")}`,
+        clear: () => setTrapStatuses([]),
       })
     }
 
@@ -101,124 +120,180 @@ function DevicesPage() {
     if (createdAfter !== "") chips.push({ key: "created", label: `Created after: ${createdAfter}`, clear: () => setCreatedAfter("") })
 
     return chips
-  }, [clusterId, clusters, latitude, longitude, searchField, searchValue, trapStatus, minCount, maxCount, createdAfter])
+  }, [clusterIds, clusters, latitude, longitude, searchValue, trapStatuses, minCount, maxCount, createdAfter])
 
   const clearAll = () => {
-    setSearchField("name")
     setSearchValue("")
-    setClusterId("all")
+    setClusterIds([])
     setLatitude("")
     setLongitude("")
-    setTrapStatus("all")
+    setTrapStatuses([])
     setMinCount("")
     setMaxCount("")
     setCreatedAfter("")
   }
 
+  // Filters that live behind the "More Filters" toggle.
+  const extraFilterCount =
+    [latitude, longitude, minCount, maxCount].filter((v) => v !== "").length +
+    (clusterIds.length > 0 ? 1 : 0) +
+    (trapStatuses.length > 0 ? 1 : 0)
+
+  const clearExtraFilters = () => {
+    setClusterIds([])
+    setTrapStatuses([])
+    setLatitude("")
+    setLongitude("")
+    setMinCount("")
+    setMaxCount("")
+  }
+
   return (
     <div className='w-full h-full flex flex-col bg-white font-raleway rounded-lg py-6 px-4 sm:py-8 sm:px-8'>
         <div className='flex flex-col lg:flex-row lg:justify-between gap-4'>
-          <div className='flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:gap-7 sm:items-center'>
+          <div className='flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:items-center'>
 
               <div className='border border-gray-300 rounded-lg p-1 w-fit'>
                   <Grid3X3 strokeWidth={1.5} size={20} />
               </div>
 
-              <div className='flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:items-center'>
-                <select
-                  value={searchField}
-                  onChange={(e) => setSearchField(e.target.value as SearchField)}
-                  className='border border-gray bg-white text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-primary'
-                >
-                  <option value="name">Name</option>
-                  <option value="region">Region</option>
-                  <option value="device_uuid">UUID</option>
-                </select>
-
               <div className='relative w-full sm:w-[350px] text-sm'>
-                  <Search strokeWidth={1.5} size={20} className='absolute left-1 top-1/2 -translate-y-1/2 text-gray-500' />
+                  <Search strokeWidth={1.5} size={20} className='absolute left-2 top-1/2 -translate-y-1/2 text-gray-500' />
                   <input
                       type='search'
                       value={searchValue}
                       onChange={(e) => setSearchValue(e.target.value)}
-                      placeholder='Search...'
-                      className='w-full py-2.5 pr-3 pl-8 border border-gray bg-[#D0CECE]/20 focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-lg'
+                      placeholder='Search by name, region, community, UUID...'
+                      className='w-full py-2.5 pr-3 pl-9 border border-gray bg-[#D0CECE]/20 focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-lg'
                   />
               </div>
 
-              <select
-                value={clusterId}
-                onChange={(e) => setClusterId(e.target.value)}
-                className='border border-gray bg-white text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-primary'
-              >
-                <option value="all">All clusters</option>
-                {clusters.map((c) => (
-                  <option key={c.id} value={String(c.id)}>{c.name || `Cluster #${c.id}`}</option>
-                ))}
-              </select>
+              <input
+                type='date'
+                value={createdAfter}
+                onChange={(e) => setCreatedAfter(e.target.value)}
+                title='Created after'
+                className='border border-gray bg-white text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary'
+              />
 
-              <select
-                value={trapStatus}
-                onChange={(e) => setTrapStatus(e.target.value as "all" | "on" | "off")}
-                className='border border-gray bg-white text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-primary'
-              >
-                <option value="all">All statuses</option>
-                <option value="on">On</option>
-                <option value="off">Off</option>
-              </select>
+              <div ref={moreFiltersRef} className='relative'>
+                <button
+                  type="button"
+                  onClick={() => setShowMoreFilters((v) => !v)}
+                  className={`flex items-center justify-center gap-2 text-sm font-medium rounded-lg px-3 py-2.5 border transition-colors
+                    ${showMoreFilters || extraFilterCount > 0
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-white text-gray-700 border-gray hover:bg-gray-50'
+                    }`}
+                >
+                  <SlidersHorizontal size={15} />
+                  <span className='whitespace-nowrap'>More Filters</span>
+                  {extraFilterCount > 0 && (
+                    <span className='bg-white text-primary text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center'>
+                      {extraFilterCount}
+                    </span>
+                  )}
+                </button>
 
-                <div className='flex flex-col gap-1'>
-            <input
-              type='number'
-              value={latitude}
-              onChange={(e) => setLatitude(e.target.value)}
-              className='w-full py-2 px-3 border border-gray bg-[#D0CECE]/20 text-sm focus:border-primary focus:outline-none rounded-lg'
-              placeholder='lat'
-            />
-          </div>
-          <div className='flex flex-col gap-1'>
-            <input
-              type='number'
-              value={longitude}
-              onChange={(e) => setLongitude(e.target.value)}
-              className='w-full py-2 px-3 border border-gray bg-[#D0CECE]/20 text-sm focus:border-primary focus:outline-none rounded-lg'
-              placeholder='long'
-            />
+                {/* Compact dropdown anchored to the button */}
+                {showMoreFilters && (
+                  <div className='absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-[300px] bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-20'>
+                    <div className='flex items-center justify-between mb-3'>
+                      <p className='text-xs font-semibold text-gray-500 uppercase tracking-wide'>Extra Filters</p>
+                      {extraFilterCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={clearExtraFilters}
+                          className='text-xs font-medium text-primary hover:underline'
+                        >
+                          Clear all
+                        </button>
+                      )}
+                    </div>
+                    <div className='flex flex-col gap-3 mb-3'>
+                      {canFilterByCluster && (
+                        <div className='flex flex-col gap-1'>
+                          <label className='text-[11px] text-gray-500 px-1'>Clusters</label>
+                          <MultiSelectDropdown
+                            label='All clusters'
+                            options={clusters.map((c) => ({ value: String(c.id), label: c.name || `Cluster #${c.id}` }))}
+                            selected={clusterIds}
+                            onChange={setClusterIds}
+                            emptyText='No clusters'
+                            className='w-full'
+                          />
+                        </div>
+                      )}
+                      <div className='flex flex-col gap-1'>
+                        <label className='text-[11px] text-gray-500 px-1'>Trap status</label>
+                        <MultiSelectDropdown
+                          label='All statuses'
+                          options={[
+                            { value: 'on', label: 'On' },
+                            { value: 'off', label: 'Off' },
+                          ]}
+                          selected={trapStatuses}
+                          onChange={setTrapStatuses}
+                          className='w-full'
+                        />
+                      </div>
+                    </div>
+                    <div className='grid grid-cols-2 gap-3'>
+                      <div className='flex flex-col gap-1'>
+                        <label className='text-[11px] text-gray-500 px-1'>Latitude</label>
+                        <input
+                          type='number'
+                          value={latitude}
+                          onChange={(e) => setLatitude(e.target.value)}
+                          className='w-full py-2 px-3 border border-gray bg-white text-sm focus:border-primary focus:outline-none rounded-lg'
+                          placeholder='e.g. 5.6037'
+                        />
+                      </div>
+                      <div className='flex flex-col gap-1'>
+                        <label className='text-[11px] text-gray-500 px-1'>Longitude</label>
+                        <input
+                          type='number'
+                          value={longitude}
+                          onChange={(e) => setLongitude(e.target.value)}
+                          className='w-full py-2 px-3 border border-gray bg-white text-sm focus:border-primary focus:outline-none rounded-lg'
+                          placeholder='e.g. -0.187'
+                        />
+                      </div>
+                      <div className='flex flex-col gap-1'>
+                        <label className='text-[11px] text-gray-500 px-1'>Min count</label>
+                        <input
+                          type='number'
+                          min={0}
+                          value={minCount}
+                          onChange={(e) => setMinCount(e.target.value)}
+                          className='w-full py-2 px-3 border border-gray bg-white text-sm focus:border-primary focus:outline-none rounded-lg'
+                          placeholder='0'
+                        />
+                      </div>
+                      <div className='flex flex-col gap-1'>
+                        <label className='text-[11px] text-gray-500 px-1'>Max count</label>
+                        <input
+                          type='number'
+                          min={0}
+                          value={maxCount}
+                          onChange={(e) => setMaxCount(e.target.value)}
+                          className='w-full py-2 px-3 border border-gray bg-white text-sm focus:border-primary focus:outline-none rounded-lg'
+                          placeholder='1000'
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
           </div>
 
-          <input
-            type='number'
-            min={0}
-            value={minCount}
-            onChange={(e) => setMinCount(e.target.value)}
-            className='w-full sm:w-32 py-2 px-3 border border-gray bg-[#D0CECE]/20 text-sm focus:border-primary focus:outline-none rounded-lg'
-            placeholder='Min count'
-          />
-          <input
-            type='number'
-            min={0}
-            value={maxCount}
-            onChange={(e) => setMaxCount(e.target.value)}
-            className='w-full sm:w-32 py-2 px-3 border border-gray bg-[#D0CECE]/20 text-sm focus:border-primary focus:outline-none rounded-lg'
-            placeholder='Max count'
-          />
-          <div className='flex flex-col gap-1'>
-            <label className='text-[11px] text-gray-400 px-1'>Created after</label>
-            <input
-              type='date'
-              value={createdAfter}
-              onChange={(e) => setCreatedAfter(e.target.value)}
-              className='w-full py-2 px-3 border border-gray bg-[#D0CECE]/20 text-sm focus:border-primary focus:outline-none rounded-lg'
-            />
-          </div>
+          {canManageSystem && (
+            <div>
+                <Link href="/devices/add" className='bg-primary text-sm py-2 px-4 text-white font-medium rounded-md'>
+                    Add New Device
+                </Link>
             </div>
-          </div>
-
-          <div>
-              <Link href="/devices/add" className='bg-primary text-sm py-2 px-4 text-white font-medium rounded-md'>
-                  Add New Device
-              </Link>
-          </div>
+          )}
         </div>
 
         <div className='flex flex-col gap-2'>
@@ -234,10 +309,6 @@ function DevicesPage() {
                   Clear all
                 </button>
             </div>
-        </div>
-
-        <div className='grid grid-cols-1 md:grid-cols-6 gap-3 items-end mt-4'>
-        
         </div>
 
         {activeChips.length > 0 && (

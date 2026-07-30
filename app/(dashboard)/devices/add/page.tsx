@@ -40,15 +40,27 @@ export default function AddDevicePage() {
         return
     }
 
+    // Send only what was actually filled in. Blank coordinates must be omitted,
+    // not sent as NaN (which serialises to null) — the device fills them in
+    // from its own GPS, and the region/community are derived from those.
+    const optionalNumber = (raw: string) => {
+      const n = parseFloat(raw)
+      return Number.isFinite(n) ? n : undefined
+    }
+    const optionalText = (raw: string) => {
+      const t = raw.trim()
+      return t.length > 0 ? t : undefined
+    }
+
     createDevice(
       {
         name: form.name,
-        region: form.region,
-        latitude: parseFloat(form.latitude),
-        longitude: parseFloat(form.longitude),
-        description: form.description,
-        gmap_link: form.gmap_link,
-        device_uuid: form.device_uuid,
+        region: optionalText(form.region),
+        latitude: optionalNumber(form.latitude),
+        longitude: optionalNumber(form.longitude),
+        description: optionalText(form.description),
+        gmap_link: optionalText(form.gmap_link),
+        device_uuid: optionalText(form.device_uuid),
         cluster_id: parseInt(form.cluster_id),
       },
       {
@@ -175,16 +187,15 @@ export default function AddDevicePage() {
               htmlFor="region"
               className="text-dark text-sm mb-2 font-medium block"
             >
-              Region
+              Region <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <input
               type="text"
               id="region"
               name="region"
-              placeholder="e.g. Greater Accra"
+              placeholder="Filled in automatically from the device's location"
               value={form.region}
               onChange={handleChange}
-              required
               className="w-full py-2.5 px-3 border border-gray focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-md"
             />
           </div>
@@ -197,7 +208,7 @@ export default function AddDevicePage() {
               htmlFor="latitude"
               className="text-dark text-sm mb-2 font-medium block"
             >
-              Latitude
+              Latitude <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <input
               type="number"
@@ -207,7 +218,8 @@ export default function AddDevicePage() {
               value={form.latitude}
               onChange={handleChange}
               step="any"
-              required
+              min={-90}
+              max={90}
               className="w-full py-2.5 px-3 border border-gray focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-md"
             />
           </div>
@@ -217,7 +229,7 @@ export default function AddDevicePage() {
               htmlFor="longitude"
               className="text-dark text-sm mb-2 font-medium block"
             >
-              Longitude
+              Longitude <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <input
               type="number"
@@ -227,11 +239,18 @@ export default function AddDevicePage() {
               value={form.longitude}
               onChange={handleChange}
               step="any"
-              required
+              min={-180}
+              max={180}
               className="w-full py-2.5 px-3 border border-gray focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-md"
             />
           </div>
         </div>
+
+        <p className="-mt-2 text-xs text-gray-500">
+          Leave the location fields blank if you don&apos;t know them yet. Once the device
+          starts reporting, its own GPS position is used and the region and community are
+          looked up from those coordinates automatically.
+        </p>
 
         {/* Row 3 — Device UUID & Cluster */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -240,18 +259,27 @@ export default function AddDevicePage() {
                     htmlFor="device_uuid"
                     className="text-dark text-sm mb-2 font-medium block"
                 >
-                    Device UUID
+                    Device ID <span className="text-red-500">*</span>
                 </label>
                 <input
                     type="text"
                     id="device_uuid"
                     name="device_uuid"
-                    placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+                    placeholder="e.g. ESP32_001"
                     value={form.device_uuid}
                     onChange={handleChange}
                     required
                     className="w-full py-2.5 px-3 border border-gray focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-md"
                 />
+                {/* This is the MQTT routing key. If it doesn't match what the
+                    firmware publishes, every message is silently dropped. */}
+                <p className="mt-1.5 text-xs text-gray-500">
+                    Must match the ID the device itself reports. It publishes to{" "}
+                    <code className="bg-gray-100 px-1 py-0.5 rounded text-[11px]">
+                        mosquito_dashboard/{form.device_uuid.trim() || "<device-id>"}/sensor_data
+                    </code>
+                    {" "}— if this doesn&apos;t match, its data is ignored.
+                </p>
             </div>
 
             <div>

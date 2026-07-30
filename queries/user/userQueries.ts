@@ -5,7 +5,9 @@ export async function getUsers(pagination?: PaginationParams) {
     const params = new URLSearchParams();
     appendPagination(params, pagination);
     const query = params.toString();
+    // /auth/users now requires authentication, so send the token (skipAuth=false)
+    // and let a 401 trigger the shared refresh-and-retry.
     return apiFetch(`/auth/users${query ? `?${query}` : ""}`, {
         method: "GET",
-    }, true);
+    });
 }

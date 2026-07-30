@@ -12,7 +12,7 @@ import {
 import { useState } from "react";
 import Skeleton from "react-loading-skeleton";
 
-export type SensorStatusGroupBy = "hour" | "day" | "week" | "month";
+export type SensorStatusGroupBy = "day" | "month" | "year";
 
 export type SensorStatusPoint = {
   xLabel: string;
@@ -48,11 +48,13 @@ export default function SensorStatusChart({
   groupBy,
   onGroupByChange,
   isLoading,
+  hideFilter,
 }: {
   data?: SensorStatusPoint[];
   groupBy?: SensorStatusGroupBy;
   onGroupByChange?: (value: SensorStatusGroupBy) => void;
   isLoading?: boolean;
+  hideFilter?: boolean;
 }) {
   const [range, setRange] = useState<SensorStatusGroupBy>("month");
   const effectiveRange = groupBy ?? range;
@@ -71,20 +73,21 @@ export default function SensorStatusChart({
           Sensor Status Over Time
         </h2>
 
-        <select
-          value={effectiveRange}
-          onChange={(e) => {
-            const next = e.target.value as SensorStatusGroupBy;
-            if (onGroupByChange) onGroupByChange(next);
-            else setRange(next);
-          }}
-          className="border border-gray rounded-lg focus:ring-0 focus:outline-none focus:border-primary px-4 py-2 text-gray-700"
-        >
-          <option value="hour">Hour</option>
-          <option value="day">Day</option>
-          <option value="week">Week</option>
-          <option value="month">Month</option>
-        </select>
+        {!hideFilter && (
+          <select
+            value={effectiveRange}
+            onChange={(e) => {
+              const next = e.target.value as SensorStatusGroupBy;
+              if (onGroupByChange) onGroupByChange(next);
+              else setRange(next);
+            }}
+            className="border border-gray rounded-lg focus:ring-0 focus:outline-none focus:border-primary px-4 py-2 text-gray-700"
+          >
+            <option value="year">Last Year</option>
+            <option value="month">Last Month</option>
+            <option value="day">Today</option>
+          </select>
+        )}
       </div>
 
       <div className="border-t border-gray mb-6"></div>
@@ -138,12 +141,12 @@ export default function SensorStatusChart({
       {/* Legend */}
       <div className="flex justify-center gap-8 mt-6">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-          <span className="text-gray-600">off</span>
-        </div>
-        <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-green-500 rounded-full"></div>
           <span className="text-gray-600">on</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+          <span className="text-gray-600">off</span>
         </div>
       </div>
     </div>

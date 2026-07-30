@@ -1,11 +1,15 @@
 "use client";
 
-import { Activity, Logs, X, Search, Thermometer, BatteryCharging, Clock, Gauge, Droplets, MapPin, Wifi, WifiOff } from "lucide-react";
+import { Activity, Logs, X, Search, SlidersHorizontal, Thermometer, BatteryCharging, Clock, Gauge, Droplets, MapPin, Wifi, WifiOff } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useClusters, useDevices } from "@/hooks/device";
+import { useRole } from "@/hooks/useRole";
+import LocationSearch, { type GeoLocation } from "@/components/map/LocationSearch";
+import MultiSelectDropdown from "@/components/filters/MultiSelectDropdown";
 import { extractItems, MAX_PAGE_SIZE } from "@/lib/pagination";
+import { locationLabel, locationSearchText } from "@/lib/location";
 import type React from "react";
 
 // ------- MapClient props type (mirrors MapClient.jsx interface) -------
@@ -18,6 +22,7 @@ type MapClientProps = {
   selectedDevice: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onMarkerClick: (device: any) => void;
+  flyToLocation?: GeoLocation | null;
 };
 
 // ------- Helpers -------
@@ -71,7 +76,8 @@ type Device = {
   name: string;
   latitude: number;
   longitude: number;
-  region: string;
+  region?: string | null;
+  community?: string | null;
   description: string;
   gmap_link: string;
   last_activity: string;
@@ -138,7 +144,7 @@ function DeviceStatusTab({ device }: { device: Device | null }) {
       <hr className="border-gray-100 mb-2" />
 
       <Row label="Region" icon={<MapPin size={14} />}>
-        <span className="text-sm font-semibold text-gray-900">{device.region}</span>
+        <span className="text-sm font-semibold text-gray-900">{locationLabel(device)}</span>
       </Row>
 
       <Row label="Battery Voltage" icon={<BatteryCharging size={14} />}>
@@ -274,21 +280,25 @@ function CountIcon({ active }: { active: boolean }) {
 type TabValue = "count" | "device-status" | "environmental-data";
 
 export default function MapPage() {
+  const { canFilterByCluster } = useRole();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabValue>("device-status");
   const [query, setQuery] = useState("");
-  const [selectedClusterId, setSelectedClusterId] = useState<string>("all");
-  const [trapStatus, setTrapStatus] = useState<"all" | "on" | "off">("all");
+  const [clusterIds, setClusterIds] = useState<string[]>([]);
+  const [trapStatuses, setTrapStatuses] = useState<string[]>([]);
   const [createdAfter, setCreatedAfter] = useState("");
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [searchedLocation, setSearchedLocation] = useState<GeoLocation | null>(null);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
 
   // trap_status / created_after are applied server-side; cluster + search stay client-side.
   const deviceFilters = useMemo(
     () => ({
-      trap_status: trapStatus === "all" ? undefined : trapStatus === "on",
+      // Both statuses selected = no filter, same as none selected.
+      trap_status: trapStatuses.length === 1 ? trapStatuses[0] === "on" : undefined,
       created_after: createdAfter ? new Date(`${createdAfter}T00:00:00Z`).toISOString() : undefined,
     }),
-    [trapStatus, createdAfter]
+    [trapStatuses, createdAfter]
   );
 
   // The map plots every device, so request a full page (API caps at 100).
@@ -299,16 +309,16 @@ export default function MapPage() {
   const clusters: Cluster[] = extractItems<Cluster>(clustersRaw);
 
   const clusterFilteredDevices =
-    selectedClusterId === "all"
+    clusterIds.length === 0
       ? devices
-      : devices.filter((d) => String(d.cluster_id) === selectedClusterId);
+      : devices.filter((d) => clusterIds.includes(String(d.cluster_id)));
 
   const filteredDevices = clusterFilteredDevices.filter((d) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
     return (
       d.name.toLowerCase().includes(q) ||
-      d.region.toLowerCase().includes(q) ||
+      locationSearchText(d).includes(q) ||
       d.device_uuid.toLowerCase().includes(q)
     );
   });
@@ -317,6 +327,9 @@ export default function MapPage() {
     setSelectedDevice(device);
     setIsOpen(true);
   };
+
+  const activeExtraCount =
+    (clusterIds.length > 0 ? 1 : 0) + (trapStatuses.length > 0 ? 1 : 0);
 
   const tabs: { label: string; value: TabValue; icon: (active: boolean) => React.ReactNode }[] = [
     { label: "Count", value: "count", icon: (active) => <CountIcon active={active} /> },
@@ -355,6 +368,7 @@ export default function MapPage() {
           devices={filteredDevices}
           selectedDevice={selectedDevice}
           onMarkerClick={handleMarkerClick}
+          flyToLocation={searchedLocation}
         />
       </div>
 
@@ -363,91 +377,140 @@ export default function MapPage() {
         className={`absolute top-4 z-[1000] transition-all duration-300 ease-in-out
           ${isOpen ? "hidden lg:block left-[420px] right-4" : "left-20 right-4"}`}
       >
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3">
-          <div className="w-full sm:w-[350px]">
-            <div className="flex items-center bg-white rounded-full shadow-lg px-4 py-2.5 gap-3">
-              <Search size={18} className="text-gray-400 shrink-0" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search name, region, UUID..."
-                className="flex-1 text-sm text-gray-700 placeholder-gray-400 outline-none bg-transparent"
-              />
-              {isLoading && (
-                <span className="text-xs text-gray-400 animate-pulse">Loading…</span>
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-start gap-3">
+            {/* Location search (geocoding) */}
+            <div className="w-full sm:w-[280px]">
+              <LocationSearch onSelect={setSearchedLocation} />
+            </div>
+
+            {/* Device search */}
+            <div className="w-full sm:w-[280px]">
+              <div className="flex items-center bg-white rounded-full shadow-lg px-4 py-2.5 gap-3">
+                <Search size={18} className="text-gray-400 shrink-0" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search device name, UUID..."
+                  className="flex-1 text-sm text-gray-700 placeholder-gray-400 outline-none bg-transparent"
+                />
+                {isLoading && (
+                  <span className="text-xs text-gray-400 animate-pulse">Loading…</span>
+                )}
+                {query && (
+                  <button onClick={() => setQuery("")} className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+              {/* Dropdown search results */}
+              {query && filteredDevices.length > 0 && (
+                <div className="mt-1 bg-white rounded-xl shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+                  {filteredDevices.map((d) => (
+                    <button
+                      key={d.id}
+                      onClick={() => { handleMarkerClick(d); setQuery(""); }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100 last:border-0"
+                    >
+                      <MapPin size={14} className="text-primary shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{d.name}</p>
+                        <p className="text-xs text-gray-400">{locationLabel(d)}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               )}
-              {query && (
-                <button onClick={() => setQuery("")} className="text-gray-400 hover:text-gray-600 transition-colors">
-                  <X size={16} />
+            </div>
+
+            {/* Created-after date */}
+            <div className="w-full sm:w-[170px] relative">
+              <input
+                type="date"
+                value={createdAfter}
+                onChange={(e) => setCreatedAfter(e.target.value)}
+                title="Created after"
+                className="w-full bg-white rounded-full shadow-lg px-4 py-2.5 text-sm text-gray-700 outline-none border border-transparent focus:border-primary"
+              />
+              {createdAfter && (
+                <button
+                  onClick={() => setCreatedAfter("")}
+                  className="absolute right-9 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  aria-label="Clear created after"
+                >
+                  <X size={14} />
                 </button>
               )}
             </div>
-          {/* Dropdown search results */}
-          {query && filteredDevices.length > 0 && (
-            <div className="mt-1 bg-white rounded-xl shadow-lg overflow-hidden max-h-48 overflow-y-auto">
-              {filteredDevices.map((d) => (
-                <button
-                  key={d.id}
-                  onClick={() => { handleMarkerClick(d); setQuery(""); }}
-                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100 last:border-0"
-                >
-                  <MapPin size={14} className="text-primary shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{d.name}</p>
-                    <p className="text-xs text-gray-400">{d.region}</p>
+
+            {/* More filters toggle — far right */}
+            <div className="w-full sm:w-auto sm:ml-auto">
+              <button
+                onClick={() => setShowMoreFilters((v) => !v)}
+                className={`w-full sm:w-auto flex items-center justify-center gap-2 rounded-full shadow-lg px-4 py-2.5 text-sm font-medium transition-colors
+                  ${showMoreFilters || activeExtraCount > 0
+                    ? "bg-primary text-white"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+              >
+                <SlidersHorizontal size={15} />
+                <span className="whitespace-nowrap">More Filters</span>
+                {activeExtraCount > 0 && (
+                  <span className="bg-white text-primary text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {activeExtraCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Extra filters panel */}
+          {showMoreFilters && (
+            <div className="w-full sm:w-[420px] sm:ml-auto bg-white rounded-2xl shadow-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Extra Filters</p>
+                {activeExtraCount > 0 && (
+                  <button
+                    onClick={() => { setClusterIds([]); setTrapStatuses([]); }}
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Only a super admin filters by cluster; everyone else is
+                    already scoped to their own cluster server-side. */}
+                {canFilterByCluster && (
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">Clusters</label>
+                    <MultiSelectDropdown
+                      label="All clusters"
+                      options={clusters.map((c) => ({ value: String(c.id), label: c.name || `Cluster #${c.id}` }))}
+                      selected={clusterIds}
+                      onChange={setClusterIds}
+                      emptyText="No clusters"
+                      className="w-full"
+                    />
                   </div>
-                </button>
-              ))}
+                )}
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">Trap Status</label>
+                  <MultiSelectDropdown
+                    label="All statuses"
+                    options={[
+                      { value: "on", label: "Trap On" },
+                      { value: "off", label: "Trap Off" },
+                    ]}
+                    selected={trapStatuses}
+                    onChange={setTrapStatuses}
+                    className="w-full"
+                  />
+                </div>
+              </div>
             </div>
           )}
-          </div>
-
-          <div className="w-full sm:w-[220px]">
-            <select
-              value={selectedClusterId}
-              onChange={(e) => setSelectedClusterId(e.target.value)}
-              className="w-full bg-white rounded-full shadow-lg px-4 py-2.5 text-sm text-gray-700 outline-none border border-transparent focus:border-primary"
-            >
-              <option value="all">All clusters</option>
-              {clusters.map((c) => (
-                <option key={c.id} value={String(c.id)}>
-                  {c.name || `Cluster #${c.id}`}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="w-full sm:w-[150px]">
-            <select
-              value={trapStatus}
-              onChange={(e) => setTrapStatus(e.target.value as "all" | "on" | "off")}
-              className="w-full bg-white rounded-full shadow-lg px-4 py-2.5 text-sm text-gray-700 outline-none border border-transparent focus:border-primary"
-            >
-              <option value="all">All statuses</option>
-              <option value="on">Trap On</option>
-              <option value="off">Trap Off</option>
-            </select>
-          </div>
-
-          <div className="w-full sm:w-[180px] relative">
-            <input
-              type="date"
-              value={createdAfter}
-              onChange={(e) => setCreatedAfter(e.target.value)}
-              title="Created after"
-              className="w-full bg-white rounded-full shadow-lg px-4 py-2.5 text-sm text-gray-700 outline-none border border-transparent focus:border-primary"
-            />
-            {createdAfter && (
-              <button
-                onClick={() => setCreatedAfter("")}
-                className="absolute right-9 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                aria-label="Clear created after"
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
         </div>
       </div>
 
@@ -477,7 +540,7 @@ export default function MapPage() {
                   <div>
                     <p className="text-xs text-gray-500">Selected Device</p>
                     <p className="text-sm font-semibold text-gray-900">{selectedDevice.name}</p>
-                    <p className="text-xs text-gray-400">{selectedDevice.region}</p>
+                    <p className="text-xs text-gray-400">{locationLabel(selectedDevice)}</p>
                   </div>
                   <button
                     onClick={() => setSelectedDevice(null)}

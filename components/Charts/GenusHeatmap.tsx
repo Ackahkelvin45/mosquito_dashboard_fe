@@ -8,12 +8,17 @@ interface Props {
   genera?: string[];
   buckets?: string[];
   data?: GenusHeatmapCell[];
-  groupBy: DashboardGroupBy;
-  onGroupByChange: (v: DashboardGroupBy) => void;
+  groupBy?: DashboardGroupBy;
+  onGroupByChange?: (v: DashboardGroupBy) => void;
   isLoading?: boolean;
+  hideFilter?: boolean;
 }
 
-const GROUP_BY_OPTIONS: DashboardGroupBy[] = ["hour", "day", "week", "month"];
+const GROUP_BY_OPTIONS: { value: DashboardGroupBy; label: string }[] = [
+  { value: "year", label: "Last Year" },
+  { value: "month", label: "Last Month" },
+  { value: "day", label: "Today" },
+];
 
 // Blend white → primary based on the count's share of the max cell value.
 function cellStyle(count: number, max: number): React.CSSProperties {
@@ -32,8 +37,9 @@ export default function GenusHeatmap({
   groupBy,
   onGroupByChange,
   isLoading,
+  hideFilter,
 }: Props) {
-  const [range, setRange] = useState<DashboardGroupBy>(groupBy);
+  const [range, setRange] = useState<DashboardGroupBy>(groupBy ?? "month");
   const effectiveRange = groupBy ?? range;
 
   // lookup[genus][label] = count
@@ -58,19 +64,21 @@ export default function GenusHeatmap({
           <p className="text-xs text-gray-400 mt-0.5">Mosquito counts by genus over time</p>
         </div>
 
-        <select
-          value={effectiveRange}
-          onChange={(e) => {
-            const next = e.target.value as DashboardGroupBy;
-            setRange(next);
-            onGroupByChange(next);
-          }}
-          className="border border-gray rounded-lg focus:ring-0 focus:outline-none focus:border-primary px-4 py-2 text-gray-700 text-sm"
-        >
-          {GROUP_BY_OPTIONS.map((o) => (
-            <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>
-          ))}
-        </select>
+        {!hideFilter && (
+          <select
+            value={effectiveRange}
+            onChange={(e) => {
+              const next = e.target.value as DashboardGroupBy;
+              setRange(next);
+              onGroupByChange?.(next);
+            }}
+            className="border border-gray rounded-lg focus:ring-0 focus:outline-none focus:border-primary px-4 py-2 text-gray-700 text-sm"
+          >
+            {GROUP_BY_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="border-t border-gray mb-6" />

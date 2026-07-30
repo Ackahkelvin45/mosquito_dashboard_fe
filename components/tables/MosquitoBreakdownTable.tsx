@@ -25,6 +25,7 @@ interface MosquitoBreakdownProps {
   groupBy?: string;
   onGroupByChange?: (value: any) => void;
   isLoading?: boolean;
+  hideFilter?: boolean;
 }
 
 export default function MosquitoBreakdown({
@@ -32,6 +33,7 @@ export default function MosquitoBreakdown({
   groupBy,
   onGroupByChange,
   isLoading,
+  hideFilter,
 }: MosquitoBreakdownProps) {
   const [activeCategory, setActiveCategory] = useState<Category>("genus");
 
@@ -70,16 +72,17 @@ export default function MosquitoBreakdown({
             rows={currentData}
             disabled={isLoading}
           />
-          <select
-            value={groupBy}
-            onChange={(e) => onGroupByChange?.(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white focus:border-primary transition-all cursor-pointer"
-          >
-            <option value="hour">Last hour</option>
-            <option value="day">Last day</option>
-            <option value="week">Last week</option>
-            <option value="month">Last month</option>
-          </select>
+          {!hideFilter && (
+            <select
+              value={groupBy}
+              onChange={(e) => onGroupByChange?.(e.target.value)}
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white focus:border-primary transition-all cursor-pointer"
+            >
+              <option value="year">Last Year</option>
+              <option value="month">Last Month</option>
+              <option value="day">Today</option>
+            </select>
+          )}
         </div>
       </div>
 

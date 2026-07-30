@@ -78,10 +78,25 @@ function FlyToDevice({ device }) {
   return null;
 }
 
+// Flies to a geocoded place picked in the location search. Uses the place's
+// bounding box when available so countries/regions frame correctly.
+function FlyToLocation({ location }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!location) return;
+    if (location.bounds) {
+      map.flyToBounds(location.bounds, { duration: 1.2, maxZoom: 15 });
+    } else {
+      map.flyTo([location.lat, location.lng], 12, { duration: 1.2 });
+    }
+  }, [location, map]);
+  return null;
+}
+
 /**
- * @param {{ position: [number, number], zoom: number, devices: any[], selectedDevice: any, onMarkerClick?: (device: any) => void }} props
+ * @param {{ position: [number, number], zoom: number, devices: any[], selectedDevice: any, onMarkerClick?: (device: any) => void, flyToLocation?: { lat: number, lng: number, bounds?: [[number, number], [number, number]] | null } | null }} props
  */
-export default function MapClient({ position, zoom, devices = [], selectedDevice, onMarkerClick }) {
+export default function MapClient({ position, zoom, devices = [], selectedDevice, onMarkerClick, flyToLocation }) {
   const devicesWithLatLng = devices
     .map((device) => ({ device, latLng: getDeviceLatLng(device) }))
     .filter(({ latLng }) => Boolean(latLng));
@@ -154,7 +169,7 @@ export default function MapClient({ position, zoom, devices = [], selectedDevice
             <div  className='font-mulish font-semibold' style={{  minWidth: "160px" }}>
               
               <div  className="flex flex-row items-center gap-1" style={{ fontSize: "13px", color: "#6b7280", marginBottom: "2px" }}>
-                <MapPin size={13} /> {device.region}
+                <MapPin size={13} /> {[device.community, device.region].filter(Boolean).join(', ') || '—'}
               </div>
               <div className="flex flex-row items-center gap-1" style={{ fontSize: "13px", color: "#6b7280" }}>
                 <Tag size={13} /> {device.name}
@@ -177,6 +192,7 @@ export default function MapClient({ position, zoom, devices = [], selectedDevice
       ))} 
 
         {selectedDevice && <FlyToDevice device={selectedDevice} />}
+        {flyToLocation && <FlyToLocation location={flyToLocation} />}
       </MapContainer>
     </div>
   );

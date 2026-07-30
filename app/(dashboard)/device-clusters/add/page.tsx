@@ -2,24 +2,37 @@
 
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Eye, EyeClosed } from "lucide-react"
+import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import { useCreateCluster } from "@/hooks/device"
+import { useUsers } from "@/hooks/user"
+import MultiSelectDropdown from "@/components/filters/MultiSelectDropdown"
 import { useAuthStore } from "@/store/authStore"
+import { extractItems, MAX_PAGE_SIZE } from "@/lib/pagination"
+
+type UserOption = {
+  id: number
+  first_name: string
+  last_name: string
+  email: string
+}
 
 export default function AddDeviceClusterPage() {
   const router = useRouter()
   const { user_id } = useAuthStore()
   const { mutate: createCluster, isPending, isError, error } = useCreateCluster()
-  const [showPassword, setShowPassword] = useState(false)
+  const { data: usersRaw, isLoading: usersLoading } = useUsers({ page_size: MAX_PAGE_SIZE })
+  const users = extractItems<UserOption>(usersRaw)
 
   const [formError, setFormError] = useState<string | null>(null)
   const [form, setForm] = useState({
     name: "",
     description: "",
-    password: "",
     public: false,
   })
+  // Members belong to the cluster (their data scope); admins manage it.
+  const [memberIds, setMemberIds] = useState<number[]>([])
+  const [adminIds, setAdminIds] = useState<number[]>([])
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -31,6 +44,12 @@ export default function AddDeviceClusterPage() {
     }))
   }
 
+  const userOptions = users.map((u) => ({
+    value: String(u.id),
+    label: `${u.first_name} ${u.last_name}`.trim() || u.email,
+    description: u.email,
+  }))
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setFormError(null)
@@ -40,13 +59,16 @@ export default function AddDeviceClusterPage() {
       return
     }
 
+    // The creator always administers the cluster they create.
+    const cluster_admins = Array.from(new Set([user_id, ...adminIds]))
+
     createCluster(
       {
         name: form.name,
         description: form.description,
-        password: form.password,
         public: form.public,
-        cluster_admins: [user_id],
+        cluster_admins,
+        users: memberIds.length > 0 ? memberIds : undefined,
       },
       {
         onSuccess: () => {
@@ -60,6 +82,29 @@ export default function AddDeviceClusterPage() {
           )
         },
       }
+    )
+  }
+
+  function renderUserPicker(
+    label: string,
+    hint: string,
+    selected: number[],
+    setSelected: (ids: number[]) => void
+  ) {
+    return (
+      <div>
+        <span className="text-dark text-sm mb-2 font-medium block">{label}</span>
+        <MultiSelectDropdown
+          label={label}
+          options={userOptions}
+          selected={selected.map(String)}
+          onChange={(vals) => setSelected(vals.map(Number))}
+          disabled={usersLoading}
+          emptyText={usersLoading ? "Loading users..." : "No users available."}
+          className="w-full"
+        />
+        <p className="mt-1.5 text-xs text-gray-500">{hint}</p>
+      </div>
     )
   }
 
@@ -142,53 +187,21 @@ export default function AddDeviceClusterPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full">
-        {/* Row 1 — Name & Password */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div>
-            <label htmlFor="name" className="text-dark text-sm mb-2 font-medium block">
-              Cluster Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              placeholder="e.g. Accra Region Cluster"
-              value={form.name}
-              onChange={handleChange}
-              required
-              className="w-full py-2.5 px-3 border border-gray focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-md"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="text-dark text-sm mb-2 font-medium block">
-              Cluster Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                name="password"
-                placeholder="Enter cluster password"
-                value={form.password}
-                onChange={handleChange}
-                required
-                className="w-full py-2.5 px-3 border border-gray focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-md pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? (
-                  <EyeClosed strokeWidth={1.5} size={18} />
-                ) : (
-                  <Eye strokeWidth={1.5} size={18} />
-                )}
-              </button>
-            </div>
-          </div>
+        {/* Row 1 — Name */}
+        <div>
+          <label htmlFor="name" className="text-dark text-sm mb-2 font-medium block">
+            Cluster Name
+          </label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            placeholder="e.g. Accra Region Cluster"
+            value={form.name}
+            onChange={handleChange}
+            required
+            className="w-full py-2.5 px-3 border border-gray focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-md"
+          />
         </div>
 
         {/* Row 2 — Description */}
@@ -220,6 +233,22 @@ export default function AddDeviceClusterPage() {
           <label htmlFor="public" className="text-sm font-medium text-gray-700">
             Make this cluster public (visible to everyone)
           </label>
+        </div>
+
+        {/* Row 4 — Assign members & admins */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {renderUserPicker(
+            "Assign Users",
+            "These users will belong to this cluster and see its data.",
+            memberIds,
+            setMemberIds
+          )}
+          {renderUserPicker(
+            "Cluster Admins",
+            "Admins manage this cluster's users and devices. You are added automatically.",
+            adminIds,
+            setAdminIds
+          )}
         </div>
 
         {/* Actions */}

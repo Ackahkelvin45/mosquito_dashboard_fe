@@ -8,9 +8,11 @@ import {
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
+  ReferenceArea,
 } from "recharts";
 import { useMemo } from "react";
 import type { ChartGroupBy, MosquitoTrendPoint } from "@/queries/device/deviceChartsQueries";
+import { useChartZoom, ResetZoomButton, zoomAreaProps } from "./useChartZoom";
 
 interface Props {
   data?: MosquitoTrendPoint[];
@@ -103,6 +105,8 @@ export default function MosquitoTrendChart({
 
   const colorFor = (key: string) => PALETTE[keys.indexOf(key) % PALETTE.length];
 
+  const zoom = useChartZoom(chartData);
+
   return (
     <div className="bg-white rounded-2xl p-6 font-raleway shadow-sm border border-gray-100 w-full">
       <div className="flex flex-wrap gap-3 justify-between items-center mb-2">
@@ -125,7 +129,8 @@ export default function MosquitoTrendChart({
 
       <hr className="border-t border-gray-100 my-3" />
 
-      <div className="h-[360px]">
+      <div className="h-[360px] relative select-none cursor-crosshair">
+        <ResetZoomButton zoom={zoom} />
         {isLoading ? (
           <div className="h-full w-full animate-pulse rounded-xl bg-gray-100" />
         ) : keys.length === 0 ? (
@@ -134,7 +139,7 @@ export default function MosquitoTrendChart({
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 20, right: 20, left: 20, bottom: 0 }}>
+            <LineChart data={zoom.data} margin={{ top: 20, right: 20, left: 20, bottom: 0 }} {...zoom.chartProps}>
               <CartesianGrid vertical={false} stroke="#f0f0f0" strokeWidth={1} />
               <XAxis
                 dataKey="label"
@@ -149,6 +154,10 @@ export default function MosquitoTrendChart({
                 tickLine={false}
               />
               <Tooltip content={<CustomTooltip />} wrapperStyle={{ outline: "none" }} />
+
+              {zoom.refArea && (
+                <ReferenceArea {...zoomAreaProps} x1={zoom.refArea.x1} x2={zoom.refArea.x2} />
+              )}
 
               {keys.map((key) => (
                 <Line

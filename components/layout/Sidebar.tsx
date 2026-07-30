@@ -7,11 +7,12 @@ import Image from 'next/image'
 import profile from '../../public/images/profile.png'
 import {
   LayoutDashboard, Map, ChartNoAxesCombined, Satellite, CirclePile,
-  UserRoundPlus, ShieldUser, ChevronDown, ChevronRight,
+  UserRoundPlus, ShieldUser, Bell, ChevronDown, ChevronRight,
   EllipsisVertical, LogOut, User, X
 } from 'lucide-react'
 import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/authentication'
+import { useRole } from '@/hooks/useRole'
 import { useAuthStore } from '@/store/authStore'
 import { useUiStore } from '@/store/uiStore'
 import { useRouter } from 'next/navigation'
@@ -21,6 +22,8 @@ interface NavItem {
   icon: React.ReactNode;
   href: string;
   subItems?: { label: string; href: string }[];
+  // Which roles may see this item. Omitted = everyone.
+  roles?: Array<'SUPER_ADMIN' | 'ADMIN' | 'USER'>;
 }
 
 const navItems: NavItem[] = [
@@ -48,19 +51,27 @@ const navItems: NavItem[] = [
     label: 'Device Clusters',
     icon: <CirclePile size={19} />,
     href: '/device-clusters',
+    roles: ['SUPER_ADMIN'],
   },
   {
     label: 'Users',
     icon: <UserRoundPlus size={19} />,
     href: '/users',
+    roles: ['SUPER_ADMIN', 'ADMIN'],
   },
   {
     label: 'Approvals',
     icon: <ShieldUser size={19} />,
     href: '/approvals',
+    roles: ['SUPER_ADMIN'],
     subItems: [
       { label: 'Researchers', href: '/approval/research' },
     ]
+  },
+  {
+    label: 'Notifications',
+    icon: <Bell size={19} />,
+    href: '/notifications',
   },
   {
     label: 'Settings',
@@ -78,6 +89,12 @@ function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { data: user, isLoading } = useCurrentUser()
+  const { role } = useRole()
+  // Show a nav item only if it has no role restriction or includes this role.
+  // Until the role is known, restricted items stay hidden (avoids a flash).
+  const visibleNavItems = navItems.filter(
+    (item) => !item.roles || (role !== undefined && item.roles.includes(role))
+  )
   const logoutAction = useAuthStore((state) => state.logout)
   const isSidebarOpen = useUiStore((state) => state.isSidebarOpen)
   const closeSidebar = useUiStore((state) => state.closeSidebar)
@@ -158,7 +175,7 @@ function Sidebar() {
         </div>
       {/* Nav Items */}
       <nav className="flex-1 pt-5 overflow-y-auto">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const hasSubItems = item.subItems && item.subItems.length > 0
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
           const isDropdownOpen = openDropdown === item.label

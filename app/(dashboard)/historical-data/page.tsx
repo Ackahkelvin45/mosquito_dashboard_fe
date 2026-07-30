@@ -1,11 +1,13 @@
 "use client"
 
-import React, { useEffect, useMemo, useState } from 'react'
-import { ArrowLeftRight, Grid3X3, X } from 'lucide-react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { ArrowLeftRight, Grid3X3, SlidersHorizontal, X } from 'lucide-react'
 import { Search } from 'lucide-react'
 import HistoricalDataTable from '@/components/tables/HistoricalDataTable'
 import MultiSelectDropdown from '@/components/filters/MultiSelectDropdown'
 import { useDevices } from '@/hooks/device'
+import { useMosquitoFilterOptions } from '@/hooks/mosquito'
+import { extractItems, MAX_PAGE_SIZE } from '@/lib/pagination'
 
 const SEARCH_DEBOUNCE_MS = 1000
 const DATE_DEBOUNCE_MS = 1000
@@ -20,48 +22,41 @@ function toIsoEndOfDay(dateOnly: string): string {
   return new Date(`${dateOnly}T23:59:59Z`).toISOString()
 }
 
-function extractDevices(value: unknown): DeviceLike[] {
-  if (Array.isArray(value)) return value as DeviceLike[]
-  if (value && typeof value === "object") {
-    const maybe = value as { data?: unknown }
-    if (Array.isArray(maybe.data)) return maybe.data as DeviceLike[]
-  }
-  return []
-}
-
 function HistoricalDataPage() {
   const [search, setSearch] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
-  const [region, setRegion] = useState("")
-  const [genus, setGenus] = useState("")
-  const [species, setSpecies] = useState("")
+  // Region / genus / species are picked from multi-select dropdowns of
+  // distinct DB values, so they apply immediately — only free text and dates
+  // are debounced. Within a filter, selections combine as OR (any match);
+  // across filters they combine as AND.
+  const [regions, setRegions] = useState<string[]>([])
+  const [genusValues, setGenusValues] = useState<string[]>([])
+  const [speciesValues, setSpeciesValues] = useState<string[]>([])
   const [deviceUuids, setDeviceUuids] = useState<string[]>([])
+  const [showMoreFilters, setShowMoreFilters] = useState(false)
 
   const [appliedSearch, setAppliedSearch] = useState("")
   const [appliedStartDate, setAppliedStartDate] = useState("")
   const [appliedEndDate, setAppliedEndDate] = useState("")
-  const [appliedRegion, setAppliedRegion] = useState("")
-  const [appliedGenus, setAppliedGenus] = useState("")
-  const [appliedSpecies, setAppliedSpecies] = useState("")
 
-  const { data: devicesRaw } = useDevices()
+  // The dropdown needs every device, so request a full page (API caps at 100).
+  const { data: devicesRaw } = useDevices(undefined, { page_size: MAX_PAGE_SIZE })
   const deviceOptions = useMemo(() => {
-    return extractDevices(devicesRaw)
+    return extractItems<DeviceLike>(devicesRaw)
       .filter((d) => typeof d.device_uuid === "string" && d.device_uuid)
       .map((d) => ({ value: d.device_uuid as string, label: d.name || (d.device_uuid as string) }))
   }, [devicesRaw])
 
-  // Debounce all free-text inputs together.
+  const { data: filterOptions } = useMosquitoFilterOptions()
+  const regionOptions = filterOptions?.regions ?? []
+  const genusOptions = filterOptions?.genus ?? []
+  const speciesOptions = filterOptions?.species ?? []
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setAppliedSearch(search)
-      setAppliedRegion(region)
-      setAppliedGenus(genus)
-      setAppliedSpecies(species)
-    }, SEARCH_DEBOUNCE_MS)
+    const timer = setTimeout(() => setAppliedSearch(search), SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(timer)
-  }, [search, region, genus, species])
+  }, [search])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -82,11 +77,21 @@ function HistoricalDataPage() {
     return () => clearTimeout(timer)
   }, [startDate, endDate])
 
+  // Close the More Filters dropdown when clicking outside it.
+  const moreFiltersRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!showMoreFilters) return
+    function handleMouseDown(e: MouseEvent) {
+      if (moreFiltersRef.current && !moreFiltersRef.current.contains(e.target as Node)) {
+        setShowMoreFilters(false)
+      }
+    }
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [showMoreFilters])
+
   const filters = useMemo(() => {
     const trimmed = appliedSearch.trim()
-    const trimmedRegion = appliedRegion.trim()
-    const trimmedGenus = appliedGenus.trim()
-    const trimmedSpecies = appliedSpecies.trim()
     const hasDateRange = Boolean(appliedStartDate && appliedEndDate)
     const start_date = hasDateRange ? toIsoStartOfDay(appliedStartDate) : undefined
     const end_date = hasDateRange ? toIsoEndOfDay(appliedEndDate) : undefined
@@ -94,43 +99,45 @@ function HistoricalDataPage() {
       search: trimmed ? trimmed : undefined,
       start_date,
       end_date,
-      region: trimmedRegion ? trimmedRegion : undefined,
-      genus: trimmedGenus ? trimmedGenus : undefined,
-      species: trimmedSpecies ? trimmedSpecies : undefined,
+      region: regions.length > 0 ? regions : undefined,
+      genus: genusValues.length > 0 ? genusValues : undefined,
+      species: speciesValues.length > 0 ? speciesValues : undefined,
       device_uuid: deviceUuids.length > 0 ? deviceUuids : undefined,
     }
-  }, [appliedSearch, appliedStartDate, appliedEndDate, appliedRegion, appliedGenus, appliedSpecies, deviceUuids])
+  }, [appliedSearch, appliedStartDate, appliedEndDate, regions, genusValues, speciesValues, deviceUuids])
+
+  // Filters that live behind the "More Filters" toggle.
+  const extraFilterCount =
+    (regions.length > 0 ? 1 : 0) +
+    (genusValues.length > 0 ? 1 : 0) +
+    (speciesValues.length > 0 ? 1 : 0) +
+    (deviceUuids.length > 0 ? 1 : 0)
 
   const activeFiltersCount =
     (filters.search ? 1 : 0) +
     (filters.start_date || filters.end_date ? 1 : 0) +
-    (filters.region ? 1 : 0) +
-    (filters.genus ? 1 : 0) +
-    (filters.species ? 1 : 0) +
-    (filters.device_uuid ? 1 : 0)
+    extraFilterCount
+
+  const clearExtraFilters = () => {
+    setRegions([])
+    setGenusValues([])
+    setSpeciesValues([])
+    setDeviceUuids([])
+  }
 
   const clearAll = () => {
     setSearch("")
     setStartDate("")
     setEndDate("")
-    setRegion("")
-    setGenus("")
-    setSpecies("")
-    setDeviceUuids([])
     setAppliedSearch("")
     setAppliedStartDate("")
     setAppliedEndDate("")
-    setAppliedRegion("")
-    setAppliedGenus("")
-    setAppliedSpecies("")
+    clearExtraFilters()
   }
-
-  const inputClass =
-    'w-full sm:w-auto py-2.5 px-3 border border-gray bg-[#D0CECE]/20 focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-lg'
 
   return (
     <div className='w-full h-full flex flex-col bg-white font-raleway rounded-lg py-6 px-4 sm:py-8 sm:px-8'>
-        <div className='flex flex-wrap gap-4 lg:gap-7 items-center'>
+        <div className='flex flex-wrap gap-4 items-center'>
 
             <div className='border border-gray-300 rounded-lg p-1'>
                 <Grid3X3  strokeWidth={1.5} size={20} />
@@ -166,39 +173,90 @@ function HistoricalDataPage() {
                       className='w-full py-2.5    bg-transparent focus:ring-0 text-sm  focus:border-primary focus:outline-none'
                     />
                 </div>
-            </div>
 
-            {/* Secondary filters */}
-            <div className='flex flex-wrap gap-3 items-center mt-4 w-full'>
-                <input
-                  type='text'
-                  value={region}
-                  onChange={(e) => setRegion(e.target.value)}
-                  placeholder='Region'
-                  className={inputClass}
-                />
-                <input
-                  type='text'
-                  value={genus}
-                  onChange={(e) => setGenus(e.target.value)}
-                  placeholder='Genus'
-                  className={inputClass}
-                />
-                <input
-                  type='text'
-                  value={species}
-                  onChange={(e) => setSpecies(e.target.value)}
-                  placeholder='Species'
-                  className={inputClass}
-                />
-                <MultiSelectDropdown
-                  label='Devices'
-                  options={deviceOptions}
-                  selected={deviceUuids}
-                  onChange={setDeviceUuids}
-                  emptyText='No devices'
-                  className='w-full sm:w-56'
-                />
+                <div ref={moreFiltersRef} className='relative'>
+                  <button
+                    type="button"
+                    onClick={() => setShowMoreFilters((v) => !v)}
+                    className={`flex items-center justify-center gap-2 text-sm font-medium rounded-lg px-3 py-2.5 border transition-colors
+                      ${showMoreFilters || extraFilterCount > 0
+                        ? 'bg-primary text-white border-primary'
+                        : 'bg-white text-gray-700 border-gray hover:bg-gray-50'
+                      }`}
+                  >
+                    <SlidersHorizontal size={15} />
+                    <span className='whitespace-nowrap'>More Filters</span>
+                    {extraFilterCount > 0 && (
+                      <span className='bg-white text-primary text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center'>
+                        {extraFilterCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Compact dropdown anchored to the button */}
+                  {showMoreFilters && (
+                    <div className='absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-[300px] bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-20'>
+                      <div className='flex items-center justify-between mb-3'>
+                        <p className='text-xs font-semibold text-gray-500 uppercase tracking-wide'>Extra Filters</p>
+                        {extraFilterCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={clearExtraFilters}
+                            className='text-xs font-medium text-primary hover:underline'
+                          >
+                            Clear all
+                          </button>
+                        )}
+                      </div>
+                      <div className='flex flex-col gap-3'>
+                        <div className='flex flex-col gap-1'>
+                          <label className='text-[11px] text-gray-500 px-1'>Regions</label>
+                          <MultiSelectDropdown
+                            label='All regions'
+                            options={regionOptions.map((r) => ({ value: r, label: r }))}
+                            selected={regions}
+                            onChange={setRegions}
+                            emptyText='No regions'
+                            className='w-full'
+                          />
+                        </div>
+                        <div className='flex flex-col gap-1'>
+                          <label className='text-[11px] text-gray-500 px-1'>Genus</label>
+                          <MultiSelectDropdown
+                            label='All genus'
+                            options={genusOptions.map((g) => ({ value: g, label: g }))}
+                            selected={genusValues}
+                            onChange={setGenusValues}
+                            emptyText='No genus values'
+                            className='w-full'
+                          />
+                        </div>
+                        <div className='flex flex-col gap-1'>
+                          <label className='text-[11px] text-gray-500 px-1'>Species</label>
+                          <MultiSelectDropdown
+                            label='All species'
+                            options={speciesOptions.map((s) => ({ value: s, label: s }))}
+                            selected={speciesValues}
+                            onChange={setSpeciesValues}
+                            emptyText='No species values'
+                            className='w-full'
+                          />
+                        </div>
+                        <div className='flex flex-col gap-1'>
+                          <label className='text-[11px] text-gray-500 px-1'>Devices</label>
+                          <MultiSelectDropdown
+                            label='Devices'
+                            options={deviceOptions}
+                            selected={deviceUuids}
+                            onChange={setDeviceUuids}
+                            emptyText='No devices'
+                            className='w-full'
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
             </div>
 
             <div className='flex flex-col gap-2 w-full'>
@@ -247,8 +305,8 @@ function HistoricalDataPage() {
 
                 {filters.region && (
                   <div className='flex flex-row gap-2 items-center bg-[#3C2178]/5 px-2 rounded-lg py-1'>
-                      <span className='text-sm font-medium text-secondary'>Region: {filters.region}</span>
-                      <button type="button" onClick={() => { setRegion(""); setAppliedRegion(""); }}>
+                      <span className='text-sm font-medium text-secondary'>Regions: {filters.region.join(", ")}</span>
+                      <button type="button" onClick={() => setRegions([])}>
                         <X size={16} strokeWidth={1.5} className='text-gray-500' />
                       </button>
                   </div>
@@ -256,8 +314,8 @@ function HistoricalDataPage() {
 
                 {filters.genus && (
                   <div className='flex flex-row gap-2 items-center bg-[#3C2178]/5 px-2 rounded-lg py-1'>
-                      <span className='text-sm font-medium text-secondary'>Genus: {filters.genus}</span>
-                      <button type="button" onClick={() => { setGenus(""); setAppliedGenus(""); }}>
+                      <span className='text-sm font-medium text-secondary'>Genus: {filters.genus.join(", ")}</span>
+                      <button type="button" onClick={() => setGenusValues([])}>
                         <X size={16} strokeWidth={1.5} className='text-gray-500' />
                       </button>
                   </div>
@@ -265,8 +323,8 @@ function HistoricalDataPage() {
 
                 {filters.species && (
                   <div className='flex flex-row gap-2 items-center bg-[#3C2178]/5 px-2 rounded-lg py-1'>
-                      <span className='text-sm font-medium text-secondary'>Species: {filters.species}</span>
-                      <button type="button" onClick={() => { setSpecies(""); setAppliedSpecies(""); }}>
+                      <span className='text-sm font-medium text-secondary'>Species: {filters.species.join(", ")}</span>
+                      <button type="button" onClick={() => setSpeciesValues([])}>
                         <X size={16} strokeWidth={1.5} className='text-gray-500' />
                       </button>
                   </div>

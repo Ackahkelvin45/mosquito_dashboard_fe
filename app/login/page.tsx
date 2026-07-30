@@ -146,13 +146,8 @@ export default function LoginPage() {
             </div>
           </form>
 
+          {/* Self-signup removed — accounts are created by an administrator. */}
           <div className="mt-4 w-full font-raleway flex flex-col items-center gap-2">
-            <div className="flex justify-center gap-1 text-sm font-medium">
-              <span className="text-gray-500">Don't have an account?</span>
-              <Link href="/signup" className="text-secondary hover:underline">
-                Sign up
-              </Link>
-            </div>
             <Link href="/forgot-password" className="text-secondary hover:underline text-sm font-medium">
               Forgot Password?
             </Link>

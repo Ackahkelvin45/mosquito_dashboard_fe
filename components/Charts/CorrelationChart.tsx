@@ -9,18 +9,21 @@ import {
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
+  ReferenceArea,
 } from "recharts";
 import { useState } from "react";
 import Skeleton from "react-loading-skeleton";
 import type { DashboardGroupBy, CorrelationPoint } from "@/queries/dashboard/dashboardQueries";
+import { useChartZoom, ResetZoomButton, zoomAreaProps } from "./useChartZoom";
 
 interface Props {
   data?: CorrelationPoint[];
   temperatureCorrelation?: number | null;
   humidityCorrelation?: number | null;
-  groupBy: DashboardGroupBy;
-  onGroupByChange: (v: DashboardGroupBy) => void;
+  groupBy?: DashboardGroupBy;
+  onGroupByChange?: (v: DashboardGroupBy) => void;
   isLoading?: boolean;
+  hideFilter?: boolean;
 }
 
 // Pearson r interpretation for a quick human-readable hint.
@@ -62,7 +65,11 @@ function CorrelationBadge({ label, r, color }: { label: string; r: number | null
   );
 }
 
-const GROUP_BY_OPTIONS: DashboardGroupBy[] = ["hour", "day", "week", "month"];
+const GROUP_BY_OPTIONS: { value: DashboardGroupBy; label: string }[] = [
+  { value: "year", label: "Last Year" },
+  { value: "month", label: "Last Month" },
+  { value: "day", label: "Today" },
+];
 
 export default function CorrelationChart({
   data = [],
@@ -71,9 +78,11 @@ export default function CorrelationChart({
   groupBy,
   onGroupByChange,
   isLoading,
+  hideFilter,
 }: Props) {
-  const [range, setRange] = useState<DashboardGroupBy>(groupBy);
+  const [range, setRange] = useState<DashboardGroupBy>(groupBy ?? "month");
   const effectiveRange = groupBy ?? range;
+  const zoom = useChartZoom(data);
 
   return (
     <div className="bg-white rounded-lg font-raleway shadow-md p-6 sm:p-8 w-full">
@@ -83,19 +92,21 @@ export default function CorrelationChart({
           <p className="text-xs text-gray-400 mt-0.5">Correlation with external sensor readings</p>
         </div>
 
-        <select
-          value={effectiveRange}
-          onChange={(e) => {
-            const next = e.target.value as DashboardGroupBy;
-            setRange(next);
-            onGroupByChange(next);
-          }}
-          className="border border-gray rounded-lg focus:ring-0 focus:outline-none focus:border-primary px-4 py-2 text-gray-700 text-sm"
-        >
-          {GROUP_BY_OPTIONS.map((o) => (
-            <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>
-          ))}
-        </select>
+        {!hideFilter && (
+          <select
+            value={effectiveRange}
+            onChange={(e) => {
+              const next = e.target.value as DashboardGroupBy;
+              setRange(next);
+              onGroupByChange?.(next);
+            }}
+            className="border border-gray rounded-lg focus:ring-0 focus:outline-none focus:border-primary px-4 py-2 text-gray-700 text-sm"
+          >
+            {GROUP_BY_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-3 mb-4">
@@ -105,7 +116,8 @@ export default function CorrelationChart({
 
       <div className="border-t border-gray mb-6" />
 
-      <div style={{ width: "100%", height: 340 }}>
+      <div className="relative select-none cursor-crosshair" style={{ width: "100%", height: 340 }}>
+        <ResetZoomButton zoom={zoom} />
         {isLoading ? (
           <div className="w-full h-full flex items-center justify-center bg-gray-50/30 rounded-xl">
             <Skeleton width="100%" height="100%" />
@@ -116,7 +128,7 @@ export default function CorrelationChart({
           </div>
         ) : (
           <ResponsiveContainer>
-            <ComposedChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <ComposedChart data={zoom.data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} {...zoom.chartProps}>
               <CartesianGrid strokeDasharray="5 5" vertical={false} />
               <XAxis
                 dataKey="label"
@@ -142,6 +154,15 @@ export default function CorrelationChart({
                 fontSize={12}
               />
               <Tooltip content={<CorrelationTooltip />} />
+
+              {zoom.refArea && (
+                <ReferenceArea
+                  {...zoomAreaProps}
+                  yAxisId="left"
+                  x1={zoom.refArea.x1}
+                  x2={zoom.refArea.x2}
+                />
+              )}
 
               <Bar yAxisId="left" dataKey="mosquito_count" name="Mosquito Count" fill="#93AAFD" radius={[4, 4, 0, 0]} barSize={18} />
               <Line yAxisId="right" type="monotone" dataKey="temperature" name="Temp (°C)" stroke="#EF4444" strokeWidth={2.5} dot={false} connectNulls />

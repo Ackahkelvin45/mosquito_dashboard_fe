@@ -8,8 +8,10 @@ import {
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
+  ReferenceArea,
 } from "recharts";
 import type { ChartGroupBy, EnvironmentalPoint } from "@/queries/device/deviceChartsQueries";
+import { useChartZoom, ResetZoomButton, zoomAreaProps } from "./useChartZoom";
 
 interface Props {
   data?: EnvironmentalPoint[];
@@ -47,6 +49,8 @@ const GROUP_BY_OPTIONS: { label: string; value: ChartGroupBy }[] = [
 ];
 
 export default function PressureTrendChart({ data = [], groupBy, onGroupByChange, isLoading }: Props) {
+  const zoom = useChartZoom(data);
+
   return (
     <div className="bg-white rounded-2xl p-6 font-raleway shadow-sm border border-gray-100 w-full">
       <div className="flex justify-between items-center mb-2">
@@ -64,12 +68,13 @@ export default function PressureTrendChart({ data = [], groupBy, onGroupByChange
 
       <hr className="border-t border-gray-100 my-3" />
 
-      <div className="h-90">
+      <div className="h-90 relative select-none cursor-crosshair">
+        <ResetZoomButton zoom={zoom} />
         {isLoading ? (
           <div className="h-full w-full animate-pulse rounded-xl bg-gray-100" />
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 20, right: 20, left: 10, bottom: 0 }}>
+            <LineChart data={zoom.data} margin={{ top: 20, right: 20, left: 10, bottom: 0 }} {...zoom.chartProps}>
               <CartesianGrid vertical={false} stroke="#f0f0f0" strokeWidth={1} />
               <XAxis
                 dataKey="label"
@@ -87,6 +92,9 @@ export default function PressureTrendChart({ data = [], groupBy, onGroupByChange
                 wrapperStyle={{ outline: "none" }}
                 cursor={{ stroke: "#9ca3af", strokeWidth: 1, strokeDasharray: "5 5" }}
               />
+              {zoom.refArea && (
+                <ReferenceArea {...zoomAreaProps} x1={zoom.refArea.x1} x2={zoom.refArea.x2} />
+              )}
               <Line
                 type="monotone"
                 dataKey="external"

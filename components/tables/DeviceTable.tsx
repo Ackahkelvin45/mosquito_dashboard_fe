@@ -12,11 +12,13 @@ import ColumnVisibilityDropdown, { useColumnVisibility } from "./ColumnVisibilit
 
 export type DeviceRow = {
   name: string;
-  longitude: number;
-  latitude: number;
-  region: string;
-  description: string;
-  gmap_link: string;
+  // Position and its derived labels are absent until the device reports.
+  longitude?: number | null;
+  latitude?: number | null;
+  region?: string | null;
+  community?: string | null;
+  description?: string | null;
+  gmap_link?: string | null;
   id: number;
   last_activity: string;
   created_at: string;
@@ -64,17 +66,30 @@ const DEVICE_COLUMNS: DeviceColumn[] = [
     csv: (r) => r.name,
   },
   {
+    header: "Community",
+    tdClass: "px-5 py-5 font-raleway",
+    cell: (r) => r.community || <span className="text-gray-400">—</span>,
+    csv: (r) => r.community ?? "",
+  },
+  {
     header: "Region",
     tdClass: "px-5 py-5 font-raleway",
-    cell: (r) => r.region,
-    csv: (r) => r.region,
+    cell: (r) => r.region || <span className="text-gray-400">—</span>,
+    csv: (r) => r.region ?? "",
   },
   {
     header: "Coordinates",
     thClass: "text-center",
     tdClass: "px-5 py-5 font-raleway text-center text-gray-500 text-xs",
-    cell: (r) => `${r.latitude.toFixed(3)}, ${r.longitude.toFixed(3)}`,
-    csv: (r) => `${r.latitude}, ${r.longitude}`,
+    // Null until the device reports a GPS fix — `.toFixed()` on that throws.
+    cell: (r) =>
+      typeof r.latitude === "number" && typeof r.longitude === "number"
+        ? `${r.latitude.toFixed(3)}, ${r.longitude.toFixed(3)}`
+        : <span className="text-gray-400">Awaiting GPS</span>,
+    csv: (r) =>
+      typeof r.latitude === "number" && typeof r.longitude === "number"
+        ? `${r.latitude}, ${r.longitude}`
+        : "",
   },
   {
     header: "Last Activity",

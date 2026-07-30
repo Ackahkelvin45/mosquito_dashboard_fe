@@ -32,15 +32,30 @@ const MapWithNoSSR = dynamic(
 
 import { useDevice, useDeviceCharts } from "@/hooks/device";
 import { useMosquitoEventsByDeviceUuidWithFilters } from "@/hooks/mosquito";
-import { extractItems, MAX_PAGE_SIZE } from "@/lib/pagination";
+import { extractItems, toPaginated, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import Pagination from "@/components/Pagination";
+import { locationLabel } from "@/lib/location";
 import type { MosquitoEvent, MosquitoRange } from "@/queries/mosquito_data/mosquitoDeviceQueries";
 import type { ChartGroupBy } from "@/queries/device/deviceChartsQueries";
 import DownloadCsvButton from "@/components/tables/DownloadCsvButton";
 import ColumnVisibilityDropdown, { useColumnVisibility } from "@/components/tables/ColumnVisibilityDropdown";
 
+// A missing reading is unknown, not zero — `|| 0` would render "0 °C" / "0 V"
+// for a device that has never reported, which reads as a real measurement.
+function formatReading(value: number | null | undefined, unit: string): string {
+  return typeof value === "number" ? `${value} ${unit}` : "—";
+}
+
+// Backend timestamps are naive UTC (no zone suffix); new Date() would read
+// them as browser-local time and shift the display outside UTC timezones.
+function parseApiDate(iso: string): Date {
+  const hasZone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(iso);
+  return new Date(hasZone ? iso : `${iso}Z`);
+}
+
 function formatTimestamp(iso: string | undefined): string {
   if (!iso) return "—";
-  const date = new Date(iso);
+  const date = parseApiDate(iso);
   return date.toLocaleString("en-GB", {
     day: "2-digit", month: "short", year: "numeric",
     hour: "2-digit", minute: "2-digit",
@@ -114,17 +129,38 @@ export default function SensorDetailPage() {
   const id = params?.id as string | undefined;
   const { data: device, isLoading } = useDevice(id || "");
   const [activeTab, setActiveTab] = useState<"readings" | "graphs">("readings");
-  const [range, setRange] = useState<MosquitoRange>("month");
+  // "all" omits the range param — the API then returns every event, which is
+  // the only way to reach data older than the widest rolling window (month).
+  const [range, setRange] = useState<MosquitoRange | "all">("month");
   const [chartGroupBy, setChartGroupBy] = useState<ChartGroupBy>("month");
+  const [page, setPage] = useState(1);
+
+  // Jump back to the first page whenever the range changes (render-phase reset).
+  const [prevRange, setPrevRange] = useState(range);
+  if (range !== prevRange) {
+    setPrevRange(range);
+    setPage(1);
+  }
 
   const deviceUuid = device?.device_uuid ?? "";
-  const { data: mosquitoEventsPage, isLoading: isMosquitoLoading } = useMosquitoEventsByDeviceUuidWithFilters(deviceUuid, { range }, { page_size: MAX_PAGE_SIZE });
+  const { data: mosquitoEventsPage, isLoading: isMosquitoLoading } = useMosquitoEventsByDeviceUuidWithFilters(
+    deviceUuid,
+    { range: range === "all" ? undefined : range },
+    { page, page_size: DEFAULT_PAGE_SIZE }
+  );
   const { data: charts, isLoading: isChartsLoading } = useDeviceCharts(id || "", chartGroupBy);
 
-  const { mosquitoTableRows, totalMosquitoCount } = useMemo(() => {
+  // While the device (and thus its uuid) is still loading, the events query is
+  // disabled and reports isLoading=false — without this the table flashes its
+  // empty state before any fetch has happened.
+  const isEventsLoading = isLoading || isMosquitoLoading;
+
+  // Server envelope: total counts ALL events in range, not just this page.
+  const eventsPage = useMemo(() => toPaginated<MosquitoEvent>(mosquitoEventsPage), [mosquitoEventsPage]);
+
+  const mosquitoTableRows = useMemo(() => {
     const events = extractItems<MosquitoEvent>(mosquitoEventsPage);
     const rows: { species: string; genus: string; ageGroup: string; sex: string; iso: string }[] = [];
-    let total = 0;
 
     for (const event of events) {
       const batchIso = typeof event.timestamp === "string" ? event.timestamp : "";
@@ -132,11 +168,9 @@ export default function SensorDetailPage() {
       const single = event.mosquito_reading;
 
       const batchCount = typeof event.count === "number" ? event.count : 0;
-      if (batchCount > 0) total += batchCount;
 
       // Newer API shape: one mosquito_reading per event.
       if (single && typeof single === "object") {
-        if (!batchCount) total += 1;
         const genus = single?.genus ?? "—";
         const species = single?.species ?? "—";
         const ageGroup = single?.age_group ?? "—";
@@ -166,9 +200,6 @@ export default function SensorDetailPage() {
         continue;
       }
 
-      // Prefer total from individuals if backend didn't set count
-      if (!batchCount) total += individuals.length;
-
       for (const reading of individuals) {
         const genus = reading?.genus ?? "—";
         const species = reading?.species ?? "—";
@@ -186,11 +217,11 @@ export default function SensorDetailPage() {
     }
 
     rows.sort((a, b) => {
-      const aTime = a.iso ? new Date(a.iso).getTime() : 0;
-      const bTime = b.iso ? new Date(b.iso).getTime() : 0;
+      const aTime = a.iso ? parseApiDate(a.iso).getTime() : 0;
+      const bTime = b.iso ? parseApiDate(b.iso).getTime() : 0;
       return bTime - aTime;
     });
-    return { mosquitoTableRows: rows, totalMosquitoCount: total };
+    return rows;
   }, [mosquitoEventsPage]);
 
   const { selected, setSelected, visibleColumns } = useColumnVisibility(MOSQUITO_COLUMNS);
@@ -220,32 +251,52 @@ export default function SensorDetailPage() {
             </span>
           ) : device && (
             <span className="text-xs text-gray-400 break-words">
-              {device.region} • {device.device_uuid} • Last activity: {formatTimestamp(device.last_activity)}
+              {locationLabel(device)} • {device.device_uuid} • Last activity: {formatTimestamp(device.last_activity)}
             </span>
           )}
         </div>
 
 
-        <div className="text-sm flex flex-row gap-3 items-center">
-          <span>Status:</span>
+        {/* Connectivity and trap state are DIFFERENT things and must be shown
+            separately: a trap switched off can still be reporting fine, and a
+            device that died while switched on is not "online". */}
+        <div className="text-sm flex flex-row flex-wrap gap-x-5 gap-y-1 items-center">
           {isLoading ? (
-            <Skeleton width={70} height={14} />
+            <Skeleton width={170} height={14} />
           ) : (
-            <span
-              className={`font-semibold ${
-                !device?.latest_reading
-                  ? "text-gray-400"
-                  : device.latest_reading.trap_status
-                  ? "text-green-600"
-                  : "text-red-500"
-              }`}
-            >
-              {!device?.latest_reading
-                ? "No data"
-                : device.latest_reading.trap_status
-                ? "Online"
-                : "Offline"}
-            </span>
+            <>
+              <span className="flex items-center gap-2">
+                <span className="text-gray-500">Device:</span>
+                <span
+                  className={`font-semibold ${
+                    device?.is_active ? "text-green-600" : "text-red-500"
+                  }`}
+                  title="Reported within the last 24 hours"
+                >
+                  {device?.is_active ? "Online" : "Offline"}
+                </span>
+              </span>
+
+              <span className="flex items-center gap-2">
+                <span className="text-gray-500">Trap:</span>
+                <span
+                  className={`font-semibold ${
+                    !device?.latest_reading
+                      ? "text-gray-400"
+                      : device.latest_reading.trap_status
+                      ? "text-green-600"
+                      : "text-red-500"
+                  }`}
+                  title="Physical on/off state from the most recent reading"
+                >
+                  {!device?.latest_reading
+                    ? "No data"
+                    : device.latest_reading.trap_status
+                    ? "ON"
+                    : "OFF"}
+                </span>
+              </span>
+            </>
           )}
         </div>
          
@@ -302,12 +353,23 @@ export default function SensorDetailPage() {
                   <h2 className="text-lg font-raleway font-semibold text-gray-800">
                     Mosquito Events
                   </h2>
-                  {isMosquitoLoading ? (
-                    <Skeleton width={80} height={20} />
+                  {/* Two different scopes, so label both: the table is filtered
+                      to the selected range, while the device carries an
+                      all-time count. Showing only one made 0-vs-3 look wrong. */}
+                  {isEventsLoading ? (
+                    <Skeleton width={150} height={20} />
                   ) : (
-                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">
-                      Total: {totalMosquitoCount}
-                    </span>
+                    <>
+                      <span className="text-xs font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">
+                        {eventsPage.total} in range
+                      </span>
+                      <span
+                        className="text-xs font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-500"
+                        title="Total ever recorded by this device, ignoring the range filter"
+                      >
+                        {device?.total_mosquito_count ?? 0} all-time
+                      </span>
+                    </>
                   )}
                 </div>
                 <div className="flex items-center gap-3">
@@ -315,24 +377,25 @@ export default function SensorDetailPage() {
                     columns={MOSQUITO_COLUMNS}
                     selected={selected}
                     onChange={setSelected}
-                    disabled={isMosquitoLoading}
+                    disabled={isEventsLoading}
                   />
                   <DownloadCsvButton
                     filename={`mosquito-events-${device?.device_uuid ?? id ?? ""}`}
                     title="Mosquito Events"
                     columns={mosquitoCsvColumns}
                     rows={mosquitoTableRows}
-                    disabled={isMosquitoLoading}
+                    disabled={isEventsLoading}
                   />
                   <select
                     value={range}
-                    onChange={(e) => setRange(e.target.value as MosquitoRange)}
+                    onChange={(e) => setRange(e.target.value as MosquitoRange | "all")}
                     className="border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-0  text-gray-700 bg-white y focus:border-primary outline-none"
                   >
                     <option value="hour">Hour</option>
                     <option value="day">Day</option>
                     <option value="week">Week</option>
                     <option value="month">Month</option>
+                    <option value="all">All time</option>
                   </select>
                 </div>
               </div>
@@ -348,7 +411,7 @@ export default function SensorDetailPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white">
-                    {isMosquitoLoading
+                    {isEventsLoading
                       ? Array.from({ length: 6 }).map((_, i) => (
                           <tr
                             key={i}
@@ -373,16 +436,26 @@ export default function SensorDetailPage() {
                             ))}
                           </tr>
                         ))}
-                    {!isMosquitoLoading && mosquitoTableRows.length === 0 && (
+                    {!isEventsLoading && mosquitoTableRows.length === 0 && (
                       <tr className="border-t border-secondary/15 text-sm">
                         <td className="px-5 py-6 text-gray-500 text-center" colSpan={visibleColumns.length}>
-                          No mosquito events for this device yet.
+                          {(device?.total_mosquito_count ?? 0) > 0
+                            ? "No mosquito events in the selected range — try a wider range or All time."
+                            : "No mosquito events for this device yet."}
                         </td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
+              <Pagination
+                page={eventsPage.page}
+                totalPages={eventsPage.total_pages}
+                total={eventsPage.total}
+                pageSize={eventsPage.page_size}
+                onPageChange={setPage}
+                isLoading={isEventsLoading}
+              />
             </div>
 
             {/* Environmental sensor cards */}
@@ -392,8 +465,8 @@ export default function SensorDetailPage() {
                 icon={temperatureIcon.src}
                 iconBg="rgba(21, 101, 192, 0.15)"
                 lines={[
-                  { label: "external", value: `${device?.latest_reading?.external_temperature || 0} °C` },
-                  { label: "Internal", value: `${device?.latest_reading?.internal_temperature || 0} °C` },
+                  { label: "external", value: formatReading(device?.latest_reading?.external_temperature, "°C") },
+                  { label: "Internal", value: formatReading(device?.latest_reading?.internal_temperature, "°C") },
                 ]}
               />
               <SensorMetricCard
@@ -401,8 +474,8 @@ export default function SensorDetailPage() {
                 icon={humidityIcon.src}
                 iconBg="rgba(21, 101, 192, 0.15)"
                 lines={[
-                  { label: "external", value: `${device?.latest_reading?.external_humidity || 0} %` },
-                  { label: "Internal", value: `${device?.latest_reading?.internal_humidity || 0} %` },
+                  { label: "external", value: formatReading(device?.latest_reading?.external_humidity, "%") },
+                  { label: "Internal", value: formatReading(device?.latest_reading?.internal_humidity, "%") },
                 ]}
               />
               <SensorMetricCard
@@ -410,15 +483,15 @@ export default function SensorDetailPage() {
                 icon={pressureIcon.src}
                 iconBg="rgba(21, 101, 192, 0.15)"
                 lines={[
-                  { label: "external", value: `${device?.latest_reading?.external_pressure || 0} hPa` },
-                  { label: "Internal", value: `${device?.latest_reading?.internal_pressure || 0} hPa` },
+                  { label: "external", value: formatReading(device?.latest_reading?.external_pressure, "hPa") },
+                  { label: "Internal", value: formatReading(device?.latest_reading?.internal_pressure, "hPa") },
                 ]}
               />
               <SensorMetricCard
                 title="Battery"
                 icon={batteryIcon.src}
                 iconBg="rgba(251, 191, 36, 0.2)"
-                lines={[{ label: "Reading", value: `${device?.latest_reading?.battery_voltage || 0} V` }]}
+                lines={[{ label: "Reading", value: formatReading(device?.latest_reading?.battery_voltage, "V") }]}
               />
             </div>
           </div>

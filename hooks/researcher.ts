@@ -11,7 +11,8 @@ export const useResearcherRequests = (pagination?: PaginationParams) => {
       const params = new URLSearchParams()
       appendPagination(params, pagination)
       const query = params.toString()
-      return await apiFetch(`/auth/researcher-requests${query ? `?${query}` : ""}`, { method: "GET" }, true)
+      // Now an authenticated endpoint — send the token and allow refresh-on-401.
+      return await apiFetch(`/auth/researcher-requests${query ? `?${query}` : ""}`, { method: "GET" })
     },
     placeholderData: keepPreviousData,
   })

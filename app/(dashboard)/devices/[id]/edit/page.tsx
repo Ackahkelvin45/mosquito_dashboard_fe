@@ -270,18 +270,27 @@ export default function EditDevicePage() {
                     htmlFor="device_uuid"
                     className="text-dark text-sm mb-2 font-medium block"
                 >
-                    Device UUID
+                    Device ID <span className="text-red-500">*</span>
                 </label>
                 <input
                     type="text"
                     id="device_uuid"
                     name="device_uuid"
-                    placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+                    placeholder="e.g. ESP32_001"
                     value={form.device_uuid}
                     onChange={handleChange}
                     required
                     className="w-full py-2.5 px-3 border border-gray focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-md"
                 />
+                {/* Editing this re-points the MQTT routing key: the device keeps
+                    publishing under its old ID and its data stops arriving. */}
+                <p className="mt-1.5 text-xs text-amber-700">
+                    Changing this stops incoming data unless the firmware is updated to match.
+                    It listens on{" "}
+                    <code className="bg-gray-100 px-1 py-0.5 rounded text-[11px]">
+                        mosquito_dashboard/{form.device_uuid.trim() || "<device-id>"}/sensor_data
+                    </code>
+                </p>
             </div>
 
             <div>

@@ -1,7 +1,7 @@
 'use client'
 import { Menu, Search } from 'lucide-react'
 import React from 'react'
-import { Bell } from 'lucide-react'
+import NotificationBell from '@/components/notifications/NotificationBell'
 import { useUiStore } from '@/store/uiStore'
 
 function Navbar() {
@@ -28,11 +28,7 @@ function Navbar() {
             </div>
         </div>
 
-        <div className='relative shrink-0'>
-            <div className='px-2 sm:px-4'>
-                <Bell />
-            </div>
-        </div>
+        <NotificationBell />
 
     </div>
   )

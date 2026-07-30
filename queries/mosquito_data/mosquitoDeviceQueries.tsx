@@ -47,11 +47,14 @@ export type GetAllMosquitoEventsFilters = {
 	start_date?: string;
 	end_date?: string;
 	search?: string;
-	region?: string;
+	/** Pass multiple regions to match events in any of them. */
+	region?: string[];
 	/** Pass multiple uuids to filter several devices at once. */
 	device_uuid?: string[];
-	genus?: string;
-	species?: string;
+	/** Pass multiple genus values to match any of them. */
+	genus?: string[];
+	/** Pass multiple species values to match any of them. */
+	species?: string[];
 };
 
 export type MosquitoRange = "hour" | "day" | "week" | "month";
@@ -68,9 +71,16 @@ export async function getAllMosquitoEvents(
 	if (filters?.start_date) params.set("start_date", filters.start_date);
 	if (filters?.end_date) params.set("end_date", filters.end_date);
 	if (filters?.search) params.set("search", filters.search);
-	if (filters?.region) params.set("region", filters.region);
-	if (filters?.genus) params.set("genus", filters.genus);
-	if (filters?.species) params.set("species", filters.species);
+	// Multi-select filters are repeatable: ?region=a&region=b
+	filters?.region?.forEach((r) => {
+		if (r) params.append("region", r);
+	});
+	filters?.genus?.forEach((g) => {
+		if (g) params.append("genus", g);
+	});
+	filters?.species?.forEach((s) => {
+		if (s) params.append("species", s);
+	});
 	// device_uuid is repeatable: ?device_uuid=a&device_uuid=b
 	filters?.device_uuid?.forEach((uuid) => {
 		if (uuid) params.append("device_uuid", uuid);
@@ -84,6 +94,18 @@ export async function getAllMosquitoEvents(
 }
 
 
+
+export type MosquitoFilterOptions = {
+	regions: string[];
+	genus: string[];
+	species: string[];
+};
+
+export async function getMosquitoFilterOptions(): Promise<MosquitoFilterOptions> {
+	return apiFetch("/mosquito/filter-options", {
+		method: "GET",
+	});
+}
 
 export async function getMosquitoEventDataById() {
 	return apiFetch("/mosquito-event-data", {

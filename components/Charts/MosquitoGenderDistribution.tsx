@@ -10,7 +10,7 @@ import {
 import { useState } from "react";
 import Skeleton from "react-loading-skeleton";
 
-export type GenderGroupBy = "hour" | "day" | "week" | "month";
+export type GenderGroupBy = "day" | "month" | "year";
 
 export default function MosquitoGenderDistribution({
   male,
@@ -18,12 +18,14 @@ export default function MosquitoGenderDistribution({
   groupBy,
   onGroupByChange,
   isLoading,
+  hideFilter,
 }: {
   male?: number;
   female?: number;
   groupBy?: GenderGroupBy;
   onGroupByChange?: (value: GenderGroupBy) => void;
   isLoading?: boolean;
+  hideFilter?: boolean;
 }) {
   const [range, setRange] = useState<GenderGroupBy>("month");
   const effectiveRange = groupBy ?? range;
@@ -42,20 +44,21 @@ export default function MosquitoGenderDistribution({
           Mosquito Gender Distribution
         </h2>
 
-        <select
-          value={effectiveRange}
-          onChange={(e) => {
-            const next = e.target.value as GenderGroupBy;
-            if (onGroupByChange) onGroupByChange(next);
-            else setRange(next);
-          }}
-          className="border border-gray focus:ring-0 focus:outline-none focus:border-primary rounded-xl px-4 py-2 text-sm bg-white"
-        >
-          <option value="hour">Hour</option>
-          <option value="day">Day</option>
-          <option value="week">Week</option>
-          <option value="month">Month</option>
-        </select>
+        {!hideFilter && (
+          <select
+            value={effectiveRange}
+            onChange={(e) => {
+              const next = e.target.value as GenderGroupBy;
+              if (onGroupByChange) onGroupByChange(next);
+              else setRange(next);
+            }}
+            className="border border-gray focus:ring-0 focus:outline-none focus:border-primary rounded-xl px-4 py-2 text-sm bg-white"
+          >
+            <option value="year">Last Year</option>
+            <option value="month">Last Month</option>
+            <option value="day">Today</option>
+          </select>
+        )}
       </div>
 
       <hr className="mb-8 border-gray-200" />

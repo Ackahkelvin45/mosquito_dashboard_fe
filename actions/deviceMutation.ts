@@ -2,13 +2,16 @@ import { apiFetch } from "@/api/base";
 
 export type CreateDevicePayload = {
     name: string;
-    region: string;
-    device_uuid: string;
-    latitude: number;
-    longitude: number;
-    description: string;
-    gmap_link: string;
     cluster_id: number;
+    // All optional: the device reports its own position, and region/community
+    // are reverse-geocoded from those coordinates rather than typed in.
+    region?: string;
+    community?: string;
+    device_uuid?: string;
+    latitude?: number;
+    longitude?: number;
+    description?: string;
+    gmap_link?: string;
 };
 
 export type UpdateDevicePayload = Partial<CreateDevicePayload>;
@@ -16,9 +19,10 @@ export type UpdateDevicePayload = Partial<CreateDevicePayload>;
 export type CreateDeviceClusterPayload = {
     name: string;
     description: string;
-    password: string;
     public: boolean;
     cluster_admins: number[];
+    // Member users assigned to the cluster (sets their cluster_id).
+    users?: number[];
 };
 
 

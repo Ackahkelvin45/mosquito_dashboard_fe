@@ -70,11 +70,27 @@ export async function apiFetch(
     headers["Authorization"] = `Bearer ${accessToken}`
   }
 
+  if (!API_URL) {
+    throw new Error(
+      "NEXT_PUBLIC_BACKEND_API_URL is not set. Add it to .env and restart the dev server (env is read at boot)."
+    )
+  }
+
   let res: Response
   try {
     res = await fetch(`${API_URL}${endpoint}`, { ...options, headers, credentials: "include" })
-  } catch {
-    throw new Error("Network error. Please check your connection.")
+  } catch (err) {
+    // fetch rejects with a generic TypeError and hides the real reason on
+    // `cause` (ECONNREFUSED, ENOTFOUND, UND_ERR_CONNECT_TIMEOUT, TLS errors...).
+    // Without unwrapping it, every transport failure looks identical and there
+    // is nothing to debug from.
+    const cause = (err as { cause?: { code?: string; message?: string } })?.cause
+    const reason = cause?.code || cause?.message || (err as Error)?.message || "unknown error"
+    console.error(
+      `[apiFetch] ${options.method ?? "GET"} ${API_URL}${endpoint} failed: ${reason}`,
+      err
+    )
+    throw new Error(`Network error (${reason}). Please check your connection.`)
   }
 
   // On 401, refresh the access token (shared across concurrent calls) and retry once.

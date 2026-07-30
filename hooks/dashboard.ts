@@ -64,3 +64,13 @@ export const useGenusHeatmap = (groupBy: DashboardGroupBy) => {
 		select: (data) => data.genus_heatmap,
 	})
 }
+
+// Custom date range — one call scopes EVERY section (totals, charts, breakdown,
+// correlation, heatmap) to the same window, so the whole response is returned.
+export const useDashboardRange = (startDate?: string, endDate?: string) => {
+	return useQuery({
+		queryKey: ["dashboard", "range", startDate, endDate],
+		queryFn: () => getDashboardData({ start_date: startDate, end_date: endDate }),
+		enabled: Boolean(startDate && endDate),
+	})
+}
