@@ -1,11 +1,14 @@
 'use client'
-import { Menu, Search } from 'lucide-react'
+import { Eye, LogIn, Menu, Search } from 'lucide-react'
+import Link from 'next/link'
 import React from 'react'
 import NotificationBell from '@/components/notifications/NotificationBell'
 import { useUiStore } from '@/store/uiStore'
+import { useAuthStore } from '@/store/authStore'
 
 function Navbar() {
   const openSidebar = useUiStore((state) => state.openSidebar)
+  const isGuest = useAuthStore((state) => state.isGuest)
 
   return (
     <div className='w-full h-16 flex items-center font-raleway z-30 flex-row justify-between px-4 fixed top-0 left-0 right-0 bg-white shadow-sm lg:pl-[250px]'>
@@ -28,7 +31,24 @@ function Navbar() {
             </div>
         </div>
 
-        <NotificationBell />
+        {/* Notifications need an account — guests get a badge + sign-in instead. */}
+        {isGuest ? (
+          <div className='flex items-center gap-3 shrink-0'>
+            <span className='hidden sm:flex items-center gap-1.5 rounded-full bg-amber-100 text-amber-800 px-3 py-1 text-xs font-semibold'>
+              <Eye size={13} />
+              Guest Mode
+            </span>
+            <Link
+              href='/login'
+              className='flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-primary/90 transition-colors'
+            >
+              <LogIn size={14} />
+              Sign In
+            </Link>
+          </div>
+        ) : (
+          <NotificationBell />
+        )}
 
     </div>
   )

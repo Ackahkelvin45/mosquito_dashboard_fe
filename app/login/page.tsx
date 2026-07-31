@@ -9,9 +9,11 @@ import logo from "../../public/images/logo.png"
 import name from "../../public/images/name.png"
 import loginiage from "../../public/images/loginimage.png"
 import { useLogin } from "@/hooks/authentication"
+import { useAuthStore } from "@/store/authStore"
 
 export default function LoginPage() {
   const router = useRouter()
+  const enterGuestMode = useAuthStore((s) => s.enterGuestMode)
   const { mutate: login, isPending, isError, error } = useLogin()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -145,6 +147,26 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
+
+          {/* Explore without an account: read-only access to public data. */}
+          <div className="mt-4 w-full font-raleway flex items-center gap-3">
+            <div className="h-px flex-1 bg-gray-300" />
+            <span className="text-xs text-gray-400 font-medium">or</span>
+            <div className="h-px flex-1 bg-gray-300" />
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              enterGuestMode()
+              router.push("/")
+            }}
+            className="mt-4 w-full py-2.5 px-3 font-raleway border border-primary text-primary font-semibold text-sm rounded-md hover:bg-primary/5 transition-colors"
+          >
+            View as Guest
+          </button>
+          <p className="mt-2 text-center font-raleway text-xs text-gray-400">
+            Read-only access to public surveillance data — no account needed.
+          </p>
 
           {/* Self-signup removed — accounts are created by an administrator. */}
           <div className="mt-4 w-full font-raleway flex flex-col items-center gap-2">

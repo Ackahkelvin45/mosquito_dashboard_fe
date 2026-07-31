@@ -6,9 +6,12 @@ import { loginUser, type LoginResult, registerUser, type RegisterFormData, updat
 import { useAuthStore } from "@/store/authStore"
 
 export const useCurrentUser = () => {
+  // Guests have no account — never call /auth/me for them (it would 401).
+  const isGuest = useAuthStore((s) => s.isGuest)
   return useQuery({
     queryKey: ["currentUser"],
     queryFn: getCurrentUser,
+    enabled: !isGuest,
   })
 }
 

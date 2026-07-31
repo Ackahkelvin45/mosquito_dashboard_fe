@@ -9,6 +9,7 @@ import DownloadCsvButton from "./DownloadCsvButton";
 import ColumnVisibilityDropdown, { useColumnVisibility } from "./ColumnVisibilityDropdown";
 import Pagination from "@/components/Pagination";
 import { resolvePage, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { useRole } from "@/hooks/useRole";
 
 export type HistoricalDataRow = {
   device: string;
@@ -136,6 +137,8 @@ export default function HistoricalDataTable({
 
   const { selected, setSelected, visibleColumns } = useColumnVisibility(HISTORICAL_COLUMNS);
   const csvColumns = visibleColumns.map((c) => ({ header: c.header, accessor: c.csv }));
+  // Guests are read-only: no data export.
+  const { isGuest } = useRole();
 
   return (
     <div className="bg-white">
@@ -150,13 +153,15 @@ export default function HistoricalDataTable({
             onChange={setSelected}
             disabled={isLoading}
           />
-          <DownloadCsvButton
-            filename="historical-data"
-            title={title}
-            columns={csvColumns}
-            rows={rows}
-            disabled={isLoading}
-          />
+          {!isGuest && (
+            <DownloadCsvButton
+              filename="historical-data"
+              title={title}
+              columns={csvColumns}
+              rows={rows}
+              disabled={isLoading}
+            />
+          )}
         </div>
       </div>
 

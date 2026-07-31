@@ -23,9 +23,12 @@ import {
 } from '@/hooks/dashboard'
 import type { DashboardChartPoint, DashboardGroupBy } from '@/queries/dashboard/dashboardQueries'
 import { buildStatCards } from '@/components/cards/dashboardStatCards'
+import { useRole } from '@/hooks/useRole'
 import "react-loading-skeleton/dist/skeleton.css";
 
 function Dashboard() {
+  // The date-range page isn't part of the guest surface — hide its entry point.
+  const { isGuest } = useRole()
   const [generalGroupBy, setGeneralGroupBy] = useState<DashboardGroupBy>("month")
   const [totalsGroupBy, setTotalsGroupBy] = useState<DashboardGroupBy>("month")
   const [chartGroupBy, setChartGroupBy] = useState<DashboardGroupBy>("month")
@@ -227,13 +230,15 @@ function Dashboard() {
             Dashboard
           </span>
           <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/date-range"
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 shadow-sm transition-colors"
-            >
-              <CalendarDays size={16} />
-              Date Range Filter
-            </Link>
+            {!isGuest && (
+              <Link
+                href="/date-range"
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 shadow-sm transition-colors"
+              >
+                <CalendarDays size={16} />
+                Date Range Filter
+              </Link>
+            )}
             <div className="flex items-center gap-2">
               <label htmlFor="general-filter" className="text-sm font-semibold text-text-dark whitespace-nowrap">
                 General Filter:

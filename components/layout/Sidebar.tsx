@@ -8,7 +8,7 @@ import profile from '../../public/images/profile.png'
 import {
   House, Map, ChartNoAxesCombined, Satellite, CirclePile,
   UserRoundPlus, ShieldUser, Bell, ChevronDown, ChevronRight,
-  EllipsisVertical, LogOut, User, X
+  EllipsisVertical, LogIn, LogOut, User, X
 } from 'lucide-react'
 import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/authentication'
@@ -22,8 +22,10 @@ interface NavItem {
   icon: React.ReactNode;
   href: string;
   subItems?: { label: string; href: string }[];
-  // Which roles may see this item. Omitted = everyone.
+  // Which roles may see this item. Omitted = every authenticated user.
   roles?: Array<'SUPER_ADMIN' | 'ADMIN' | 'USER'>;
+  // Also visible in anonymous guest mode. Guests see ONLY these items.
+  guest?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -31,6 +33,7 @@ const navItems: NavItem[] = [
     label: 'Home',
     icon: <House size={19} />,
     href: '/',
+    guest: true,
   },
   {
     label: 'Map',
@@ -41,11 +44,13 @@ const navItems: NavItem[] = [
     label: 'Historical Data',
     icon: <ChartNoAxesCombined size={19} />,
     href: '/historical-data',
+    guest: true,
   },
   {
     label: 'Devices',
     icon: <Satellite size={19} />,
     href: '/devices',
+    guest: true,
   },
   {
     label: 'Device Clusters',
@@ -89,12 +94,14 @@ function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { data: user, isLoading } = useCurrentUser()
-  const { role } = useRole()
-  // Show a nav item only if it has no role restriction or includes this role.
-  // Until the role is known, restricted items stay hidden (avoids a flash).
-  const visibleNavItems = navItems.filter(
-    (item) => !item.roles || (role !== undefined && item.roles.includes(role))
-  )
+  const { role, isGuest } = useRole()
+  // Guests see only the explicitly guest-enabled items. Authenticated users
+  // see an item if it has no role restriction or includes their role; until
+  // the role is known, restricted items stay hidden (avoids a flash).
+  const visibleNavItems = navItems.filter((item) => {
+    if (isGuest) return item.guest === true
+    return !item.roles || (role !== undefined && role !== 'GUEST' && item.roles.includes(role))
+  })
   const logoutAction = useAuthStore((state) => state.logout)
   const isSidebarOpen = useUiStore((state) => state.isSidebarOpen)
   const closeSidebar = useUiStore((state) => state.closeSidebar)
@@ -242,7 +249,27 @@ function Sidebar() {
       {/* Divider */}
       <div className="mx-6 h-px bg-white/10" />
 
-      {/* User Profile Section */}
+      {/* User Profile Section — replaced by a sign-in prompt for guests */}
+      {isGuest ? (
+        <div className="flex items-center justify-between w-full gap-3 px-6 py-5">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm shrink-0">
+              G
+            </div>
+            <div className="min-w-0">
+              <p className="text-white font-semibold text-sm leading-tight">Guest</p>
+              <p className="text-white/45 text-xs mt-0.5">Read-only access</p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push('/login')}
+            className="flex items-center gap-1.5 rounded-md bg-white/15 hover:bg-white/25 px-3 py-2 text-xs font-semibold text-white transition-colors shrink-0"
+          >
+            <LogIn size={14} />
+            Sign In
+          </button>
+        </div>
+      ) : (
       <div className="relative flex flex-row items-center justify-center w-full px-5">
         {/* Account Flyout Menu */}
         {isAccountMenuOpen && (
@@ -312,6 +339,7 @@ function Sidebar() {
           <EllipsisVertical strokeWidth={1.5} size={20} className="text-white shrink-0" />
         </button>
       </div>
+      )}
     </div>
   </div>
   </>

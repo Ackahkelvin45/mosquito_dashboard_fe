@@ -1,5 +1,3 @@
-"use server"
-
 import { apiFetch } from "@/api/base"
 
 export type UserRoleValue = "USER" | "ADMIN" | "SUPER_ADMIN"

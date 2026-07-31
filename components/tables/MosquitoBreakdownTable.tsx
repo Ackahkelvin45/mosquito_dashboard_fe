@@ -5,6 +5,7 @@ import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import DownloadCsvButton from "./DownloadCsvButton";
 import type { CsvColumn } from "@/lib/csv";
+import { useRole } from "@/hooks/useRole";
 
 type BreakdownItem = {
   name: string;
@@ -36,6 +37,8 @@ export default function MosquitoBreakdown({
   hideFilter,
 }: MosquitoBreakdownProps) {
   const [activeCategory, setActiveCategory] = useState<Category>("genus");
+  // Guests are read-only: no data export.
+  const { isGuest } = useRole();
 
   const categories: { id: Category; label: string }[] = [
     { id: "genus", label: "Genus" },
@@ -65,13 +68,15 @@ export default function MosquitoBreakdown({
         </div>
 
         <div className="flex items-center gap-3">
-          <DownloadCsvButton
-            filename={`mosquito-breakdown-${activeCategory}`}
-            title={`Mosquito Breakdown — ${activeLabel}`}
-            columns={csvColumns}
-            rows={currentData}
-            disabled={isLoading}
-          />
+          {!isGuest && (
+            <DownloadCsvButton
+              filename={`mosquito-breakdown-${activeCategory}`}
+              title={`Mosquito Breakdown — ${activeLabel}`}
+              columns={csvColumns}
+              rows={currentData}
+              disabled={isLoading}
+            />
+          )}
           {!hideFilter && (
             <select
               value={groupBy}

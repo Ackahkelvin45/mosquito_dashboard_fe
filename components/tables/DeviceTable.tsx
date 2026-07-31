@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import ApproveDeleteDeviceModal from "../modal/ApproveDeleteDeviceModal";
 import { useDeleteDevice } from "@/hooks/device";
+import { useRole } from "@/hooks/useRole";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import DownloadCsvButton from "./DownloadCsvButton";
@@ -137,10 +138,12 @@ export default function DeviceTable({
   const [deviceToDelete, setDeviceToDelete] = useState<DeviceRow | null>(null);
   const deleteDeviceMutation = useDeleteDevice();
   const { selected, setSelected, visibleColumns } = useColumnVisibility(DEVICE_COLUMNS);
+  // Guests are read-only: no edit/delete actions and no data export.
+  const { isGuest } = useRole();
 
   const csvColumns = visibleColumns.map((c) => ({ header: c.header, accessor: c.csv }));
-  // +1 for the always-visible Actions column.
-  const colSpan = visibleColumns.length + 1;
+  // +1 for the Actions column (hidden for guests).
+  const colSpan = visibleColumns.length + (isGuest ? 0 : 1);
 
   const handleConfirmDelete = () => {
     if (deviceToDelete) {
@@ -161,13 +164,15 @@ export default function DeviceTable({
           onChange={setSelected}
           disabled={isLoading}
         />
-        <DownloadCsvButton
-          filename="devices"
-          title="Devices"
-          columns={csvColumns}
-          rows={data}
-          disabled={isLoading}
-        />
+        {!isGuest && (
+          <DownloadCsvButton
+            filename="devices"
+            title="Devices"
+            columns={csvColumns}
+            rows={data}
+            disabled={isLoading}
+          />
+        )}
       </div>
       <div className="overflow-x-auto rounded-2xl mt-4 border border-secondary/15">
         <table className="w-full min-w-[700px] text-left border-collapse">
@@ -178,7 +183,7 @@ export default function DeviceTable({
                   {c.header}
                 </th>
               ))}
-              <th className="px-6 py-5 font-bold text-right">Actions</th>
+              {!isGuest && <th className="px-6 py-5 font-bold text-right">Actions</th>}
             </tr>
           </thead>
           <tbody className="bg-white">
@@ -193,9 +198,11 @@ export default function DeviceTable({
                         <Skeleton width={100} height={14} />
                       </td>
                     ))}
-                    <td className="px-5 py-5 flex gap-2 justify-end">
-                      <Skeleton width={50} height={14} />
-                    </td>
+                    {!isGuest && (
+                      <td className="px-5 py-5 flex gap-2 justify-end">
+                        <Skeleton width={50} height={14} />
+                      </td>
+                    )}
                   </tr>
                 ))
               : data.map((row, index) => (
@@ -208,15 +215,17 @@ export default function DeviceTable({
                         {c.cell(row)}
                       </td>
                     ))}
-                    <td className="px-5 py-5 flex gap-2 justify-center items-center font-mulish text-right font-semibold text-black">
-                      <Link href={`/devices/${row.id}/edit`}>
-                        <PencilLine size={16} className="text-primary"/>
-                      </Link>
+                    {!isGuest && (
+                      <td className="px-5 py-5 flex gap-2 justify-center items-center font-mulish text-right font-semibold text-black">
+                        <Link href={`/devices/${row.id}/edit`}>
+                          <PencilLine size={16} className="text-primary"/>
+                        </Link>
 
-                      <button onClick={() => setDeviceToDelete(row)}>
-                        <Trash2 size={16} className="text-red-500"/>
-                      </button>
-                    </td>
+                        <button onClick={() => setDeviceToDelete(row)}>
+                          <Trash2 size={16} className="text-red-500"/>
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
 

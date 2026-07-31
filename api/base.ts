@@ -94,8 +94,10 @@ export async function apiFetch(
   }
 
   // On 401, refresh the access token (shared across concurrent calls) and retry once.
-  // Skipped for login/signup endpoints.
-  if (!skipAuth && res.status === 401) {
+  // Skipped for login/signup endpoints, and in guest mode — a guest has no
+  // refresh token, and attempting one would clear guest state via logout().
+  const { isGuest } = useAuthStore.getState()
+  if (!skipAuth && !isGuest && res.status === 401) {
     const newAccessToken = await refreshAccessToken()
     headers["Authorization"] = `Bearer ${newAccessToken}`
     res = await fetch(`${API_URL}${endpoint}`, { ...options, headers, credentials: "include" })
