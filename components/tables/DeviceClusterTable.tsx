@@ -142,9 +142,9 @@ export default function DeviceClusterTable({
                       {formatDate(row.created_at)}
                     </td>
                     <td className="px-5 py-5 flex gap-2 justify-center items-center font-mulish text-right font-semibold text-black">
-                      <button title="Edit Cluster">
+                      <Link href={`/device-clusters/${row.id}/edit`} title="Edit Cluster">
                         <PencilLine size={16} className="text-primary hover:scale-110 transition-transform" />
-                      </button>
+                      </Link>
                       <button title="Delete Cluster">
                         <Trash2 size={16} className="text-red-500 hover:scale-110 transition-transform" />
                       </button>

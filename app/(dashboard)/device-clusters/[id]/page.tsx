@@ -2,7 +2,7 @@
 
 import React, { use } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, Info, Users, Monitor, Calendar } from "lucide-react"
+import { ChevronLeft, Info, Users, Monitor, Calendar, PencilLine } from "lucide-react"
 import Link from "next/link"
 import { useCluster } from "@/hooks/device"
 import DeviceTable from "@/components/tables/DeviceTable"
@@ -68,6 +68,13 @@ export default function DeviceClusterDetailPage({ params }: { params: Promise<{ 
             </p>
           </div>
         </div>
+        <Link
+          href={`/device-clusters/${id}/edit`}
+          className="flex items-center gap-2 self-start sm:self-auto rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 transition-colors"
+        >
+          <PencilLine size={15} />
+          Edit Cluster
+        </Link>
       </div>
 
       {/* Cluster Info Cards */}

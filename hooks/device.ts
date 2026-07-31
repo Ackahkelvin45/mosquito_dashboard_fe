@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query"
-import { createDevice, type CreateDevicePayload, createDeviceCluster, type CreateDeviceClusterPayload, deleteDevice, updateDevice, type UpdateDevicePayload } from "@/actions/deviceMutation"
+import { createDevice, type CreateDevicePayload, createDeviceCluster, type CreateDeviceClusterPayload, deleteDevice, updateDevice, type UpdateDevicePayload, updateDeviceCluster, type UpdateDeviceClusterPayload } from "@/actions/deviceMutation"
 import { getDevices, type GetDevicesFilters, getClusters, getClusterById, getDeviceById } from "@/queries/device/deviceQueries"
 import { getDeviceCharts, type ChartGroupBy } from "@/queries/device/deviceChartsQueries"
 import type { PaginationParams } from "@/lib/pagination"
@@ -66,6 +66,20 @@ export const useCreateCluster = () => {
         mutationFn: (data: CreateDeviceClusterPayload) => createDeviceCluster(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["clusters"] })
+        },
+    })
+}
+
+export const useUpdateCluster = () => {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ clusterId, data }: { clusterId: string | number, data: UpdateDeviceClusterPayload }) => updateDeviceCluster(clusterId, data),
+        onSuccess: (_, { clusterId }) => {
+            queryClient.invalidateQueries({ queryKey: ["clusters"] })
+            // useCluster keys by the string route param.
+            queryClient.invalidateQueries({ queryKey: ["cluster", String(clusterId)] })
+            // Membership changes affect which users show a cluster.
+            queryClient.invalidateQueries({ queryKey: ["users"] })
         },
     })
 }

@@ -25,6 +25,10 @@ export type CreateDeviceClusterPayload = {
     users?: number[];
 };
 
+// Partial update: omitted fields are left unchanged by the backend; `users`
+// replaces the member list when sent (members dropped from it are unassigned).
+export type UpdateDeviceClusterPayload = Partial<CreateDeviceClusterPayload>;
+
 
 export async function createDevice(data: CreateDevicePayload) {
     try {
@@ -43,6 +47,19 @@ export async function createDeviceCluster(data: CreateDeviceClusterPayload) {
     try {
         const res = await apiFetch("/devices/clusters", {
             method: "POST",
+            body: JSON.stringify(data),
+        });
+        return res;
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
+}
+
+export async function updateDeviceCluster(clusterId: string | number, data: UpdateDeviceClusterPayload) {
+    try {
+        const res = await apiFetch(`/devices/clusters/${clusterId}`, {
+            method: "PATCH",
             body: JSON.stringify(data),
         });
         return res;
