@@ -48,18 +48,25 @@ export default function MosquitoBreakdown({
   ];
 
   const currentData = data ? data[activeCategory] : [];
-  const activeLabel =
-    categories.find((c) => c.id === activeCategory)?.label ?? "Category";
 
-  const csvColumns: CsvColumn<BreakdownItem>[] = [
-    { header: activeLabel, accessor: (r) => r.name },
+  // Export covers ALL categories, not just the active tab.
+  type ExportRow = { category: string; name: string; count: number };
+  const exportRows: ExportRow[] = data
+    ? categories.flatMap((c) =>
+        (data[c.id] ?? []).map((r) => ({ category: c.label, name: r.name, count: r.count }))
+      )
+    : [];
+
+  const csvColumns: CsvColumn<ExportRow>[] = [
+    { header: "Category", accessor: (r) => r.category },
+    { header: "Name", accessor: (r) => r.name },
     { header: "Mosquito Count", accessor: (r) => r.count },
   ];
 
   return (
     <div className="bg-white rounded-2xl py-6  font-raleway shadow-sm border border-gray-100 w-full min-h-[500px] flex flex-col">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6 pb-4 px-6  border-b border-gray-50">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 px-6  border-b border-gray-50">
         <div>
           <h2 className="text-sm font-medium tracking-wide text-gray-600 uppercase">
             Mosquito Breakdown
@@ -67,13 +74,13 @@ export default function MosquitoBreakdown({
           <p className="text-xs text-gray-400 mt-1">Detailed statistical overview</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {!isGuest && (
             <DownloadCsvButton
-              filename={`mosquito-breakdown-${activeCategory}`}
-              title={`Mosquito Breakdown — ${activeLabel}`}
+              filename="mosquito-breakdown"
+              title="Mosquito Breakdown"
               columns={csvColumns}
-              rows={currentData}
+              rows={exportRows}
               disabled={isLoading}
             />
           )}
@@ -92,13 +99,13 @@ export default function MosquitoBreakdown({
       </div>
 
       {/* Tabs */}
-      <div className="flex  pt-2 mb-6 px-6 ">
+      <div className="flex overflow-x-auto pt-2 mb-6 px-6 ">
         {categories.map((cat, index) => (
           <button
             key={cat.id}
             type="button"
             onClick={() => setActiveCategory(cat.id)}
-            className={`px-5 py-3 font-raleway text-sm font-semibold transition ${
+            className={`px-5 py-3 font-raleway text-sm font-semibold transition shrink-0 whitespace-nowrap ${
               index === 0 ? "rounded-l-lg" : ""
             } ${index === categories.length - 1 ? "rounded-r-lg" : ""} ${
               activeCategory === cat.id
@@ -147,7 +154,7 @@ export default function MosquitoBreakdown({
               ))
             ) : (
               <tr>
-                <td colSpan={3} className="px-6 py-12 text-center text-sm text-gray-400 font-raleway">
+                <td colSpan={2} className="px-6 py-12 text-center text-sm text-gray-400 font-raleway">
                   No data available for this period
                 </td>
               </tr>

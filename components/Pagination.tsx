@@ -56,7 +56,7 @@ export default function Pagination({
         <span className="font-semibold text-gray-700">{total}</span>
       </span>
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
         <button
           type="button"
           onClick={() => go(page - 1)}

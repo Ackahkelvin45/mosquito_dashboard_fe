@@ -41,15 +41,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="w-full h-screen flex flex-row">
-      <div className="w-full lg:w-1/2 h-full flex justify-center bg-[#F5F5F5] items-center px-6">
+    <div className="w-full min-h-dvh flex flex-row">
+      <div className="w-full lg:w-1/2 min-h-dvh flex justify-center bg-[#F5F5F5] items-center px-6 py-10">
         <div className="w-full max-w-md flex flex-col">
           <div className="flex flex-row justify-center gap-2 items-center">
             <div>
-              <Image src={logo} alt="logo" width={50} height={50} />
+              <Image src={logo} alt="logo" width={50} height={40} className="h-auto" />
             </div>
             <div className="flex justify-center items-center">
-              <Image src={name} alt="name" width={200} height={200} />
+              <Image src={name} alt="name" width={200} height={28} className="w-40 sm:w-[200px] h-auto" />
             </div>
           </div>
 
@@ -113,7 +113,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 p-2 -m-2"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
@@ -177,8 +177,8 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <div className="hidden lg:block lg:w-1/2 h-full">
-        <Image src={loginiage} alt="login" className="w-full h-full object-cover" />
+      <div className="hidden lg:block lg:w-1/2 relative">
+        <Image src={loginiage} alt="login" fill sizes="50vw" className="object-cover" />
       </div>
     </div>
   )

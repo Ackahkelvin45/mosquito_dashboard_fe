@@ -13,6 +13,7 @@ import SensorStatusChart from '@/components/Charts/SensorStatusChart'
 import MosquitoBarChart from '@/components/Charts/MosquitoRegionBarChart'
 import CorrelationChart from '@/components/Charts/CorrelationChart'
 import GenusHeatmap from '@/components/Charts/GenusHeatmap'
+import DashboardExportButton from '@/components/DashboardExportButton'
 import { useDashboardRange } from '@/hooks/dashboard'
 import "react-loading-skeleton/dist/skeleton.css"
 
@@ -49,11 +50,15 @@ const PRESETS: { label: string; days: number | null }[] = [
 function DateRangePage() {
   const [range, setRange] = useState<DateRange>({ start: null, end: null })
   const [applied, setApplied] = useState<{ start: Date; end: Date } | null>(null)
+  // Collapse the picker card after applying so the results are visible.
+  const [pickerOpen, setPickerOpen] = useState(true)
 
   const startIso = applied ? toIsoStartOfDay(applied.start) : undefined
   const endIso = applied ? toIsoEndOfDay(applied.end) : undefined
-  const { data, isLoading, isFetching } = useDashboardRange(startIso, endIso)
-  const loading = isLoading || isFetching
+  // isLoading only: a newly applied range is a new query key (skeletons show),
+  // while re-applying a cached range renders instantly with a silent refresh.
+  const { data, isLoading } = useDashboardRange(startIso, endIso)
+  const loading = isLoading
 
   const applyPreset = (days: number | null) => {
     const today = stripTime(new Date())
@@ -68,11 +73,13 @@ function DateRangePage() {
     if (!range.start) return
     // A single picked day is a valid one-day range.
     setApplied({ start: range.start, end: range.end ?? range.start })
+    setPickerOpen(false)
   }
 
   const clearRange = () => {
     setRange({ start: null, end: null })
     setApplied(null)
+    setPickerOpen(true)
   }
 
   const cards = buildStatCards(data?.totals, loading)
@@ -121,21 +128,32 @@ function DateRangePage() {
           >
             <ArrowLeft size={16} />
           </Link>
-          <span className="text-xl font-semibold font-mulish text-primary">
+          <h1 className="text-xl font-semibold font-mulish text-primary">
             Date Range Filter
-          </span>
+          </h1>
         </div>
         {applied && (
-          <span className="text-sm text-gray-500">
-            Showing{" "}
-            <span className="font-semibold text-text-dark">{fmtDay(applied.start)}</span>
-            {" — "}
-            <span className="font-semibold text-text-dark">{fmtDay(applied.end)}</span>
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-gray-500">
+              Showing{" "}
+              <span className="font-semibold text-text-dark">{fmtDay(applied.start)}</span>
+              {" — "}
+              <span className="font-semibold text-text-dark">{fmtDay(applied.end)}</span>
+            </span>
+            <DashboardExportButton sections={data ?? {}} disabled={loading} />
+            <button
+              type="button"
+              onClick={() => setPickerOpen((o) => !o)}
+              className="px-3 py-1.5 rounded-lg border border-primary text-sm font-medium text-primary hover:bg-primary/5 transition-colors"
+            >
+              {pickerOpen ? "Hide picker" : "Change range"}
+            </button>
+          </div>
         )}
       </div>
 
       {/* Picker */}
+      {pickerOpen && (
       <div className="bg-white rounded-2xl p-6 font-raleway shadow-sm border border-gray-100">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Quick presets */}
@@ -201,10 +219,11 @@ function DateRangePage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Results */}
       {!applied ? (
-        <div className="bg-white rounded-2xl p-12 font-raleway shadow-sm border border-gray-100 flex flex-col items-center justify-center text-center gap-3">
+        <div className="bg-white rounded-2xl p-6 sm:p-12 font-raleway shadow-sm border border-gray-100 flex flex-col items-center justify-center text-center gap-3">
           <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
             <CalendarDays className="text-primary" size={26} />
           </div>

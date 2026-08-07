@@ -55,8 +55,8 @@ export default function ColumnVisibilityDropdown<C extends ColumnLike>({
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    document.addEventListener("pointerdown", onClick);
+    return () => document.removeEventListener("pointerdown", onClick);
   }, [open]);
 
   const selectedCount = columns.filter((c) => selected[c.header]).length;
@@ -93,7 +93,7 @@ export default function ColumnVisibilityDropdown<C extends ColumnLike>({
               <button
                 type="button"
                 onClick={() => setAll(true)}
-                className="text-primary hover:underline"
+                className="text-primary hover:underline px-2 py-1.5 -mx-1 -my-1.5"
               >
                 All
               </button>
@@ -101,7 +101,7 @@ export default function ColumnVisibilityDropdown<C extends ColumnLike>({
               <button
                 type="button"
                 onClick={() => setAll(false)}
-                className="text-gray-500 hover:underline"
+                className="text-gray-500 hover:underline px-2 py-1.5 -mx-1 -my-1.5"
               >
                 None
               </button>

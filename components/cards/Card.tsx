@@ -20,10 +20,10 @@ function Card({
   valueClassName = 'text-gray-800',
 }: CardProps) {
   return (
-    <div className="bg-white rounded-2xl p-6 h-40   shadow-sm border flex flex-row justify-between  gap-2 border-gray-100 w-full">
-      <div className="w-full flex h-full  justify-between items-stretch flex-col gap-1 min-w-0">
+    <div className="bg-white rounded-2xl p-4 sm:p-6 min-h-40   shadow-sm border flex flex-row justify-between  gap-2 border-gray-100 w-full">
+      <div className="w-full flex justify-between items-stretch flex-col gap-1 min-w-0">
         <span className="text-sm font-raleway font-medium text-gray-600">{title}</span>
-        <span className={`text-2xl font-mulish font-bold ${valueClassName}`}>
+        <span className={`text-2xl font-mulish font-bold break-all ${valueClassName}`}>
           {value}
           {valueSuffix && <span className="text-gray-600 font-normal"> {valueSuffix}</span>}
         </span>

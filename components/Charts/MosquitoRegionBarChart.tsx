@@ -127,7 +127,7 @@ function CustomTooltip({
   const total = rows.reduce((sum, p) => sum + (p.value ?? 0), 0);
 
   return (
-    <div className="px-4 py-3 bg-white border border-gray-100 rounded-lg shadow-md min-w-[210px]">
+    <div className="px-4 py-3 bg-white border border-gray-100 rounded-lg shadow-md sm:min-w-[210px] max-w-[85vw]">
       <p className="text-xs text-gray-500 mb-0.5 font-mulish font-bold uppercase tracking-wider">
         {label}
       </p>
@@ -203,8 +203,8 @@ export default function MosquitoBarChart({
   const stacked = communityKeys.length > 0;
 
   return (
-    <div className="bg-white rounded-lg font-raleway p-8 border min-h-[550px] border-gray-100 shadow-md w-full flex flex-col">
-      <div className="flex justify-between items-center mb-10">
+    <div className="bg-white rounded-lg font-raleway p-4 sm:p-8 border sm:min-h-[550px] border-gray-100 shadow-md w-full flex flex-col">
+      <div className="flex flex-wrap gap-3 justify-between items-start mb-6 sm:mb-10">
         <div>
           <h2 className="text-sm text-gray-700 font-semibold tracking-wide uppercase">
             Mosquito Presence by Region
@@ -233,7 +233,7 @@ export default function MosquitoBarChart({
         )}
       </div>
 
-      <div className="h-[410px]">
+      <div className="h-[300px] sm:h-[410px]">
         {isLoading ? (
           <div className="w-full h-full flex items-end gap-4 px-4 bg-gray-50/30 rounded-xl">
             {[220, 180, 140, 110, 80].map((h, i) => (
@@ -256,11 +256,14 @@ export default function MosquitoBarChart({
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "#9CA3AF", fontSize: 11, fontWeight: 500 }}
-                dy={12}
                 // Every tick must show — dropping regions from the axis would
                 // leave unlabelled bars. "Region" is on every name and so
-                // carries no information; stripping it is what makes them fit.
+                // carries no information; stripping it plus angling the labels
+                // is what lets all 16 fit, even on narrow plots.
                 interval={0}
+                angle={-60}
+                textAnchor="end"
+                height={70}
                 tickFormatter={shortenRegion}
               />
               <YAxis
@@ -281,7 +284,7 @@ export default function MosquitoBarChart({
                     name={key}
                     stackId="region"
                     fill={colors[key]}
-                    barSize={38}
+                    maxBarSize={38}
                     // A 2px surface-coloured edge keeps adjacent segments from
                     // bleeding into one another.
                     stroke="#ffffff"
@@ -289,7 +292,7 @@ export default function MosquitoBarChart({
                   />
                 ))
               ) : (
-                <Bar dataKey="__total" name="Mosquitoes" fill={PALETTE[0]} barSize={38} radius={[6, 6, 0, 0]} />
+                <Bar dataKey="__total" name="Mosquitoes" fill={PALETTE[0]} maxBarSize={38} radius={[6, 6, 0, 0]} />
               )}
             </BarChart>
           </ResponsiveContainer>
@@ -300,7 +303,7 @@ export default function MosquitoBarChart({
       {stacked && !isLoading && (
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-6">
           {communityKeys.map((key) => (
-            <div key={key} className="flex items-center gap-2 text-[12px] text-gray-500">
+            <div key={key} className="flex items-center gap-2 text-[12px] text-gray-500 min-w-0 break-words">
               <span
                 className="w-2.5 h-2.5 rounded-sm inline-block shrink-0"
                 style={{ background: colors[key] }}

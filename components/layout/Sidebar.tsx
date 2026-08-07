@@ -8,7 +8,7 @@ import profile from '../../public/images/profile.png'
 import {
   House, Map, ChartNoAxesCombined, Satellite, CirclePile,
   UserRoundPlus, ShieldUser, Bell, ChevronDown, ChevronRight,
-  EllipsisVertical, LogIn, LogOut, User, X
+  EllipsisVertical, LogIn, LogOut, Thermometer, User, X
 } from 'lucide-react'
 import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/authentication'
@@ -44,6 +44,12 @@ const navItems: NavItem[] = [
     label: 'Historical Data',
     icon: <ChartNoAxesCombined size={19} />,
     href: '/historical-data',
+    guest: true,
+  },
+  {
+    label: 'Sensor Data',
+    icon: <Thermometer size={19} />,
+    href: '/sensor-data',
     guest: true,
   },
   {
@@ -146,7 +152,7 @@ function Sidebar() {
         className={`fixed inset-0 z-40 bg-black/40 lg:hidden transition-opacity duration-300
           ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       />
-    <div className={`w-[250px] h-screen fixed top-0 left-0 z-50 font-raleway flex flex-col shadow-2xl overflow-hidden
+    <div className={`w-[250px] h-dvh fixed top-0 left-0 z-50 font-raleway flex flex-col shadow-2xl overflow-hidden
       transition-transform duration-300 ease-in-out lg:translate-x-0
       ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Gradient base */}
@@ -162,7 +168,7 @@ function Sidebar() {
         style={{
           backgroundImage: "url('/images/sidebarpattern.png')",
           backgroundRepeat: 'repeat',
-          backgroundSize: '100% 100%',
+          backgroundSize: '250px auto',
           backgroundBlendMode: 'overlay',
           backgroundPosition: 'center',
         }}
@@ -170,12 +176,12 @@ function Sidebar() {
       <div className="relative z-10 flex flex-1 flex-col">
 
         <div className='flex bg-primary/30 flex-row items-center px-7 gap-3 py-5'>
-            <Image src={logo} alt='logo' className='invert brightness-0' width={30} height={30} />
-            <Image src={name} alt='name' className='invert brightness-0' width={120} height={80} />
+            <Image src={logo} alt='logo' className='invert brightness-0 h-auto' width={30} height={24} />
+            <Image src={name} alt='name' className='invert brightness-0 h-auto' width={120} height={17} />
             <button
               onClick={closeSidebar}
               aria-label="Close menu"
-              className='ml-auto p-1 rounded-md text-white/80 hover:bg-white/10 lg:hidden'
+              className='ml-auto p-2 rounded-md text-white/80 hover:bg-white/10 lg:hidden'
             >
               <X size={20} />
             </button>

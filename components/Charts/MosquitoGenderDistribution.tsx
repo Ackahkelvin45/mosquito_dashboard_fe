@@ -39,7 +39,7 @@ export default function MosquitoGenderDistribution({
   return (
     <div className="bg-white rounded-lg font-raleway p-3 border border-gray-200 w-full">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap gap-2 justify-between items-center mb-6">
         <h2 className="text-sm font-semibold text-gray-800">
           Mosquito Gender Distribution
         </h2>
@@ -64,8 +64,8 @@ export default function MosquitoGenderDistribution({
       <hr className="mb-8 border-gray-200" />
 
       {isLoading ? (
-        <div className="flex items-center justify-between pb-8">
-          <div className="space-y-8 w-1/3 p-4">
+        <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4 pb-8">
+          <div className="space-y-8 w-full sm:w-1/3 p-4">
             {[1, 2].map((i) => (
               <div key={i} className="flex items-center gap-4">
                 <Skeleton circle width={12} height={12} />
@@ -76,14 +76,14 @@ export default function MosquitoGenderDistribution({
               </div>
             ))}
           </div>
-          <div className="w-[350px] h-[400px] flex items-center justify-center">
+          <div className="w-full max-w-[350px] h-[240px] sm:h-[400px] flex items-center justify-center">
             <Skeleton circle width={200} height={200} />
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
           {/* Legend */}
-          <div className="space-y-8">
+          <div className="space-y-4 sm:space-y-8 self-start sm:self-auto">
             {data.map((item) => (
               <div key={item.name} className="flex items-center gap-4">
                 <div
@@ -103,7 +103,7 @@ export default function MosquitoGenderDistribution({
           </div>
 
           {/* Pie Chart */}
-          <div className="w-[350px] h-[400px] relative">
+          <div className="w-full max-w-[350px] h-[240px] sm:h-[400px] relative">
             <ResponsiveContainer>
               <PieChart>
                 <Tooltip
@@ -127,7 +127,7 @@ export default function MosquitoGenderDistribution({
                   dataKey="value"
                   nameKey="name"
                   innerRadius={0}
-                  outerRadius={100}
+                  outerRadius="85%"
                   paddingAngle={0}
                 >
                   {data.map((entry, index) => (

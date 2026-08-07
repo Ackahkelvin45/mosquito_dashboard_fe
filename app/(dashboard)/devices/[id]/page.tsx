@@ -68,7 +68,7 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-white font-raleway rounded-lg py-6 px-4 sm:py-8 sm:px-8 overflow-y-auto">
+    <div className="w-full flex flex-col bg-white font-raleway rounded-lg py-6 px-4 sm:py-8 sm:px-8">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
         <div className="flex flex-row items-center gap-3">
@@ -95,9 +95,9 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
           <div className="flex flex-row gap-2 items-center text-sm">
             <span className="font-medium text-gray-600">Device:</span>
             {device.is_active ? (
-               <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase">Active</span>
+               <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase">Online</span>
             ) : (
-               <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-bold uppercase">Inactive</span>
+               <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-bold uppercase">Offline</span>
             )}
           </div>
           <div className="flex flex-row gap-2 items-center text-sm">

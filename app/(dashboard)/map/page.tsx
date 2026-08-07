@@ -50,7 +50,7 @@ function Row({
         {icon && <span className="text-gray-400">{icon}</span>}
         {label}
       </div>
-      <div className="flex items-center gap-1.5">{children}</div>
+      <div className="flex items-center gap-1.5 min-w-0 text-right">{children}</div>
     </div>
   );
 }
@@ -155,7 +155,7 @@ function DeviceStatusTab({ device }: { device: Device | null }) {
 
       <Row label="Trap Status">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">{r ? (r.trap_status ? "Active" : "Inactive") : "—"}</span>
+          <span className="text-sm font-semibold">{r ? (r.trap_status ? "On" : "Off") : "—"}</span>
           {r && (
             <div className={`w-9 h-5 rounded-full flex items-center px-0.5 transition-colors ${r.trap_status ? "bg-green-500" : "bg-gray-300"}`}>
               <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${r.trap_status ? "translate-x-4" : "translate-x-0"}`} />
@@ -169,11 +169,11 @@ function DeviceStatusTab({ device }: { device: Device | null }) {
       </Row>
 
       <Row label="Latitude">
-        <span className="text-sm font-semibold font-mono">{device.latitude}</span>
+        <span className="text-sm font-semibold font-mono break-all">{device.latitude}</span>
       </Row>
 
       <Row label="Longitude">
-        <span className="text-sm font-semibold font-mono">{device.longitude}</span>
+        <span className="text-sm font-semibold font-mono break-all">{device.longitude}</span>
       </Row>
 
       <Row label="Connectivity">
@@ -290,6 +290,9 @@ export default function MapPage() {
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [searchedLocation, setSearchedLocation] = useState<GeoLocation | null>(null);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
+  // Below sm the search/filter stack covers most of the map, so it starts
+  // collapsed behind a single toggle there; sm+ always shows it.
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   // trap_status / created_after are applied server-side; cluster + search stay client-side.
   const deviceFilters = useMemo(
@@ -341,7 +344,7 @@ export default function MapPage() {
     () =>
       dynamic<MapClientProps>(() => import("@/components/map/MapClient"), {
         loading: () => (
-          <div className="w-full flex justify-center items-center h-screen">
+          <div className="w-full flex justify-center items-center h-full">
             <div className="spinner">
               {Array.from({ length: 10 }).map((_, i) => (
                 <div key={i} />
@@ -377,7 +380,19 @@ export default function MapPage() {
         className={`absolute top-4 z-[1000] transition-all duration-300 ease-in-out
           ${isOpen ? "hidden lg:block left-[420px] right-4" : "left-20 right-4"}`}
       >
-        <div className="flex flex-col gap-2">
+        <button
+          onClick={() => setMobileFiltersOpen((v) => !v)}
+          className="sm:hidden mb-2 inline-flex items-center gap-2 bg-white rounded-full shadow-lg px-4 py-2.5 text-sm font-medium text-gray-700"
+        >
+          {mobileFiltersOpen ? <X size={15} /> : <Search size={15} />}
+          {mobileFiltersOpen ? "Hide filters" : "Search & filters"}
+          {!mobileFiltersOpen && activeExtraCount > 0 && (
+            <span className="bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              {activeExtraCount}
+            </span>
+          )}
+        </button>
+        <div className={`${mobileFiltersOpen ? "flex" : "hidden"} sm:flex flex-col gap-2`}>
           <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-start gap-3">
             {/* Location search (geocoding) */}
             <div className="w-full sm:w-[280px]">
@@ -399,7 +414,7 @@ export default function MapPage() {
                   <span className="text-xs text-gray-400 animate-pulse">Loading…</span>
                 )}
                 {query && (
-                  <button onClick={() => setQuery("")} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <button onClick={() => setQuery("")} className="text-gray-400 hover:text-gray-600 transition-colors p-2 -m-2 shrink-0">
                     <X size={16} />
                   </button>
                 )}
@@ -436,7 +451,7 @@ export default function MapPage() {
               {createdAfter && (
                 <button
                   onClick={() => setCreatedAfter("")}
-                  className="absolute right-9 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-9 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1.5 -m-1.5"
                   aria-label="Clear created after"
                 >
                   <X size={14} />
@@ -524,7 +539,7 @@ export default function MapPage() {
         <div className={`w-full flex shrink-0 ${isOpen ? "justify-end" : "justify-center"} items-center p-4`}>
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="p-1 rounded-md hover:bg-gray-200 transition-colors"
+            className="p-2.5 -m-1.5 rounded-md hover:bg-gray-200 transition-colors"
           >
             {isOpen ? <X size={20} /> : <Logs size={20} />}
           </button>
@@ -544,7 +559,8 @@ export default function MapPage() {
                   </div>
                   <button
                     onClick={() => setSelectedDevice(null)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 hover:text-gray-600 p-2 -m-2 shrink-0"
+                    aria-label="Deselect device"
                   >
                     <X size={15} />
                   </button>
@@ -561,7 +577,8 @@ export default function MapPage() {
                     <button
                       key={tab.value}
                       onClick={() => setActiveTab(tab.value)}
-                      className={`flex items-center gap-1 px-2 py-2 rounded-lg text-[12px] font-semibold transition-all duration-300 flex-1 justify-center
+                      title={tab.label}
+                      className={`flex items-center gap-1 px-2 py-2 rounded-lg text-[12px] font-semibold transition-all duration-300 flex-1 min-w-0 justify-center
                         ${active
                           ? "bg-linear-to-r from-secondary to-primary text-white shadow-sm"
                           : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -570,7 +587,7 @@ export default function MapPage() {
                       <span className={active ? "text-white" : "text-gray-600"}>
                         {tab.icon(active)}
                       </span>
-                      <span className="whitespace-nowrap leading-tight">{tab.label}</span>
+                      <span className="truncate leading-tight">{tab.label}</span>
                     </button>
                   );
                 })}

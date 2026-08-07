@@ -44,6 +44,8 @@ function Toggle({
       onClick={() => onChange(!checked)}
       className="group relative w-10 h-6 shrink-0 rounded-full transition-colors bg-gray-300 aria-checked:bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
     >
+      {/* Invisible hit-area extension — the visible pill stays 40×24. */}
+      <span aria-hidden className="absolute -inset-2" />
       <span
         aria-hidden
         className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform group-aria-checked:translate-x-4"

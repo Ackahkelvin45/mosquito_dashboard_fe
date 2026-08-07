@@ -55,7 +55,7 @@ const GROUP_BY_OPTIONS: { label: string; value: ChartGroupBy }[] = [
 export default function MosquitoGenderChart({ data = [], groupBy, onGroupByChange, isLoading }: Props) {
   return (
     <div className="bg-white rounded-2xl p-6 font-raleway shadow-sm border border-gray-100 w-full">
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex flex-wrap gap-2 justify-between items-center mb-2">
         <h2 className="text-base font-bold text-[#1a1a2e]">Mosquito Count by Gender</h2>
         <select
           value={groupBy}
@@ -70,7 +70,7 @@ export default function MosquitoGenderChart({ data = [], groupBy, onGroupByChang
 
       <hr className="border-t border-gray-100 my-3" />
 
-      <div className="h-[360px]">
+      <div className="h-[240px] sm:h-[360px]">
         {isLoading ? (
           <div className="h-full w-full animate-pulse rounded-xl bg-gray-100" />
         ) : (

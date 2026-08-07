@@ -44,8 +44,8 @@ function DevicesPage() {
         setShowMoreFilters(false)
       }
     }
-    document.addEventListener('mousedown', handleMouseDown)
-    return () => document.removeEventListener('mousedown', handleMouseDown)
+    document.addEventListener('pointerdown', handleMouseDown)
+    return () => document.removeEventListener('pointerdown', handleMouseDown)
   }, [showMoreFilters])
 
   const filters = useMemo(() => {
@@ -318,7 +318,7 @@ function DevicesPage() {
                 <span className='text-sm font-medium text-secondary'>
                   {chip.label}
                 </span>
-                <button type="button" onClick={chip.clear}>
+                <button type="button" onClick={chip.clear} className="p-1.5 -m-1.5" aria-label={`Clear ${chip.key} filter`}>
                   <X size={16} strokeWidth={1.5} className='text-gray-500' />
                 </button>
               </div>

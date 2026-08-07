@@ -42,7 +42,7 @@ export default function DeviceClusterDetailPage({ params }: { params: Promise<{ 
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-white font-raleway rounded-lg py-6 px-4 sm:py-8 sm:px-8 overflow-y-auto">
+    <div className="w-full flex flex-col bg-white font-raleway rounded-lg py-6 px-4 sm:py-8 sm:px-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div className="flex flex-row items-center gap-3">
@@ -53,7 +53,7 @@ export default function DeviceClusterDetailPage({ params }: { params: Promise<{ 
             <ChevronLeft strokeWidth={1.5} size={18} className="text-gray-600" />
           </Link>
           <div>
-            <h1 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
+            <h1 className="text-xl font-semibold text-gray-900 flex flex-wrap items-center gap-x-3 gap-y-1">
               {cluster.name}
               <span
                 className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
@@ -125,7 +125,7 @@ export default function DeviceClusterDetailPage({ params }: { params: Promise<{ 
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Devices in Cluster</h2>
         </div>
-        <div className=" rounded-lg overflow-hidden">
+        <div className=" rounded-lg">
           {/* We reuse the generic DeviceTable passing the devices inside this cluster specifically */}
           <DeviceTable data={cluster.devices || []} isLoading={false} />
         </div>

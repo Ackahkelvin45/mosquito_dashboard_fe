@@ -116,7 +116,7 @@ export default function CorrelationChart({
 
       <div className="border-t border-gray mb-6" />
 
-      <div className="relative select-none cursor-crosshair" style={{ width: "100%", height: 340 }}>
+      <div className="relative select-none touch-pan-y cursor-crosshair w-full h-[240px] sm:h-[340px]">
         <ResetZoomButton zoom={zoom} />
         {isLoading ? (
           <div className="w-full h-full flex items-center justify-center bg-gray-50/30 rounded-xl">
@@ -164,7 +164,7 @@ export default function CorrelationChart({
                 />
               )}
 
-              <Bar yAxisId="left" dataKey="mosquito_count" name="Mosquito Count" fill="#93AAFD" radius={[4, 4, 0, 0]} barSize={18} />
+              <Bar yAxisId="left" dataKey="mosquito_count" name="Mosquito Count" fill="#93AAFD" radius={[4, 4, 0, 0]} maxBarSize={18} />
               <Line yAxisId="right" type="monotone" dataKey="temperature" name="Temp (°C)" stroke="#EF4444" strokeWidth={2.5} dot={false} connectNulls />
               <Line yAxisId="right" type="monotone" dataKey="humidity" name="Humidity (%)" stroke="#1565C0" strokeWidth={2.5} dot={false} connectNulls />
             </ComposedChart>

@@ -54,7 +54,7 @@ export default function MosquitoCountChart({ data = [], groupBy, onGroupByChange
 
   return (
     <div className="w-full rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex flex-wrap gap-2 items-center justify-between">
         <h2 className="text-base font-bold text-slate-900">
           Mosquito Count Over Time
         </h2>
@@ -70,7 +70,7 @@ export default function MosquitoCountChart({ data = [], groupBy, onGroupByChange
         </select>
       </div>
 
-      <div className="h-[320px] relative select-none cursor-crosshair">
+      <div className="h-[240px] sm:h-[320px] relative select-none touch-pan-y cursor-crosshair">
         <ResetZoomButton zoom={zoom} />
         {isLoading ? (
           <div className="h-full w-full animate-pulse rounded-xl bg-gray-100" />

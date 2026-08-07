@@ -100,7 +100,7 @@ const DEVICE_COLUMNS: DeviceColumn[] = [
     csv: (r) => r.last_activity,
   },
   {
-    header: "Activity",
+    header: "Status",
     thClass: "text-center",
     tdClass: "px-5 py-5 font-raleway text-center",
     cell: (r) => (
@@ -110,10 +110,10 @@ const DEVICE_COLUMNS: DeviceColumn[] = [
         }`}
       >
         <span className={`w-1.5 h-1.5 rounded-full ${r.is_active ? "bg-green-500" : "bg-gray-400"}`} />
-        {r.is_active ? "Active" : "Inactive"}
+        {r.is_active ? "Online" : "Offline"}
       </span>
     ),
-    csv: (r) => (r.is_active ? "Active" : "Inactive"),
+    csv: (r) => (r.is_active ? "Online" : "Offline"),
   },
   {
     header: "Mosquito Count",
@@ -157,7 +157,7 @@ export default function DeviceTable({
 
   return (
     <div className="bg-white">
-      <div className="flex justify-end gap-3">
+      <div className="flex flex-wrap justify-end gap-3">
         <ColumnVisibilityDropdown
           columns={DEVICE_COLUMNS}
           selected={selected}
@@ -199,8 +199,10 @@ export default function DeviceTable({
                       </td>
                     ))}
                     {!isGuest && (
-                      <td className="px-5 py-5 flex gap-2 justify-end">
-                        <Skeleton width={50} height={14} />
+                      <td className="px-5 py-5">
+                        <div className="flex gap-2 justify-end">
+                          <Skeleton width={50} height={14} />
+                        </div>
                       </td>
                     )}
                   </tr>
@@ -216,14 +218,16 @@ export default function DeviceTable({
                       </td>
                     ))}
                     {!isGuest && (
-                      <td className="px-5 py-5 flex gap-2 justify-center items-center font-mulish text-right font-semibold text-black">
-                        <Link href={`/devices/${row.id}/edit`}>
-                          <PencilLine size={16} className="text-primary"/>
-                        </Link>
+                      <td className="px-5 py-5 font-mulish font-semibold text-black">
+                        <div className="flex gap-2 justify-center items-center">
+                          <Link href={`/devices/${row.id}/edit`} aria-label="Edit device" className="p-2 rounded-md hover:bg-primary/10 transition-colors">
+                            <PencilLine size={16} className="text-primary"/>
+                          </Link>
 
-                        <button onClick={() => setDeviceToDelete(row)}>
-                          <Trash2 size={16} className="text-red-500"/>
-                        </button>
+                          <button onClick={() => setDeviceToDelete(row)} aria-label="Delete device" className="p-2 rounded-md hover:bg-red-500/10 transition-colors">
+                            <Trash2 size={16} className="text-red-500"/>
+                          </button>
+                        </div>
                       </td>
                     )}
                   </tr>

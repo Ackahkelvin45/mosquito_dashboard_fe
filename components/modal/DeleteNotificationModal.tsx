@@ -21,15 +21,15 @@ export default function DeleteNotificationModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-24">
+    <div className="fixed inset-0 z-50 flex overflow-y-auto p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm"
         onClick={!isPending ? onCancel : undefined}
       />
 
       {/* Modal */}
-      <div className="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative z-10 m-auto bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-3">
           <div className="flex items-center gap-3">
@@ -43,7 +43,7 @@ export default function DeleteNotificationModal({
           <button
             onClick={onCancel}
             disabled={isPending}
-            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 p-2 -m-2"
           >
             <X size={18} />
           </button>
@@ -51,7 +51,7 @@ export default function DeleteNotificationModal({
 
         {/* Body */}
         <div className="px-6 py-4">
-          <p className="text-sm text-gray-600 font-raleway leading-relaxed">
+          <p className="text-sm text-gray-600 font-raleway leading-relaxed break-words">
             Are you sure you want to{" "}
             <span className="font-semibold text-red-600">delete</span>{" "}
             the notification{" "}

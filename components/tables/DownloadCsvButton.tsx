@@ -39,8 +39,8 @@ export default function DownloadCsvButton<T>({
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    document.addEventListener("pointerdown", onClick);
+    return () => document.removeEventListener("pointerdown", onClick);
   }, [open]);
 
   const run = (fn: () => void) => {

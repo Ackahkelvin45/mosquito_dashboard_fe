@@ -97,8 +97,10 @@ export default function DeviceClusterTable({
                     <td className="px-5 py-5 text-center">
                       <Skeleton width={40} height={14} />
                     </td>
-                    <td className="px-5 py-5 flex justify-end">
-                      <Skeleton width={90} height={14} />
+                    <td className="px-5 py-5">
+                      <div className="flex justify-end">
+                        <Skeleton width={90} height={14} />
+                      </div>
                     </td>
                     <td className="px-5 py-5">
                         <Skeleton width={50} height={14} />
@@ -141,13 +143,15 @@ export default function DeviceClusterTable({
                     <td className="px-5 py-5 font-raleway text-right">
                       {formatDate(row.created_at)}
                     </td>
-                    <td className="px-5 py-5 flex gap-2 justify-center items-center font-mulish text-right font-semibold text-black">
-                      <Link href={`/device-clusters/${row.id}/edit`} title="Edit Cluster">
-                        <PencilLine size={16} className="text-primary hover:scale-110 transition-transform" />
-                      </Link>
-                      <button title="Delete Cluster">
-                        <Trash2 size={16} className="text-red-500 hover:scale-110 transition-transform" />
-                      </button>
+                    <td className="px-5 py-5 font-mulish font-semibold text-black">
+                      <div className="flex gap-2 justify-center items-center">
+                        <Link href={`/device-clusters/${row.id}/edit`} title="Edit Cluster" aria-label="Edit cluster" className="p-2 rounded-md hover:bg-primary/10 transition-colors">
+                          <PencilLine size={16} className="text-primary hover:scale-110 transition-transform" />
+                        </Link>
+                        <button title="Delete Cluster" aria-label="Delete cluster" className="p-2 rounded-md hover:bg-red-500/10 transition-colors">
+                          <Trash2 size={16} className="text-red-500 hover:scale-110 transition-transform" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

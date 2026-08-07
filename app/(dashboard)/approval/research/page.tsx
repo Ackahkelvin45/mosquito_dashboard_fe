@@ -37,9 +37,9 @@ function ResearcherRequestsPage() {
         </div>
 
         <div className='flex flex-col gap-2'>
-            <div className='flex flex-row gap-2 items-center'>
+            <div className='flex flex-row flex-wrap gap-2 items-center'>
                 <span className='text-sm font-medium'>Filter Status:</span>
-                <div className='flex gap-2 ml-2'>
+                <div className='flex flex-wrap gap-2 ml-2'>
                     <span className='px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold cursor-pointer border border-primary/20'>All</span>
                     <span className='px-3 py-1 hover:bg-gray-100 text-gray-500 rounded-full text-xs font-semibold cursor-pointer border border-gray-200'>Pending</span>
                     <span className='px-3 py-1 hover:bg-gray-100 text-gray-500 rounded-full text-xs font-semibold cursor-pointer border border-gray-200'>Approved</span>

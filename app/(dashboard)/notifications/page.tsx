@@ -274,7 +274,7 @@ function NotificationsPage() {
             {activeChips.map((chip) => (
               <div key={chip.key} className='flex flex-row gap-2 items-center bg-[#3C2178]/5 px-2 rounded-lg py-1'>
                 <span className='text-sm font-medium text-secondary'>{chip.label}</span>
-                <button type='button' onClick={chip.clear} aria-label={`Clear ${chip.key} filter`}>
+                <button type='button' onClick={chip.clear} aria-label={`Clear ${chip.key} filter`} className='p-1.5 -m-1.5'>
                   <X size={16} strokeWidth={1.5} className='text-gray-500' />
                 </button>
               </div>
@@ -322,7 +322,7 @@ function NotificationsPage() {
                           aria-label='Mark as unread'
                           title='Mark as unread'
                           onClick={() => markUnread.mutate(notification.id)}
-                          className='hover:bg-primary/10 p-1.5 rounded-md transition-colors'
+                          className='hover:bg-primary/10 p-2 rounded-md transition-colors'
                         >
                           <Mail size={16} className='text-primary' />
                         </button>
@@ -332,7 +332,7 @@ function NotificationsPage() {
                           aria-label='Mark as read'
                           title='Mark as read'
                           onClick={() => markRead.mutate(notification.id)}
-                          className='hover:bg-primary/10 p-1.5 rounded-md transition-colors'
+                          className='hover:bg-primary/10 p-2 rounded-md transition-colors'
                         >
                           <MailOpen size={16} className='text-primary' />
                         </button>
@@ -343,7 +343,7 @@ function NotificationsPage() {
                           aria-label='Unarchive'
                           title='Unarchive'
                           onClick={() => unarchive.mutate(notification.id)}
-                          className='hover:bg-gray-100 p-1.5 rounded-md transition-colors'
+                          className='hover:bg-gray-100 p-2 rounded-md transition-colors'
                         >
                           <ArchiveRestore size={16} className='text-gray-500' />
                         </button>
@@ -353,7 +353,7 @@ function NotificationsPage() {
                           aria-label='Archive'
                           title='Archive'
                           onClick={() => archive.mutate(notification.id)}
-                          className='hover:bg-gray-100 p-1.5 rounded-md transition-colors'
+                          className='hover:bg-gray-100 p-2 rounded-md transition-colors'
                         >
                           <Archive size={16} className='text-gray-500' />
                         </button>
@@ -363,7 +363,7 @@ function NotificationsPage() {
                         aria-label='Delete'
                         title='Delete'
                         onClick={() => setDeleteTarget(notification)}
-                        className='hover:bg-red-500/10 p-1.5 rounded-md transition-colors'
+                        className='hover:bg-red-500/10 p-2 rounded-md transition-colors'
                       >
                         <Trash2 size={16} className='text-red-500' />
                       </button>

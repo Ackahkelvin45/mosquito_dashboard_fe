@@ -68,7 +68,7 @@ export default function MosquitoMonitoringChart({
   return (
     <div className="bg-white rounded-2xl p-6 font-raleway shadow-sm border border-gray-100 w-full h-full flex flex-col">
       {/* Header */}
-      <div className="flex justify-between border-b border-gray pb-4 items-center mb-6">
+      <div className="flex flex-wrap gap-2 justify-between border-b border-gray pb-4 items-center mb-6">
         <h2 className="text-sm font-medium tracking-wide text-gray-600">
           MOSQUITO MONITORING
         </h2>
@@ -94,7 +94,7 @@ export default function MosquitoMonitoringChart({
           chart a definite height in every layout — without it the chart
           silently disappears wherever the card is not itself height-constrained
           (e.g. the date-range page). */}
-      <div className="flex-1 min-h-[380px] relative select-none cursor-crosshair">
+      <div className="flex-1 min-h-[260px] sm:min-h-[380px] relative select-none touch-pan-y cursor-crosshair">
         <ResetZoomButton zoom={zoom} />
         <div className="absolute inset-0">
         {isLoading ? (

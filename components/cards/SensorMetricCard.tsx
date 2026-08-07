@@ -21,7 +21,7 @@ function SensorMetricCard({
          
         </div>
         <div className="flex justify-center items-center my-4">
-            <Image src={Icon} alt={title} width={100}  height={150 } objectFit="contain" />
+            <Image src={Icon} alt={title} width={100} height={100} className="h-auto object-contain" />
           </div>
         <div className="flex flex-col gap-1 text-center">
           {lines.map((line) => (

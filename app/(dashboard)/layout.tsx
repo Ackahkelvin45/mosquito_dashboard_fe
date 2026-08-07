@@ -76,8 +76,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <Sidebar />
       <Navbar />
       <main
-        className="p-4 pt-20 lg:pl-[260px] bg-[#F5F5F5] min-h-screen w-full overflow-x-hidden overflow-y-auto"
-        style={{ flex: 1, overflow: "auto" }}
+        className="flex-1 p-4 pt-20 lg:pl-[260px] bg-[#F5F5F5] min-h-screen w-full overflow-x-hidden"
       >
         {isGuest && <GuestBanner />}
         {children}

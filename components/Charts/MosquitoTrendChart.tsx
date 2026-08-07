@@ -129,7 +129,7 @@ export default function MosquitoTrendChart({
 
       <hr className="border-t border-gray-100 my-3" />
 
-      <div className="h-[360px] relative select-none cursor-crosshair">
+      <div className="h-[240px] sm:h-[360px] relative select-none touch-pan-y cursor-crosshair">
         <ResetZoomButton zoom={zoom} />
         {isLoading ? (
           <div className="h-full w-full animate-pulse rounded-xl bg-gray-100" />

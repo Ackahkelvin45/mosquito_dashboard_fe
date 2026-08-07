@@ -46,8 +46,8 @@ export default function MultiSelectDropdown({
         setQuery("");
       }
     }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
+    document.addEventListener("pointerdown", onClickOutside);
+    return () => document.removeEventListener("pointerdown", onClickOutside);
   }, []);
 
   const filtered = useMemo(() => {
@@ -107,6 +107,7 @@ export default function MultiSelectDropdown({
           type="button"
           tabIndex={-1}
           disabled={disabled}
+          className="p-2 -m-1 shrink-0"
           onClick={(e) => {
             e.stopPropagation();
             setOpen((o) => {
@@ -124,7 +125,7 @@ export default function MultiSelectDropdown({
       </div>
 
       {open && !disabled && (
-        <div className="absolute z-50 mt-1 w-full min-w-[220px] max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+        <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg py-1">
           {filtered.length === 0 ? (
             <div className="px-3 py-2 text-gray-400">
               {options.length === 0 ? emptyText : "No matches"}

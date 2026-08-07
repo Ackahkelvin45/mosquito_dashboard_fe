@@ -1,5 +1,5 @@
 import { apiFetch } from "@/api/base";
-import { appendPagination, type PaginationParams } from "@/lib/pagination";
+import { appendPagination, type PaginationParams, type Paginated } from "@/lib/pagination";
 
 export type GetDevicesFilters = {
     name?: string;
@@ -68,3 +68,52 @@ export async function getClusterById(id: string) {
 }
 
 
+
+export type SensorReadingRow = {
+    id: number;
+    device_id: number;
+    timestamp: string;
+    temp_external?: number | null;
+    temp_internal?: number | null;
+    humidity_external?: number | null;
+    humidity_internal?: number | null;
+    pressure_internal?: number | null;
+    external_pressure?: number | null;
+    external_light?: number | null;
+    battery?: number | null;
+    trap_status?: boolean | null;
+    device_uuid?: string | null;
+    device_name?: string | null;
+    region?: string | null;
+};
+
+export type GetAllSensorReadingsFilters = {
+    start_date?: string;
+    end_date?: string;
+    /** Matches device name, UUID or region. */
+    search?: string;
+    region?: string[];
+    device_uuid?: string[];
+};
+
+export async function getAllSensorReadings(
+    filters?: GetAllSensorReadingsFilters,
+    pagination?: PaginationParams
+): Promise<Paginated<SensorReadingRow>> {
+    const params = new URLSearchParams();
+    if (filters?.start_date) params.set("start_date", filters.start_date);
+    if (filters?.end_date) params.set("end_date", filters.end_date);
+    if (filters?.search) params.set("search", filters.search);
+    // Multi-select filters are repeatable: ?region=a&region=b
+    filters?.region?.forEach((r) => {
+        if (r) params.append("region", r);
+    });
+    filters?.device_uuid?.forEach((uuid) => {
+        if (uuid) params.append("device_uuid", uuid);
+    });
+    appendPagination(params, pagination);
+    const query = params.toString();
+    return apiFetch(`/devices/sensor-readings${query ? `?${query}` : ""}`, {
+        method: "GET",
+    });
+}

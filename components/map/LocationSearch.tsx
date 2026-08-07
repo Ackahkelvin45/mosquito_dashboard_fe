@@ -38,8 +38,8 @@ export default function LocationSearch({
         setIsOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleMouseDown);
-    return () => document.removeEventListener("mousedown", handleMouseDown);
+    document.addEventListener("pointerdown", handleMouseDown);
+    return () => document.removeEventListener("pointerdown", handleMouseDown);
   }, []);
 
   useEffect(() => {
@@ -130,7 +130,7 @@ export default function LocationSearch({
         {query && !isSearching && (
           <button
             onClick={handleClear}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-2 -m-2 shrink-0"
             aria-label="Clear location search"
           >
             <X size={16} />

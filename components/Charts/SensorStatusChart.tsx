@@ -66,9 +66,9 @@ export default function SensorStatusChart({
   const yMax = Math.max(1, Math.ceil(maxValue * 1.2));
 
   return (
-    <div className="bg-white rounded-lg font-raleway shadow-md p-8 w-full">
+    <div className="bg-white rounded-lg font-raleway shadow-md p-4 sm:p-8 w-full">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap gap-3 justify-between items-center mb-6">
         <h2 className="text-base font-semibold ">
           Sensor Status Over Time
         </h2>
@@ -81,7 +81,7 @@ export default function SensorStatusChart({
               if (onGroupByChange) onGroupByChange(next);
               else setRange(next);
             }}
-            className="border border-gray rounded-lg focus:ring-0 focus:outline-none focus:border-primary px-4 py-2 text-gray-700"
+            className="border border-gray rounded-lg focus:ring-0 focus:outline-none focus:border-primary px-4 py-2 text-sm text-gray-700"
           >
             <option value="year">Last Year</option>
             <option value="month">Last Month</option>
@@ -93,7 +93,7 @@ export default function SensorStatusChart({
       <div className="border-t border-gray mb-6"></div>
 
       {/* Chart */}
-      <div style={{ width: "100%", height: 350 }}>
+      <div className="w-full h-[240px] sm:h-[350px]">
         {isLoading ? (
           <div className="w-full h-full flex items-center justify-center bg-gray-50/30 rounded-xl">
              <Skeleton width="100%" height="100%" />

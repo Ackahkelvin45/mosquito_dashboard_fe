@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query"
 import { createDevice, type CreateDevicePayload, createDeviceCluster, type CreateDeviceClusterPayload, deleteDevice, updateDevice, type UpdateDevicePayload, updateDeviceCluster, type UpdateDeviceClusterPayload } from "@/actions/deviceMutation"
-import { getDevices, type GetDevicesFilters, getClusters, getClusterById, getDeviceById } from "@/queries/device/deviceQueries"
+import { getDevices, type GetDevicesFilters, getClusters, getClusterById, getDeviceById, getAllSensorReadings, type GetAllSensorReadingsFilters } from "@/queries/device/deviceQueries"
 import { getDeviceCharts, type ChartGroupBy } from "@/queries/device/deviceChartsQueries"
 import type { PaginationParams } from "@/lib/pagination"
 
@@ -120,5 +120,16 @@ export const useDeviceCharts = (deviceId: string | number, groupBy: ChartGroupBy
         queryKey: ["device-charts", deviceId, groupBy],
         queryFn: () => getDeviceCharts(deviceId, groupBy),
         enabled: !!deviceId,
+    })
+}
+
+export const useAllSensorReadings = (
+    filters?: GetAllSensorReadingsFilters,
+    pagination?: PaginationParams,
+) => {
+    return useQuery({
+        queryKey: ["sensor-readings", filters ?? {}, pagination ?? null],
+        queryFn: () => getAllSensorReadings(filters, pagination),
+        placeholderData: keepPreviousData,
     })
 }

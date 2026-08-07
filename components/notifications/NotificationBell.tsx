@@ -49,8 +49,8 @@ export default function NotificationBell() {
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", onMouseDown);
-    return () => document.removeEventListener("mousedown", onMouseDown);
+    document.addEventListener("pointerdown", onMouseDown);
+    return () => document.removeEventListener("pointerdown", onMouseDown);
   }, [open]);
 
   // Escape closes.
@@ -104,7 +104,7 @@ export default function NotificationBell() {
                   type="button"
                   onClick={() => markAllRead.mutate()}
                   disabled={markAllRead.isPending}
-                  className="text-xs font-semibold text-primary hover:underline disabled:opacity-50"
+                  className="text-xs font-semibold text-primary hover:underline disabled:opacity-50 px-2 py-1.5 -mx-2 -my-1.5"
                 >
                   Mark all read
                 </button>
@@ -112,7 +112,7 @@ export default function NotificationBell() {
               <Link
                 href="/notifications"
                 onClick={() => setOpen(false)}
-                className="text-xs font-semibold text-secondary hover:underline"
+                className="text-xs font-semibold text-secondary hover:underline px-2 py-1.5 -mx-2 -my-1.5"
               >
                 View all
               </Link>
@@ -120,7 +120,7 @@ export default function NotificationBell() {
           </div>
 
           {/* List */}
-          <div className="max-h-[420px] overflow-y-auto">
+          <div className="max-h-[min(420px,60vh)] overflow-y-auto">
             {isLoading ? (
               <div className="flex flex-col">
                 {Array.from({ length: 4 }).map((_, i) => (

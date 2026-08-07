@@ -141,9 +141,11 @@ export default function ReaseacherRequetsTable({
                       <td className="px-5 py-5 text-center">
                         <Skeleton width={100} height={14} />
                       </td>
-                      <td className="px-5 py-5 flex justify-end gap-2">
-                        <Skeleton width={24} height={24} circle />
-                        <Skeleton width={24} height={24} circle />
+                      <td className="px-5 py-5">
+                        <div className="flex justify-end gap-2">
+                          <Skeleton width={24} height={24} circle />
+                          <Skeleton width={24} height={24} circle />
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -188,7 +190,8 @@ export default function ReaseacherRequetsTable({
                         <td className="px-5 py-5 font-raleway text-center text-gray-500">
                           {formatDate(row.created_at)}
                         </td>
-                        <td className="px-5 py-5 flex gap-2 justify-end items-center">
+                        <td className="px-5 py-5">
+                          <div className="flex gap-2 justify-end items-center">
                           <button
                             disabled={!isPending}
                             onClick={() =>
@@ -209,6 +212,7 @@ export default function ReaseacherRequetsTable({
                           >
                             <X size={18} strokeWidth={2.5} />
                           </button>
+                          </div>
                         </td>
                       </tr>
                     );

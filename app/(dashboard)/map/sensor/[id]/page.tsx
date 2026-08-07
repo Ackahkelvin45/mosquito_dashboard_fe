@@ -39,6 +39,7 @@ import type { MosquitoEvent, MosquitoRange } from "@/queries/mosquito_data/mosqu
 import type { ChartGroupBy } from "@/queries/device/deviceChartsQueries";
 import DownloadCsvButton from "@/components/tables/DownloadCsvButton";
 import ColumnVisibilityDropdown, { useColumnVisibility } from "@/components/tables/ColumnVisibilityDropdown";
+import SensorDataTable from "@/components/tables/SensorDataTable";
 
 // A missing reading is unknown, not zero — `|| 0` would render "0 °C" / "0 V"
 // for a device that has never reported, which reads as a real measurement.
@@ -128,7 +129,7 @@ export default function SensorDetailPage() {
   const params = useParams();
   const id = params?.id as string | undefined;
   const { data: device, isLoading } = useDevice(id || "");
-  const [activeTab, setActiveTab] = useState<"readings" | "graphs">("readings");
+  const [activeTab, setActiveTab] = useState<"readings" | "sensor-history" | "graphs">("readings");
   // "all" omits the range param — the API then returns every event, which is
   // the only way to reach data older than the widest rolling window (month).
   const [range, setRange] = useState<MosquitoRange | "all">("month");
@@ -143,6 +144,11 @@ export default function SensorDetailPage() {
   }
 
   const deviceUuid = device?.device_uuid ?? "";
+  // Stable reference: SensorDataTable resets to page 1 whenever this changes.
+  const sensorHistoryFilters = useMemo(
+    () => ({ device_uuid: [deviceUuid] }),
+    [deviceUuid]
+  );
   const { data: mosquitoEventsPage, isLoading: isMosquitoLoading } = useMosquitoEventsByDeviceUuidWithFilters(
     deviceUuid,
     { range: range === "all" ? undefined : range },
@@ -303,7 +309,7 @@ export default function SensorDetailPage() {
         </div>
       {/* Map */}
       <div className="relative w-full mt-2 rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-sm">
-        <div className="h-[400px] w-full">
+        <div className="h-[260px] sm:h-[400px] w-full">
           <MapWithNoSSR 
             position={mapCenter} 
             zoom={9} 
@@ -318,9 +324,9 @@ export default function SensorDetailPage() {
       
 
       {/* Content */}
-      <div className="bg-white rounded-b-2xl rounded-t-xl border border-t-0 border-gray-200 shadow-sm p-6">
+      <div className="bg-white rounded-b-2xl rounded-t-xl border border-t-0 border-gray-200 shadow-sm p-4 sm:p-6">
         {/* Tabs */}
-      <div className="flex   px-1 pt-2">
+      <div className="flex flex-wrap gap-y-2 px-1 pt-2">
         <button
           type="button"
           onClick={() => setActiveTab("readings")}
@@ -331,6 +337,17 @@ export default function SensorDetailPage() {
           }`}
         >
           Current Readings
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("sensor-history")}
+          className={`px-5 py-3 font-raleway text-sm font-semibold transition ${
+            activeTab === "sensor-history"
+              ? "bg-linear-to-r from-secondary to-primary text-white shadow-sm"
+              : "text-gray-500 bg-gray hover:text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          Sensor Readings
         </button>
         <button
           type="button"
@@ -349,7 +366,7 @@ export default function SensorDetailPage() {
             {/* Mosquito Species and Age Count */}
             <div>
               <div className="flex flex-wrap items-center border-b border-gray pb-2 justify-between gap-4 mb-4">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 gap-y-2">
                   <h2 className="text-lg font-raleway font-semibold text-gray-800">
                     Mosquito Events
                   </h2>
@@ -372,7 +389,7 @@ export default function SensorDetailPage() {
                     </>
                   )}
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 gap-y-2">
                   <ColumnVisibilityDropdown
                     columns={MOSQUITO_COLUMNS}
                     selected={selected}
@@ -399,7 +416,7 @@ export default function SensorDetailPage() {
                   </select>
                 </div>
               </div>
-              <div className="overflow-hidden rounded-xl border border-secondary/15 ">
+              <div className="overflow-x-auto rounded-xl border border-secondary/15 ">
                 <table className="w-full text-left border-collapse border-secondary/15  font-raleway">
                   <thead className="bg-[#DAE3F8]/30">
                     <tr className="text-gray-700 text-sm">
@@ -494,6 +511,19 @@ export default function SensorDetailPage() {
                 lines={[{ label: "Reading", value: formatReading(device?.latest_reading?.battery_voltage, "V") }]}
               />
             </div>
+
+          </div>
+        )}
+
+        {activeTab === "sensor-history" && (
+          <div className="mt-10">
+            {/* The fleet-wide table scoped to this device. Rendered only once
+                the uuid is known, so the unfiltered fleet query never fires. */}
+            {deviceUuid ? (
+              <SensorDataTable title="Sensor Reading History" filters={sensorHistoryFilters} />
+            ) : (
+              <Skeleton height={200} />
+            )}
           </div>
         )}
 

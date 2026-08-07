@@ -87,8 +87,10 @@ export default function UsersTable({
                     <td className="px-5 py-5 text-center">
                       <Skeleton width={90} height={14} />
                     </td>
-                    <td className="px-5 py-5 flex justify-end gap-2">
-                       <Skeleton width={50} height={14} />
+                    <td className="px-5 py-5">
+                       <div className="flex justify-end gap-2">
+                         <Skeleton width={50} height={14} />
+                       </div>
                     </td>
                   </tr>
                 ))
@@ -111,14 +113,16 @@ export default function UsersTable({
                     <td className="px-5 py-5 font-raleway text-center text-gray-500">
                       {formatDate(row.created_at)}
                     </td>
-                    <td className="px-5 py-5 flex gap-2 justify-end items-center font-mulish text-right font-semibold text-black">
-                      <button className="hover:bg-primary/10 p-1.5 rounded-md transition-colors">
-                        <PencilLine size={16} className="text-primary" />
-                      </button>
+                    <td className="px-5 py-5 font-mulish font-semibold text-black">
+                      <div className="flex gap-2 justify-end items-center">
+                        <button className="hover:bg-primary/10 p-2 rounded-md transition-colors">
+                          <PencilLine size={16} className="text-primary" />
+                        </button>
 
-                      <button className="hover:bg-red-500/10 p-1.5 rounded-md transition-colors">
-                        <Trash2 size={16} className="text-red-500" />
-                      </button>
+                        <button className="hover:bg-red-500/10 p-2 rounded-md transition-colors">
+                          <Trash2 size={16} className="text-red-500" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

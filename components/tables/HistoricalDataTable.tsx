@@ -142,9 +142,9 @@ export default function HistoricalDataTable({
 
   return (
     <div className="bg-white">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-base font-raleway font-semibold text-gray-900">{title}</h2>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {isLoading && <span className="text-xs text-gray-400">Loading…</span>}
           {!isLoading && error && <span className="text-xs text-red-500">Failed to load</span>}
           <ColumnVisibilityDropdown

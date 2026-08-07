@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 // Plotly-style zoom for the time-series charts: drag across the plot to zoom
 // into that x-range, double-click (or the reset button) to zoom back out.
 // Works by slicing the data array, so it fits Recharts' categorical x-axes.
+// Bound to both mouse and touch events; hosts need `touch-pan-y` so a
+// horizontal drag selects while vertical swipes still scroll the page.
 
 // Structural subset of Recharts' MouseHandlerDataParam, so the handlers can be
 // passed straight to a chart's onMouseDown/onMouseMove/onMouseUp.
@@ -34,6 +36,9 @@ export interface ChartZoom<T> {
     onMouseUp: () => void;
     onMouseLeave: () => void;
     onDoubleClick: () => void;
+    onTouchStart: (state: ChartMouseState) => void;
+    onTouchMove: (state: ChartMouseState) => void;
+    onTouchEnd: () => void;
   };
 }
 
@@ -72,32 +77,39 @@ export function useChartZoom<T>(fullData: T[], xKey = "label"): ChartZoom<T> {
         }
       : null;
 
+  const startDrag = (state: ChartMouseState) => {
+    const i = toAbsolute(state);
+    if (i !== null) setDrag([i, i]);
+  };
+  const moveDrag = (state: ChartMouseState) => {
+    if (!drag) return;
+    const i = toAbsolute(state);
+    if (i !== null) setDrag([drag[0], i]);
+  };
+  const endDrag = () => {
+    if (drag) {
+      const start = Math.max(0, Math.min(drag[0], drag[1]));
+      const end = Math.min(fullData.length - 1, Math.max(drag[0], drag[1]));
+      // Ignore clicks and one-point selections — nothing to zoom into.
+      if (end > start) setWindow([start, end]);
+    }
+    setDrag(null);
+  };
+
   return {
     data,
     refArea,
     isZoomed: window !== null,
     reset: () => setWindow(null),
     chartProps: {
-      onMouseDown: (state) => {
-        const i = toAbsolute(state);
-        if (i !== null) setDrag([i, i]);
-      },
-      onMouseMove: (state) => {
-        if (!drag) return;
-        const i = toAbsolute(state);
-        if (i !== null) setDrag([drag[0], i]);
-      },
-      onMouseUp: () => {
-        if (drag) {
-          const start = Math.max(0, Math.min(drag[0], drag[1]));
-          const end = Math.min(fullData.length - 1, Math.max(drag[0], drag[1]));
-          // Ignore clicks and one-point selections — nothing to zoom into.
-          if (end > start) setWindow([start, end]);
-        }
-        setDrag(null);
-      },
+      onMouseDown: startDrag,
+      onMouseMove: moveDrag,
+      onMouseUp: endDrag,
       onMouseLeave: () => setDrag(null),
       onDoubleClick: () => setWindow(null),
+      onTouchStart: startDrag,
+      onTouchMove: moveDrag,
+      onTouchEnd: endDrag,
     },
   };
 }

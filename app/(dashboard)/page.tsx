@@ -23,6 +23,7 @@ import {
 } from '@/hooks/dashboard'
 import type { DashboardChartPoint, DashboardGroupBy } from '@/queries/dashboard/dashboardQueries'
 import { buildStatCards } from '@/components/cards/dashboardStatCards'
+import DashboardExportButton from '@/components/DashboardExportButton'
 import { useRole } from '@/hooks/useRole'
 import "react-loading-skeleton/dist/skeleton.css";
 
@@ -53,23 +54,17 @@ function Dashboard() {
     setGenusHeatmapGroupBy(value)
   }
 
-  const { data: totalsData, isLoading: totalsLoading, isFetching: totalsFetching } = useDashboardTotals(totalsGroupBy)
-  const { data: chartData, isLoading: chartLoading, isFetching: chartFetching } = useMosquitoChart(chartGroupBy)
-  const { data: genderData, isLoading: genderLoading, isFetching: genderFetching } = useGenderDistribution(genderGroupBy)
-  const { data: breakdownDataResponse, isLoading: breakdownLoading, isFetching: breakdownFetching } = useMosquitoBreakdown(breakdownGroupBy)
-  const { data: regionDataResponse, isLoading: regionLoading, isFetching: regionFetching } = useRegionBreakdown(regionGroupBy)
-  const { data: sensorStatusResponse, isLoading: sensorStatusLoading, isFetching: sensorStatusFetching } = useSensorStatus(sensorStatusGroupBy)
-  const { data: correlationData, isLoading: correlationLoading, isFetching: correlationFetching } = useCorrelationChart(correlationGroupBy)
-  const { data: genusHeatmapData, isLoading: genusHeatmapLoading, isFetching: genusHeatmapFetching } = useGenusHeatmap(genusHeatmapGroupBy)
-
-  const isTotalsLoading = totalsLoading || totalsFetching
-  const isChartLoading = chartLoading || chartFetching
-  const isGenderLoading = genderLoading || genderFetching
-  const isBreakdownLoading = breakdownLoading || breakdownFetching
-  const isRegionLoading = regionLoading || regionFetching
-  const isSensorStatusLoading = sensorStatusLoading || sensorStatusFetching
-  const isCorrelationLoading = correlationLoading || correlationFetching
-  const isGenusHeatmapLoading = genusHeatmapLoading || genusHeatmapFetching
+  // Skeletons only on isLoading (first fetch with an empty cache — including
+  // group-by changes, which are new query keys). Background refetches of
+  // already-cached data update silently instead of re-showing skeletons.
+  const { data: totalsData, isLoading: isTotalsLoading } = useDashboardTotals(totalsGroupBy)
+  const { data: chartData, isLoading: isChartLoading } = useMosquitoChart(chartGroupBy)
+  const { data: genderData, isLoading: isGenderLoading } = useGenderDistribution(genderGroupBy)
+  const { data: breakdownDataResponse, isLoading: isBreakdownLoading } = useMosquitoBreakdown(breakdownGroupBy)
+  const { data: regionDataResponse, isLoading: isRegionLoading } = useRegionBreakdown(regionGroupBy)
+  const { data: sensorStatusResponse, isLoading: isSensorStatusLoading } = useSensorStatus(sensorStatusGroupBy)
+  const { data: correlationData, isLoading: isCorrelationLoading } = useCorrelationChart(correlationGroupBy)
+  const { data: genusHeatmapData, isLoading: isGenusHeatmapLoading } = useGenusHeatmap(genusHeatmapGroupBy)
 
   const totals = totalsData
   const chart = chartData
@@ -226,10 +221,27 @@ function Dashboard() {
     <div className="flex flex-col gap-4">
 
         <div className="flex flex-wrap items-center justify-between gap-3 px-2 mb-2">
-          <span className="text-xl font-semibold font-mulish text-primary">
+          <h1 className="text-xl font-semibold font-mulish text-primary">
             Dashboard
-          </span>
+          </h1>
           <div className="flex flex-wrap items-center gap-3">
+            <DashboardExportButton
+              sections={{
+                totals: totalsData,
+                chart: chartData,
+                gender_distribution: genderData,
+                breakdown: breakdownDataResponse,
+                region_chart: regionDataResponse,
+                sensor_status_chart: sensorStatusResponse,
+                correlation_chart: correlationData,
+                genus_heatmap: genusHeatmapData,
+              }}
+              disabled={
+                isTotalsLoading || isChartLoading || isGenderLoading ||
+                isBreakdownLoading || isRegionLoading || isSensorStatusLoading ||
+                isCorrelationLoading || isGenusHeatmapLoading
+              }
+            />
             {!isGuest && (
               <Link
                 href="/date-range"
@@ -266,8 +278,8 @@ function Dashboard() {
           isLoading={isChartLoading}
         />
 	      </div>
-	      <div className="grid grid-cols-2 gap-4 w-full lg:w-[35%]">
-	          <div className="col-span-2 flex items-center justify-between gap-2">
+	      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2 gap-4 w-full lg:w-[35%]">
+	          <div className="col-span-full flex items-center justify-between gap-2">
 	            <span className="text-base font-bold text-gray-700">Summary Cards</span>
 	            <select
 	              value={totalsGroupBy}
