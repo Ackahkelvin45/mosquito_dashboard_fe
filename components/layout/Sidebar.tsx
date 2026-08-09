@@ -8,7 +8,7 @@ import profile from '../../public/images/profile.png'
 import {
   House, Map, ChartNoAxesCombined, Satellite, CirclePile,
   UserRoundPlus, ShieldUser, Bell, ChevronDown, ChevronRight,
-  EllipsisVertical, LogIn, LogOut, Thermometer, User, X
+  EllipsisVertical, KeyRound, LogIn, LogOut, Thermometer, User, X
 } from 'lucide-react'
 import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/authentication'
@@ -83,6 +83,13 @@ const navItems: NavItem[] = [
     label: 'Notifications',
     icon: <Bell size={19} />,
     href: '/notifications',
+  },
+  {
+    // No roles array: every authenticated user may hold API keys (and it
+    // renders without waiting for /auth/me). Guests never see it.
+    label: 'API Access',
+    icon: <KeyRound size={19} />,
+    href: '/apis',
   },
   {
     label: 'Settings',
@@ -173,7 +180,7 @@ function Sidebar() {
           backgroundPosition: 'center',
         }}
       />
-      <div className="relative z-10 flex flex-1 flex-col">
+      <div className="relative z-10 flex flex-1 min-h-0 flex-col">
 
         <div className='flex bg-primary/30 flex-row items-center px-7 gap-3 py-5'>
             <Image src={logo} alt='logo' className='invert brightness-0 h-auto' width={30} height={24} />
@@ -187,7 +194,7 @@ function Sidebar() {
             </button>
         </div>
       {/* Nav Items */}
-      <nav className="flex-1 pt-5 overflow-y-auto">
+      <nav className="flex-1 min-h-0 pt-5 overflow-y-auto">
         {visibleNavItems.map((item) => {
           const hasSubItems = item.subItems && item.subItems.length > 0
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))

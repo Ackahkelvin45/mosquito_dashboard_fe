@@ -110,9 +110,12 @@ export default function MosquitoTrendChart({
   return (
     <div className="bg-white rounded-2xl p-6 font-raleway shadow-sm border border-gray-100 w-full">
       <div className="flex flex-wrap gap-3 justify-between items-center mb-2">
-        <h2 className="text-base font-bold text-[#1a1a2e]">
-          Mosquito Count Trend By Age and Sex
-        </h2>
+        <div>
+          <h2 className="text-base font-bold text-[#1a1a2e]">
+            Mosquito Count Trend By Age and Sex
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">Detections split by age group and sex over time</p>
+        </div>
 
         <div className="flex items-center gap-3">
           <select

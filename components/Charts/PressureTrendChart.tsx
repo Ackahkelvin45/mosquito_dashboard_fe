@@ -54,7 +54,10 @@ export default function PressureTrendChart({ data = [], groupBy, onGroupByChange
   return (
     <div className="bg-white rounded-2xl p-6 font-raleway shadow-sm border border-gray-100 w-full">
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-base font-bold text-[#1a1a2e]">Pressure Trend</h2>
+        <div>
+          <h2 className="text-base font-bold text-[#1a1a2e]">Pressure Trend</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Air pressure readings from this trap over time</p>
+        </div>
         <select
           value={groupBy}
           onChange={(e) => onGroupByChange(e.target.value as ChartGroupBy)}

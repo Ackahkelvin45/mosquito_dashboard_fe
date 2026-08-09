@@ -71,7 +71,7 @@ export default function MosquitoBreakdown({
           <h2 className="text-sm font-medium tracking-wide text-gray-600 uppercase">
             Mosquito Breakdown
           </h2>
-          <p className="text-xs text-gray-400 mt-1">Detailed statistical overview</p>
+          <p className="text-xs text-gray-400 mt-1">Mosquito counts grouped by genus, species, sex and age group</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

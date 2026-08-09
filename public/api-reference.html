@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Data API Reference — Mosquito Surveillance Dashboard</title>
+<link rel="icon" href="/images/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue-dark: #1a4a80;
+    --blue: #1565C0;
+    --blue-light: #2196F3;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --bg-soft: #f8fafc;
+    --code-bg: #0f172a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Raleway', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--ink);
+    background: #ffffff;
+    line-height: 1.65;
+  }
+  header {
+    background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 50%, var(--blue-light) 100%);
+    color: #fff;
+    padding: 40px 24px 36px;
+  }
+  .header-inner { max-width: 900px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  .brand img { height: 30px; width: auto; filter: brightness(0) invert(1); }
+  header h1 { margin: 0 0 6px; font-size: 1.7rem; font-weight: 700; }
+  header p { margin: 0; opacity: .85; font-size: .95rem; max-width: 640px; }
+  .badge {
+    display: inline-block; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35);
+    border-radius: 999px; padding: 2px 12px; font-size: .75rem; font-weight: 600;
+    vertical-align: middle; margin-left: 10px; letter-spacing: .04em;
+  }
+  html { scroll-behavior: smooth; }
+  .layout { max-width: 1200px; margin: 0 auto; display: flex; align-items: flex-start; gap: 40px; padding: 0 24px; }
+  .sidebar {
+    position: sticky; top: 0; width: 210px; flex-shrink: 0;
+    max-height: 100vh; overflow-y: auto; padding: 32px 0 40px;
+  }
+  .sidebar strong {
+    display: block; margin-bottom: 10px; font-size: .72rem;
+    text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+  }
+  .sidebar a {
+    display: block; color: var(--muted); text-decoration: none; font-size: .88rem;
+    padding: 6px 12px; border-left: 3px solid transparent; transition: color .15s, border-color .15s;
+  }
+  .sidebar a:hover { color: var(--blue); }
+  .sidebar a.active { color: var(--blue); border-left-color: var(--blue); font-weight: 600; background: var(--bg-soft); }
+  main { flex: 1; min-width: 0; max-width: 900px; padding: 32px 0 80px; }
+  h2 {
+    font-size: 1.25rem; font-weight: 700; margin: 48px 0 12px;
+    padding-top: 18px; border-top: 1px solid var(--border); scroll-margin-top: 16px;
+  }
+  main h2:first-of-type { margin-top: 24px; }
+  h3 { font-size: 1rem; font-weight: 600; margin: 28px 0 8px; }
+  p, li { font-size: .95rem; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .85em; background: #eef2f7; border-radius: 5px; padding: 1px 6px;
+  }
+  pre {
+    background: var(--code-bg); color: #e2e8f0; border-radius: 10px;
+    padding: 16px 18px; overflow-x: auto; font-size: .82rem; line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: .88rem; }
+  th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--bg-soft); font-weight: 600; }
+  td code { white-space: nowrap; }
+  .method {
+    display: inline-block; font-weight: 700; font-size: .72rem; letter-spacing: .05em;
+    background: #dcfce7; color: #15803d; border-radius: 5px; padding: 2px 8px; margin-right: 8px;
+  }
+  .endpoint {
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 16px; margin: 20px 0 10px; font-family: ui-monospace, Menlo, monospace; font-size: .9rem;
+  }
+  .note {
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
+    padding: 12px 16px; font-size: .88rem; margin: 16px 0;
+  }
+  .base-url { color: #7dd3fc; }
+  footer { border-top: 1px solid var(--border); color: var(--muted); font-size: .8rem; padding: 24px; text-align: center; }
+  @media (max-width: 800px) {
+    header { padding: 28px 18px; }
+    .layout { flex-direction: column; gap: 0; padding: 0 18px; }
+    /* Sidebar degrades to the top-of-page contents block on small screens. */
+    .sidebar { position: static; width: 100%; max-height: none; padding: 24px 0 0; }
+    .sidebar a { display: inline-block; border-left: none; padding: 3px 10px 3px 0; }
+    .sidebar a.active { background: none; }
+    main { padding: 8px 0 60px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <img src="/images/logo.png" alt="Logo">
+      <img src="/images/name.png" alt="Mosquito Surveillance Dashboard" style="height:16px">
+    </div>
+    <h1>Data API Reference <span class="badge">v1</span></h1>
+    <p>Read-only HTTP API for researchers and external consumers of mosquito surveillance data:
+       sensor readings, mosquito detections, devices and clusters.</p>
+  </div>
+</header>
+
+<div class="layout">
+
+<aside class="sidebar">
+  <nav>
+    <strong>Contents</strong>
+    <a href="#auth">Authentication</a>
+    <a href="#scope">Data scope</a>
+    <a href="#endpoints">Endpoints</a>
+    <a href="#parameters">Parameters</a>
+    <a href="#pagination">Pagination</a>
+    <a href="#sensor-readings">Sensor readings</a>
+    <a href="#mosquito-events">Mosquito events</a>
+    <a href="#devices">Devices</a>
+    <a href="#clusters">Clusters</a>
+    <a href="#export">Export</a>
+    <a href="#rate-limits">Rate limits</a>
+    <a href="#errors">Errors</a>
+    <a href="#versioning">Versioning</a>
+  </nav>
+</aside>
+
+<main>
+
+<p>All requests use the base URL:</p>
+<pre><code><span class="base-url">https://your-api-host</span></code></pre>
+
+<h2 id="auth">Authentication</h2>
+<p>Create an API key in the dashboard under <strong>API&nbsp;Access</strong> (any signed-in, approved
+account). The raw key (<code>mk_…</code>) is shown <strong>once</strong> at creation — store it
+securely; only a hash is kept server-side. Send it on every request in the
+<code>X-API-Key</code> header:</p>
+<pre><code>curl -H "X-API-Key: mk_your_key_here" \
+  "<span class="base-url">https://your-api-host</span>/api/v1/devices"</code></pre>
+<div class="note">
+  Keep your key out of shared notebooks, repositories and URLs. If a key leaks, revoke it in the
+  dashboard — revocation takes effect on the next request.
+</div>
+
+<h2 id="scope">Data scope</h2>
+<p>A key reads exactly the data its owner can see in the dashboard:</p>
+<table>
+  <tr><th>Owner role</th><th>Key's data scope</th></tr>
+  <tr><td>Super admin</td><td>All clusters</td></tr>
+  <tr><td>Cluster admin / user</td><td>Their cluster + public clusters</td></tr>
+</table>
+<p>Scope is evaluated live per request — revoking the key, deactivating the owner, or changing
+their cluster takes effect immediately. Requesting a <code>cluster_id</code> outside your scope is
+not an error: it simply yields no rows.</p>
+
+<h2 id="endpoints">Endpoints</h2>
+<table>
+  <tr><th>Endpoint</th><th>Data</th><th>Pagination</th></tr>
+  <tr><td><code>GET /api/v1/sensor-readings</code></td><td>Environmental sensor readings with device context</td><td>Cursor</td></tr>
+  <tr><td><code>GET /api/v1/mosquito-events</code></td><td>Mosquito detections incl. species / genus / sex / age</td><td>Cursor</td></tr>
+  <tr><td><code>GET /api/v1/devices</code></td><td>Device metadata &amp; location</td><td>Page</td></tr>
+  <tr><td><code>GET /api/v1/clusters</code></td><td>Clusters visible to your key</td><td>Page</td></tr>
+  <tr><td><code>GET /api/v1/export</code></td><td>Full filtered dataset as CSV / JSONL stream</td><td>— (streams)</td></tr>
+</table>
+
+<h2 id="parameters">Common parameters</h2>
+<table>
+  <tr><th>Parameter</th><th>Applies to</th><th>Description</th></tr>
+  <tr><td><code>device_uuid</code></td><td>readings, events, export</td><td>Repeatable: <code>?device_uuid=A&amp;device_uuid=B</code></td></tr>
+  <tr><td><code>cluster_id</code></td><td>all</td><td>Repeatable; intersected with your scope (out-of-scope ids yield nothing)</td></tr>
+  <tr><td><code>region</code></td><td>all</td><td>Repeatable region name filter</td></tr>
+  <tr><td><code>start_date</code> / <code>end_date</code></td><td>readings, events, export</td><td>Inclusive UTC bounds, ISO-8601, e.g. <code>2026-01-31T00:00:00</code></td></tr>
+  <tr><td><code>fields</code></td><td>all</td><td>Comma-separated column subset, e.g. <code>fields=timestamp,species</code></td></tr>
+  <tr><td><code>order</code></td><td>readings, events</td><td><code>asc</code> or <code>desc</code> by timestamp (default <code>desc</code>)</td></tr>
+  <tr><td><code>limit</code></td><td>readings, events</td><td>Rows per page, 1–500 (default 100)</td></tr>
+  <tr><td><code>cursor</code></td><td>readings, events</td><td>Opaque <code>next_cursor</code> from the previous page</td></tr>
+  <tr><td><code>page</code>, <code>page_size</code></td><td>devices, clusters</td><td>Standard page pagination, <code>page_size</code> ≤ 500</td></tr>
+  <tr><td><code>sort</code></td><td>devices</td><td><code>created_at</code>, <code>name</code>, <code>last_activity</code>, <code>total_mosquito_count</code></td></tr>
+  <tr><td><code>species</code>, <code>genus</code></td><td>events, export</td><td>Case-insensitive substring match</td></tr>
+  <tr><td><code>sex</code>, <code>age_group</code></td><td>events, export</td><td>Exact match</td></tr>
+  <tr><td><code>search</code></td><td>devices</td><td>Matches name, UUID, region, community</td></tr>
+</table>
+<p>All timestamps in responses are UTC with an explicit <code>Z</code> suffix.</p>
+
+<h2 id="pagination">Pagination</h2>
+<h3>Cursor endpoints (sensor-readings, mosquito-events)</h3>
+<pre><code>{ "items": [ … ], "next_cursor": "MjAyNi0wMy0wMVQwMDowNTowMHwxMg==" }</code></pre>
+<p>Pass <code>next_cursor</code> back as <code>cursor=</code> to fetch the next page;
+<code>null</code> means you have everything. Cursors are stable under concurrent inserts —
+you will never see a row twice or skip one while walking.</p>
+<h3>Page endpoints (devices, clusters)</h3>
+<pre><code>{ "items": [ … ], "total": 42, "page": 1, "page_size": 100, "total_pages": 1 }</code></pre>
+
+<h2 id="sensor-readings">Sensor readings</h2>
+<div class="endpoint"><span class="method">GET</span>/api/v1/sensor-readings</div>
+<p>Columns: <code>id</code>, <code>timestamp</code>, <code>device_uuid</code>, <code>device_name</code>,
+<code>region</code>, <code>community</code>, <code>cluster_id</code>, <code>external_temperature</code>,
+<code>internal_temperature</code>, <code>external_humidity</code>, <code>internal_humidity</code>,
+<code>external_pressure</code>, <code>internal_pressure</code>, <code>external_light</code>,
+<code>battery_voltage</code>, <code>trap_status</code>.</p>
+<p>A month of readings for two devices, temperature only, oldest first:</p>
+<pre><code>curl -H "X-API-Key: $KEY" \
+  "<span class="base-url">https://your-api-host</span>/api/v1/sensor-readings?device_uuid=AI4PEP_1&amp;device_uuid=AI4PEP_2&amp;start_date=2026-06-01T00:00:00&amp;end_date=2026-07-01T00:00:00&amp;fields=timestamp,device_uuid,external_temperature&amp;order=asc&amp;limit=500"</code></pre>
+<p>Example response:</p>
+<pre><code>{
+  "items": [
+    {
+      "timestamp": "2026-06-01T00:04:12Z",
+      "device_uuid": "AI4PEP_1",
+      "external_temperature": 29.4
+    }
+  ],
+  "next_cursor": "MjAyNi0wNi0wMVQwMDowNDoxMnw4MTM2"
+}</code></pre>
+
+<h2 id="mosquito-events">Mosquito events</h2>
+<div class="endpoint"><span class="method">GET</span>/api/v1/mosquito-events</div>
+<p>One flat row per detection event, joined with its species detail. Columns:
+<code>id</code>, <code>timestamp</code>, <code>device_uuid</code>, <code>device_name</code>,
+<code>region</code>, <code>community</code>, <code>cluster_id</code>, <code>count</code>,
+<code>detection_timestamp</code>, <code>species</code>, <code>genus</code>,
+<code>age_group</code>, <code>sex</code>.</p>
+<p>Female Aedes detections:</p>
+<pre><code>curl -H "X-API-Key: $KEY" \
+  "<span class="base-url">https://your-api-host</span>/api/v1/mosquito-events?genus=aedes&amp;sex=F"</code></pre>
+
+<h2 id="devices">Devices</h2>
+<div class="endpoint"><span class="method">GET</span>/api/v1/devices</div>
+<p>Columns: <code>id</code>, <code>device_uuid</code>, <code>name</code>, <code>description</code>,
+<code>region</code>, <code>community</code>, <code>longitude</code>, <code>latitude</code>,
+<code>cluster_id</code>, <code>total_mosquito_count</code>, <code>last_activity</code>,
+<code>created_at</code>. Supports <code>search</code>, <code>sort</code> and <code>order</code>.</p>
+
+<h2 id="clusters">Clusters</h2>
+<div class="endpoint"><span class="method">GET</span>/api/v1/clusters</div>
+<p>Columns: <code>id</code>, <code>cluster_uuid</code>, <code>name</code>, <code>description</code>,
+<code>public</code>, <code>created_at</code>.</p>
+
+<h2 id="export">Export</h2>
+<div class="endpoint"><span class="method">GET</span>/api/v1/export</div>
+<table>
+  <tr><th>Parameter</th><th>Values</th></tr>
+  <tr><td><code>dataset</code></td><td><code>sensor-readings</code> | <code>mosquito-events</code> | <code>devices</code> (required)</td></tr>
+  <tr><td><code>format</code></td><td><code>csv</code> (default) | <code>jsonl</code> — one JSON object per line</td></tr>
+</table>
+<p>Accepts the same filters as the matching list endpoint; <code>fields=</code> trims columns.
+Rows stream oldest-first and the response is chunked, so arbitrarily large date ranges download
+in constant memory. CSV columns are in the fixed order listed per dataset above; empty cells are
+NULLs; text cells beginning with <code>= + - @</code> are prefixed with <code>'</code> to disarm
+spreadsheet formula injection.</p>
+<p>A full year of events as CSV:</p>
+<pre><code>curl -H "X-API-Key: $KEY" -o events_2026.csv \
+  "<span class="base-url">https://your-api-host</span>/api/v1/export?dataset=mosquito-events&amp;format=csv&amp;start_date=2026-01-01T00:00:00&amp;end_date=2027-01-01T00:00:00"</code></pre>
+<p>Python, walking every page of the list endpoint instead:</p>
+<pre><code>import requests
+
+BASE = "<span class="base-url">https://your-api-host</span>"
+KEY  = "mk_..."
+
+rows, cursor = [], None
+while True:
+    params = {"limit": 500, "order": "asc"}
+    if cursor:
+        params["cursor"] = cursor
+    r = requests.get(f"{BASE}/api/v1/sensor-readings", params=params,
+                     headers={"X-API-Key": KEY})
+    r.raise_for_status()
+    body = r.json()
+    rows += body["items"]
+    cursor = body["next_cursor"]
+    if cursor is None:
+        break</code></pre>
+
+<h2 id="rate-limits">Rate limits</h2>
+<p>Limits are per account (the owner of the key — additional keys don't add budget):</p>
+<table>
+  <tr><th>Bucket</th><th>Limit</th></tr>
+  <tr><td>Query endpoints</td><td>120 requests/min</td></tr>
+  <tr><td>Export</td><td>5 exports/min, max 2 running at once</td></tr>
+</table>
+<p>Exceeding a limit returns <code>429</code> with a <code>Retry-After</code> header (seconds).</p>
+
+<h2 id="errors">Errors</h2>
+<p>Errors are JSON: <code>{ "detail": "message" }</code>.</p>
+<table>
+  <tr><th>Status</th><th>Meaning</th></tr>
+  <tr><td><code>401</code></td><td>Missing/invalid/revoked/expired key, or owner no longer active/approved</td></tr>
+  <tr><td><code>404</code></td><td>Unknown route</td></tr>
+  <tr><td><code>422</code></td><td>Invalid parameter (bad date, unknown <code>fields</code>/<code>sort</code> value, bad cursor, limit &gt; 500)</td></tr>
+  <tr><td><code>429</code></td><td>Rate limit or concurrent-export cap hit (see <code>Retry-After</code>)</td></tr>
+</table>
+
+<h2 id="versioning">Versioning</h2>
+<p>The API is versioned in the path (<code>/api/v1/…</code>). Backwards-incompatible changes will
+ship as <code>/api/v2</code> with a deprecation window for v1. Additive changes (new optional
+parameters, new response fields) may occur within v1 — parse leniently.</p>
+
+</main>
+
+</div>
+
+<footer>Mosquito Surveillance Dashboard — Data API v1</footer>
+
+<script>
+  // The dashboard links here with ?base=<backend URL>; substitute it into every
+  // example so copy-paste works in any environment.
+  (function () {
+    var base = new URLSearchParams(location.search).get("base");
+    if (!base || !/^https?:\/\//.test(base)) return;
+    base = base.replace(/\/+$/, "");
+    document.querySelectorAll(".base-url").forEach(function (el) { el.textContent = base; });
+  })();
+
+  // Scroll-spy: highlight the sidebar link for the section in view.
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll(".sidebar a"));
+    var sections = links
+      .map(function (a) { return document.getElementById(a.getAttribute("href").slice(1)); })
+      .filter(Boolean);
+    function activate(id) {
+      links.forEach(function (a) {
+        a.classList.toggle("active", a.getAttribute("href") === "#" + id);
+      });
+    }
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) activate(entry.target.id);
+      });
+    }, { rootMargin: "0px 0px -75% 0px" });
+    sections.forEach(function (s) { observer.observe(s); });
+    if (sections.length) activate((location.hash || "#" + sections[0].id).slice(1));
+  })();
+</script>
+
+</body>
+</html>

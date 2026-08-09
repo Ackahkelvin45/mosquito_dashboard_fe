@@ -89,7 +89,7 @@ export default function CorrelationChart({
       <div className="flex flex-wrap gap-3 justify-between items-center mb-4">
         <div>
           <h2 className="text-base font-semibold">Mosquito Count vs Temperature &amp; Humidity</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Correlation with external sensor readings</p>
+          <p className="text-xs text-gray-400 mt-0.5">How mosquito counts track temperature and humidity over time</p>
         </div>
 
         {!hideFilter && (

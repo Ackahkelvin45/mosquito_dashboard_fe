@@ -28,3 +28,29 @@ export async function createUser(data: CreateUserPayload): Promise<CreateUserRes
     return { success: false, error: message }
   }
 }
+
+export type UpdateUserPayload = {
+  first_name?: string
+  last_name?: string
+  email?: string
+  role?: UserRoleValue
+  cluster_id?: number | null
+  is_active?: boolean
+}
+
+export type UpdateUserResult =
+  | { success: true }
+  | { success: false; error: string }
+
+export async function updateUser(userId: number | string, data: UpdateUserPayload): Promise<UpdateUserResult> {
+  try {
+    await apiFetch(`/auth/users/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    })
+    return { success: true }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to update user. Please try again."
+    return { success: false, error: message }
+  }
+}

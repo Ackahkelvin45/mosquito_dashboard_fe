@@ -69,9 +69,12 @@ export default function MosquitoMonitoringChart({
     <div className="bg-white rounded-2xl p-6 font-raleway shadow-sm border border-gray-100 w-full h-full flex flex-col">
       {/* Header */}
       <div className="flex flex-wrap gap-2 justify-between border-b border-gray pb-4 items-center mb-6">
-        <h2 className="text-sm font-medium tracking-wide text-gray-600">
-          MOSQUITO MONITORING
-        </h2>
+        <div>
+          <h2 className="text-sm font-medium tracking-wide text-gray-600">
+            MOSQUITO MONITORING
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">Total mosquito detections across all traps over time</p>
+        </div>
 
         {!hideFilter && (
           <select

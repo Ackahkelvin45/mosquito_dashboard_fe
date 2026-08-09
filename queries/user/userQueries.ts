@@ -11,3 +11,9 @@ export async function getUsers(pagination?: PaginationParams) {
         method: "GET",
     });
 }
+
+export async function getUserById(userId: number | string) {
+    return apiFetch(`/auth/users/${userId}`, {
+        method: "GET",
+    });
+}

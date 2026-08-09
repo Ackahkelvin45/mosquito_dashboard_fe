@@ -209,6 +209,9 @@ export default function MosquitoBarChart({
           <h2 className="text-sm text-gray-700 font-semibold tracking-wide uppercase">
             Mosquito Presence by Region
           </h2>
+          <p className="text-xs text-gray-400 mt-1 normal-case tracking-normal">
+            Total mosquito detections in each monitored region
+          </p>
           {stacked && (
             <p className="text-xs text-gray-400 mt-1 normal-case tracking-normal">
               Each bar is split by the communities monitored in that region

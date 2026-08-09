@@ -1,6 +1,7 @@
 "use client";
 
 import { PencilLine, Trash2 } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -115,9 +116,13 @@ export default function UsersTable({
                     </td>
                     <td className="px-5 py-5 font-mulish font-semibold text-black">
                       <div className="flex gap-2 justify-end items-center">
-                        <button className="hover:bg-primary/10 p-2 rounded-md transition-colors">
+                        <Link
+                          href={`/users/${row.id}/edit`}
+                          aria-label={`Edit ${row.first_name || row.email}`}
+                          className="hover:bg-primary/10 p-2 rounded-md transition-colors"
+                        >
                           <PencilLine size={16} className="text-primary" />
-                        </button>
+                        </Link>
 
                         <button className="hover:bg-red-500/10 p-2 rounded-md transition-colors">
                           <Trash2 size={16} className="text-red-500" />

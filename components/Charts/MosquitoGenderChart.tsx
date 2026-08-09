@@ -56,7 +56,10 @@ export default function MosquitoGenderChart({ data = [], groupBy, onGroupByChang
   return (
     <div className="bg-white rounded-2xl p-6 font-raleway shadow-sm border border-gray-100 w-full">
       <div className="flex flex-wrap gap-2 justify-between items-center mb-2">
-        <h2 className="text-base font-bold text-[#1a1a2e]">Mosquito Count by Gender</h2>
+        <div>
+          <h2 className="text-base font-bold text-[#1a1a2e]">Mosquito Count by Gender</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Female vs male detections by this trap over time</p>
+        </div>
         <select
           value={groupBy}
           onChange={(e) => onGroupByChange(e.target.value as ChartGroupBy)}

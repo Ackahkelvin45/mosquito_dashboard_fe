@@ -69,9 +69,12 @@ export default function SensorStatusChart({
     <div className="bg-white rounded-lg font-raleway shadow-md p-4 sm:p-8 w-full">
       {/* Header */}
       <div className="flex flex-wrap gap-3 justify-between items-center mb-6">
-        <h2 className="text-base font-semibold ">
-          Sensor Status Over Time
-        </h2>
+        <div>
+          <h2 className="text-base font-semibold ">
+            Sensor Status Over Time
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">How many traps were switched on vs off at each point in time</p>
+        </div>
 
         {!hideFilter && (
           <select

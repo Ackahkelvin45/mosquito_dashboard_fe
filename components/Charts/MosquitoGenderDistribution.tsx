@@ -40,9 +40,12 @@ export default function MosquitoGenderDistribution({
     <div className="bg-white rounded-lg font-raleway p-3 border border-gray-200 w-full">
       {/* Header */}
       <div className="flex flex-wrap gap-2 justify-between items-center mb-6">
-        <h2 className="text-sm font-semibold text-gray-800">
-          Mosquito Gender Distribution
-        </h2>
+        <div>
+          <h2 className="text-sm font-semibold text-gray-800">
+            Mosquito Gender Distribution
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">Share of female vs male mosquitoes detected</p>
+        </div>
 
         {!hideFilter && (
           <select
