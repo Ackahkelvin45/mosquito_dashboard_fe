@@ -81,7 +81,12 @@ export type SensorReadingRow = {
     external_pressure?: number | null;
     external_light?: number | null;
     battery?: number | null;
+    /** 0-100, already normalised for the device's configured battery profile. */
+    battery_pct?: number | null;
     trap_status?: boolean | null;
+    /** Whether the Gateway currently has a live link to the Listener Unit —
+     * false means "no mosquitoes detected" can't be trusted (detector may be offline). */
+    esp1_link_alive?: boolean | null;
     device_uuid?: string | null;
     device_name?: string | null;
     region?: string | null;

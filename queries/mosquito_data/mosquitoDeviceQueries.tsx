@@ -18,6 +18,14 @@ export type MosquitoIndividualReading = {
 	genus: string | null;
 	age_group: string | null;
 	sex: string | null;
+	/** Confidence (0-1) this event was a mosquito at all. */
+	p_mosq?: number | null;
+	binary_decision?: boolean | null;
+	/** Per-genus confidence — exactly one key is nonzero, not a softmax distribution. */
+	taxon_probs?: { anopheles: number; aedes: number; culex: number } | null;
+	/** Per-sex confidence — exactly one key is nonzero, not a softmax distribution. */
+	sex_probs?: { male: number; female: number } | null;
+	inference_ms?: number | null;
 	id: number;
 	batch_id: number;
 	device_uuid?: string;
