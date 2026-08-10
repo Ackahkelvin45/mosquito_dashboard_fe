@@ -16,7 +16,8 @@ export type GetDashboardFilters = {
   start_date?: string;
   end_date?: string;
   region?: string;
-  cluster_id?: number;
+  /** Super admin only — repeatable, the backend intersects it with your own scope regardless. */
+  cluster_id?: number[];
   device_id?: number;
 };
 
@@ -90,7 +91,7 @@ export type DashboardResponse = {
   correlation_chart?: CorrelationChart;
   genus_heatmap?: GenusHeatmap;
   region?: string | null;
-  cluster_id?: number | null;
+  cluster_id?: number[] | null;
   device_id?: number | null;
 };
 
@@ -140,7 +141,7 @@ export async function getDashboardData(filters?: GetDashboardFilters): Promise<D
   if (filters?.start_date) params.set("start_date", filters.start_date);
   if (filters?.end_date) params.set("end_date", filters.end_date);
   if (filters?.region) params.set("region", filters.region);
-  if (typeof filters?.cluster_id === "number") params.set("cluster_id", String(filters.cluster_id));
+  filters?.cluster_id?.forEach((id) => params.append("cluster_id", String(id)));
   if (typeof filters?.device_id === "number") params.set("device_id", String(filters.device_id));
 
   const query = params.toString();

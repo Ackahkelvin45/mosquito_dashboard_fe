@@ -6,80 +6,85 @@ import { getDashboardData, type DashboardGroupBy } from "@/queries/dashboard/das
 // (matches hooks/device.ts, hooks/mosquito.ts).
 const LIVE_REFETCH_MS = 30_000
 
-export const useDashboardTotals = (groupBy: DashboardGroupBy) => {
+// clusterIds is the super-admin-only cluster filter (empty/undefined = all
+// clusters they're allowed to see — see useRole().canFilterByCluster). The
+// backend intersects it with the caller's own scope regardless, so passing
+// it for a non-super-admin is harmless, just redundant.
+
+export const useDashboardTotals = (groupBy: DashboardGroupBy, clusterIds?: number[]) => {
 	return useQuery({
-		queryKey: ["dashboard", "totals", groupBy],
-		queryFn: () => getDashboardData({ totals_group_by: groupBy }),
+		queryKey: ["dashboard", "totals", groupBy, clusterIds ?? null],
+		queryFn: () => getDashboardData({ totals_group_by: groupBy, cluster_id: clusterIds }),
 		select: (data) => data.totals,
 		refetchInterval: LIVE_REFETCH_MS,
 		refetchOnWindowFocus: true,
 	})
 }
 
-export const useMosquitoChart = (groupBy: DashboardGroupBy) => {
+export const useMosquitoChart = (groupBy: DashboardGroupBy, clusterIds?: number[]) => {
 	return useQuery({
-		queryKey: ["dashboard", "chart", groupBy],
-		queryFn: () => getDashboardData({ chart_group_by: groupBy }),
+		queryKey: ["dashboard", "chart", groupBy, clusterIds ?? null],
+		queryFn: () => getDashboardData({ chart_group_by: groupBy, cluster_id: clusterIds }),
 		select: (data) => data.chart,
 		refetchInterval: LIVE_REFETCH_MS,
 		refetchOnWindowFocus: true,
 	})
 }
 
-export const useMosquitoBreakdown = (groupBy: DashboardGroupBy) => {
+export const useMosquitoBreakdown = (groupBy: DashboardGroupBy, clusterIds?: number[]) => {
 	return useQuery({
-		queryKey: ["dashboard", "breakdown", groupBy],
-		queryFn: () => getDashboardData({ breakdown_group_by: groupBy }),
+		queryKey: ["dashboard", "breakdown", groupBy, clusterIds ?? null],
+		queryFn: () => getDashboardData({ breakdown_group_by: groupBy, cluster_id: clusterIds }),
 		select: (data) => data.breakdown,
 		refetchInterval: LIVE_REFETCH_MS,
 		refetchOnWindowFocus: true,
 	})
 }
 
-export const useGenderDistribution = (groupBy: DashboardGroupBy) => {
+export const useGenderDistribution = (groupBy: DashboardGroupBy, clusterIds?: number[]) => {
 	return useQuery({
-		queryKey: ["dashboard", "gender", groupBy],
-		queryFn: () => getDashboardData({ gender_group_by: groupBy }),
+		queryKey: ["dashboard", "gender", groupBy, clusterIds ?? null],
+		queryFn: () => getDashboardData({ gender_group_by: groupBy, cluster_id: clusterIds }),
 		select: (data) => data.gender_distribution,
 		refetchInterval: LIVE_REFETCH_MS,
 		refetchOnWindowFocus: true,
 	})
 }
 
-export const useRegionBreakdown = (groupBy: DashboardGroupBy) => {
+export const useRegionBreakdown = (groupBy: DashboardGroupBy, clusterIds?: number[]) => {
 	return useQuery({
-		queryKey: ["dashboard", "region", groupBy],
-		queryFn: () => getDashboardData({ region_group_by: groupBy }),
+		queryKey: ["dashboard", "region", groupBy, clusterIds ?? null],
+		queryFn: () => getDashboardData({ region_group_by: groupBy, cluster_id: clusterIds }),
 		select: (data) => data.region_chart,
 		refetchInterval: LIVE_REFETCH_MS,
 		refetchOnWindowFocus: true,
 	})
 }
 
-export const useSensorStatus = (groupBy: DashboardGroupBy) => {
+export const useSensorStatus = (groupBy: DashboardGroupBy, clusterIds?: number[]) => {
 	return useQuery({
-		queryKey: ["dashboard", "sensor_status", groupBy],
-		queryFn: () => getDashboardData({ sensor_status_group_by: groupBy }),
+		queryKey: ["dashboard", "sensor_status", groupBy, clusterIds ?? null],
+		queryFn: () => getDashboardData({ sensor_status_group_by: groupBy, cluster_id: clusterIds }),
 		select: (data) => data.sensor_status_chart,
 		refetchInterval: LIVE_REFETCH_MS,
 		refetchOnWindowFocus: true,
 	})
 }
 
-export const useCorrelationChart = (groupBy: DashboardGroupBy) => {
+export const useCorrelationChart = (groupBy: DashboardGroupBy, clusterIds?: number[]) => {
 	return useQuery({
-		queryKey: ["dashboard", "correlation", groupBy],
-		queryFn: () => getDashboardData({ correlation_group_by: groupBy }),
+		queryKey: ["dashboard", "correlation", groupBy, clusterIds ?? null],
+		queryFn: () => getDashboardData({ correlation_group_by: groupBy, cluster_id: clusterIds }),
 		select: (data) => data.correlation_chart,
 		refetchInterval: LIVE_REFETCH_MS,
 		refetchOnWindowFocus: true,
 	})
 }
 
-export const useGenusHeatmap = (groupBy: DashboardGroupBy) => {
+export const useGenusHeatmap = (groupBy: DashboardGroupBy, clusterIds?: number[]) => {
 	return useQuery({
-		queryKey: ["dashboard", "genus_heatmap", groupBy],
-		queryFn: () => getDashboardData({ genus_heatmap_group_by: groupBy }),
+		queryKey: ["dashboard", "genus_heatmap", groupBy, clusterIds ?? null],
+		queryFn: () => getDashboardData({ genus_heatmap_group_by: groupBy, cluster_id: clusterIds }),
 		select: (data) => data.genus_heatmap,
 		refetchInterval: LIVE_REFETCH_MS,
 		refetchOnWindowFocus: true,

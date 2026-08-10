@@ -25,11 +25,24 @@ import type { DashboardChartPoint, DashboardGroupBy } from '@/queries/dashboard/
 import { buildStatCards } from '@/components/cards/dashboardStatCards'
 import DashboardExportButton from '@/components/DashboardExportButton'
 import { useRole } from '@/hooks/useRole'
+import { useClusters } from '@/hooks/device'
+import MultiSelectDropdown from '@/components/filters/MultiSelectDropdown'
+import { extractItems, MAX_PAGE_SIZE } from '@/lib/pagination'
 import "react-loading-skeleton/dist/skeleton.css";
+
+type Cluster = { id: number; name: string }
 
 function Dashboard() {
   // The date-range page isn't part of the guest surface — hide its entry point.
-  const { isGuest } = useRole()
+  const { isGuest, canFilterByCluster } = useRole()
+  const [clusterIds, setClusterIds] = useState<string[]>([])
+  // Empty selection = every cluster the caller is allowed to see ("All").
+  const selectedClusterIds = useMemo(
+    () => (clusterIds.length > 0 ? clusterIds.map(Number) : undefined),
+    [clusterIds]
+  )
+  const { data: clustersRaw } = useClusters({ page_size: MAX_PAGE_SIZE })
+  const clusters: Cluster[] = useMemo(() => extractItems<Cluster>(clustersRaw), [clustersRaw])
   const [generalGroupBy, setGeneralGroupBy] = useState<DashboardGroupBy>("month")
   const [totalsGroupBy, setTotalsGroupBy] = useState<DashboardGroupBy>("month")
   const [chartGroupBy, setChartGroupBy] = useState<DashboardGroupBy>("month")
@@ -57,14 +70,14 @@ function Dashboard() {
   // Skeletons only on isLoading (first fetch with an empty cache — including
   // group-by changes, which are new query keys). Background refetches of
   // already-cached data update silently instead of re-showing skeletons.
-  const { data: totalsData, isLoading: isTotalsLoading } = useDashboardTotals(totalsGroupBy)
-  const { data: chartData, isLoading: isChartLoading } = useMosquitoChart(chartGroupBy)
-  const { data: genderData, isLoading: isGenderLoading } = useGenderDistribution(genderGroupBy)
-  const { data: breakdownDataResponse, isLoading: isBreakdownLoading } = useMosquitoBreakdown(breakdownGroupBy)
-  const { data: regionDataResponse, isLoading: isRegionLoading } = useRegionBreakdown(regionGroupBy)
-  const { data: sensorStatusResponse, isLoading: isSensorStatusLoading } = useSensorStatus(sensorStatusGroupBy)
-  const { data: correlationData, isLoading: isCorrelationLoading } = useCorrelationChart(correlationGroupBy)
-  const { data: genusHeatmapData, isLoading: isGenusHeatmapLoading } = useGenusHeatmap(genusHeatmapGroupBy)
+  const { data: totalsData, isLoading: isTotalsLoading } = useDashboardTotals(totalsGroupBy, selectedClusterIds)
+  const { data: chartData, isLoading: isChartLoading } = useMosquitoChart(chartGroupBy, selectedClusterIds)
+  const { data: genderData, isLoading: isGenderLoading } = useGenderDistribution(genderGroupBy, selectedClusterIds)
+  const { data: breakdownDataResponse, isLoading: isBreakdownLoading } = useMosquitoBreakdown(breakdownGroupBy, selectedClusterIds)
+  const { data: regionDataResponse, isLoading: isRegionLoading } = useRegionBreakdown(regionGroupBy, selectedClusterIds)
+  const { data: sensorStatusResponse, isLoading: isSensorStatusLoading } = useSensorStatus(sensorStatusGroupBy, selectedClusterIds)
+  const { data: correlationData, isLoading: isCorrelationLoading } = useCorrelationChart(correlationGroupBy, selectedClusterIds)
+  const { data: genusHeatmapData, isLoading: isGenusHeatmapLoading } = useGenusHeatmap(genusHeatmapGroupBy, selectedClusterIds)
 
   const totals = totalsData
   const chart = chartData
@@ -250,6 +263,20 @@ function Dashboard() {
                 <CalendarDays size={16} />
                 Date Range Filter
               </Link>
+            )}
+            {canFilterByCluster && (
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-semibold text-text-dark whitespace-nowrap">
+                  Clusters:
+                </label>
+                <MultiSelectDropdown
+                  label="All clusters"
+                  options={clusters.map((c) => ({ value: String(c.id), label: c.name || `Cluster #${c.id}` }))}
+                  selected={clusterIds}
+                  onChange={setClusterIds}
+                  emptyText="No clusters"
+                />
+              </div>
             )}
             <div className="flex items-center gap-2">
               <label htmlFor="general-filter" className="text-sm font-semibold text-text-dark whitespace-nowrap">

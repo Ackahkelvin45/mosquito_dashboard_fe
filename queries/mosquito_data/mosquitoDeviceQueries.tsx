@@ -63,6 +63,8 @@ export type GetAllMosquitoEventsFilters = {
 	genus?: string[];
 	/** Pass multiple species values to match any of them. */
 	species?: string[];
+	/** Super admin only — the backend intersects this with your own scope regardless. */
+	cluster_id?: number[];
 };
 
 export type MosquitoRange = "hour" | "day" | "week" | "month";
@@ -93,6 +95,7 @@ export async function getAllMosquitoEvents(
 	filters?.device_uuid?.forEach((uuid) => {
 		if (uuid) params.append("device_uuid", uuid);
 	});
+	filters?.cluster_id?.forEach((id) => params.append("cluster_id", String(id)));
 	appendPagination(params, pagination);
 	const query = params.toString();
 

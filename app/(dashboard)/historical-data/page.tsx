@@ -5,14 +5,16 @@ import { ArrowLeftRight, Grid3X3, SlidersHorizontal, X } from 'lucide-react'
 import { Search } from 'lucide-react'
 import HistoricalDataTable from '@/components/tables/HistoricalDataTable'
 import MultiSelectDropdown from '@/components/filters/MultiSelectDropdown'
-import { useDevices } from '@/hooks/device'
+import { useDevices, useClusters } from '@/hooks/device'
 import { useMosquitoFilterOptions } from '@/hooks/mosquito'
+import { useRole } from '@/hooks/useRole'
 import { extractItems, MAX_PAGE_SIZE } from '@/lib/pagination'
 
 const SEARCH_DEBOUNCE_MS = 1000
 const DATE_DEBOUNCE_MS = 1000
 
 type DeviceLike = { device_uuid?: string; name?: string }
+type Cluster = { id: number; name: string }
 
 function toIsoStartOfDay(dateOnly: string): string {
   return new Date(`${dateOnly}T00:00:00Z`).toISOString()
@@ -23,6 +25,7 @@ function toIsoEndOfDay(dateOnly: string): string {
 }
 
 function HistoricalDataPage() {
+  const { canFilterByCluster } = useRole()
   const [search, setSearch] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
@@ -34,6 +37,7 @@ function HistoricalDataPage() {
   const [genusValues, setGenusValues] = useState<string[]>([])
   const [speciesValues, setSpeciesValues] = useState<string[]>([])
   const [deviceUuids, setDeviceUuids] = useState<string[]>([])
+  const [clusterIds, setClusterIds] = useState<string[]>([])
   const [showMoreFilters, setShowMoreFilters] = useState(false)
 
   const [appliedSearch, setAppliedSearch] = useState("")
@@ -47,6 +51,11 @@ function HistoricalDataPage() {
       .filter((d) => typeof d.device_uuid === "string" && d.device_uuid)
       .map((d) => ({ value: d.device_uuid as string, label: d.name || (d.device_uuid as string) }))
   }, [devicesRaw])
+
+  // Super admin only (canFilterByCluster) — everyone else has just one
+  // visible cluster, so a picker would be meaningless.
+  const { data: clustersRaw } = useClusters({ page_size: MAX_PAGE_SIZE })
+  const clusterOptions = useMemo(() => extractItems<Cluster>(clustersRaw), [clustersRaw])
 
   const { data: filterOptions } = useMosquitoFilterOptions()
   const regionOptions = filterOptions?.regions ?? []
@@ -103,15 +112,17 @@ function HistoricalDataPage() {
       genus: genusValues.length > 0 ? genusValues : undefined,
       species: speciesValues.length > 0 ? speciesValues : undefined,
       device_uuid: deviceUuids.length > 0 ? deviceUuids : undefined,
+      cluster_id: clusterIds.length > 0 ? clusterIds.map(Number) : undefined,
     }
-  }, [appliedSearch, appliedStartDate, appliedEndDate, regions, genusValues, speciesValues, deviceUuids])
+  }, [appliedSearch, appliedStartDate, appliedEndDate, regions, genusValues, speciesValues, deviceUuids, clusterIds])
 
   // Filters that live behind the "More Filters" toggle.
   const extraFilterCount =
     (regions.length > 0 ? 1 : 0) +
     (genusValues.length > 0 ? 1 : 0) +
     (speciesValues.length > 0 ? 1 : 0) +
-    (deviceUuids.length > 0 ? 1 : 0)
+    (deviceUuids.length > 0 ? 1 : 0) +
+    (clusterIds.length > 0 ? 1 : 0)
 
   const activeFiltersCount =
     (filters.search ? 1 : 0) +
@@ -123,6 +134,7 @@ function HistoricalDataPage() {
     setGenusValues([])
     setSpeciesValues([])
     setDeviceUuids([])
+    setClusterIds([])
   }
 
   const clearAll = () => {
@@ -253,6 +265,19 @@ function HistoricalDataPage() {
                             className='w-full'
                           />
                         </div>
+                        {canFilterByCluster && (
+                          <div className='flex flex-col gap-1'>
+                            <label className='text-[11px] text-gray-500 px-1'>Clusters</label>
+                            <MultiSelectDropdown
+                              label='All clusters'
+                              options={clusterOptions.map((c) => ({ value: String(c.id), label: c.name || `Cluster #${c.id}` }))}
+                              selected={clusterIds}
+                              onChange={setClusterIds}
+                              emptyText='No clusters'
+                              className='w-full'
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -336,6 +361,17 @@ function HistoricalDataPage() {
                         Devices: {filters.device_uuid.length}
                       </span>
                       <button type="button" onClick={() => setDeviceUuids([])} className="p-1.5 -m-1.5" aria-label="Clear device filter">
+                        <X size={16} strokeWidth={1.5} className='text-gray-500' />
+                      </button>
+                  </div>
+                )}
+
+                {filters.cluster_id && (
+                  <div className='flex flex-row gap-2 items-center bg-[#3C2178]/5 px-2 rounded-lg py-1'>
+                      <span className='text-sm font-medium text-secondary'>
+                        Clusters: {filters.cluster_id.length}
+                      </span>
+                      <button type="button" onClick={() => setClusterIds([])} className="p-1.5 -m-1.5" aria-label="Clear cluster filter">
                         <X size={16} strokeWidth={1.5} className='text-gray-500' />
                       </button>
                   </div>
