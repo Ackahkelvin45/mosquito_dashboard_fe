@@ -84,11 +84,18 @@ export const useUpdateCluster = () => {
     })
 }
 
+// Live surveillance data — polled so Online/Offline status and new readings
+// show up without the user having to navigate away and back (see
+// hooks/notification.ts's useUnreadCount for the same convention).
+const LIVE_REFETCH_MS = 30_000
+
 export const useDevices = (filters?: GetDevicesFilters, pagination?: PaginationParams) => {
     return useQuery({
         queryKey: ["devices", filters ?? null, pagination ?? null],
         queryFn: () => getDevices(filters, pagination),
         placeholderData: keepPreviousData,
+        refetchInterval: LIVE_REFETCH_MS,
+        refetchOnWindowFocus: true,
     })
 }
 
@@ -97,6 +104,8 @@ export const useDevice = (id: string | number) => {
         queryKey: ["device", id],
         queryFn: () => getDeviceById(id),
         enabled: !!id,
+        refetchInterval: LIVE_REFETCH_MS,
+        refetchOnWindowFocus: true,
     })
 }
 
@@ -120,6 +129,8 @@ export const useDeviceCharts = (deviceId: string | number, groupBy: ChartGroupBy
         queryKey: ["device-charts", deviceId, groupBy],
         queryFn: () => getDeviceCharts(deviceId, groupBy),
         enabled: !!deviceId,
+        refetchInterval: LIVE_REFETCH_MS,
+        refetchOnWindowFocus: true,
     })
 }
 
@@ -131,5 +142,7 @@ export const useAllSensorReadings = (
         queryKey: ["sensor-readings", filters ?? {}, pagination ?? null],
         queryFn: () => getAllSensorReadings(filters, pagination),
         placeholderData: keepPreviousData,
+        refetchInterval: LIVE_REFETCH_MS,
+        refetchOnWindowFocus: true,
     })
 }

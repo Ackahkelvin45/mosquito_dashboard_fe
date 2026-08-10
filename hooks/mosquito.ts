@@ -8,6 +8,10 @@ import {
 } from "@/queries/mosquito_data/mosquitoDeviceQueries"
 import type { PaginationParams } from "@/lib/pagination"
 
+// Live surveillance data — polled so a new detection shows up without the
+// user having to navigate away and back (matches hooks/device.ts).
+const LIVE_REFETCH_MS = 30_000
+
 export const useMosquitoEvents = (
 	filters?: GetAllMosquitoEventsFilters,
 	pagination?: PaginationParams,
@@ -18,6 +22,8 @@ export const useMosquitoEvents = (
 		queryFn: () => getAllMosquitoEvents(filters, pagination),
 		enabled,
 		placeholderData: keepPreviousData,
+		refetchInterval: LIVE_REFETCH_MS,
+		refetchOnWindowFocus: true,
 	})
 }
 
@@ -35,6 +41,8 @@ export const useMosquitoEventsByDeviceUuid = (deviceUuid: string) => {
 		queryKey: ["mosquito-events", deviceUuid],
 		queryFn: () => getMosquitoEventsByDeviceUuid(deviceUuid),
 		enabled: !!deviceUuid,
+		refetchInterval: LIVE_REFETCH_MS,
+		refetchOnWindowFocus: true,
 	})
 }
 
@@ -48,5 +56,7 @@ export const useMosquitoEventsByDeviceUuidWithFilters = (
 		queryFn: () => getMosquitoEventsByDeviceUuid(deviceUuid, filters, pagination),
 		enabled: !!deviceUuid,
 		placeholderData: keepPreviousData,
+		refetchInterval: LIVE_REFETCH_MS,
+		refetchOnWindowFocus: true,
 	})
 }
