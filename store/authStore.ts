@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { queryClient } from "@/app/providers/QueryProvider"
 
 interface AuthState {
   accessToken: string | null
@@ -25,13 +26,28 @@ export const useAuthStore = create<AuthState>()(
       isGuest: false,
       _hasHydrated: false,
 
+      // Every identity change clears the query cache first: without this, a
+      // second user logging into the same browser tab can be served the
+      // first user's cached, differently-scoped dashboard/device data for up
+      // to staleTime (60s) — this provider never remounts on navigation, so
+      // nothing else invalidates it.
       // Signing in always ends guest mode.
-      setAuth: (accessToken, refreshToken, user_id) =>
-        set({ accessToken, refreshToken, user_id, isGuest: false }),
-      enterGuestMode: () =>
-        set({ accessToken: null, refreshToken: null, user_id: null, isGuest: true }),
-      exitGuestMode: () => set({ isGuest: false }),
-      logout: () => set({ accessToken: null, refreshToken: null, user_id: null, isGuest: false }),
+      setAuth: (accessToken, refreshToken, user_id) => {
+        queryClient.clear()
+        set({ accessToken, refreshToken, user_id, isGuest: false })
+      },
+      enterGuestMode: () => {
+        queryClient.clear()
+        set({ accessToken: null, refreshToken: null, user_id: null, isGuest: true })
+      },
+      exitGuestMode: () => {
+        queryClient.clear()
+        set({ isGuest: false })
+      },
+      logout: () => {
+        queryClient.clear()
+        set({ accessToken: null, refreshToken: null, user_id: null, isGuest: false })
+      },
       setHasHydrated: (state) => set({ _hasHydrated: state }),
     }),
     {
