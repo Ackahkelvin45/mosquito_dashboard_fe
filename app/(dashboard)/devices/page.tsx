@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Grid3X3, Search, SlidersHorizontal, X } from 'lucide-react'
 import Link from 'next/link'
 import DeviceTable, { type DeviceRow } from '@/components/tables/DeviceTable'
+import { UnregisteredSightingsSection } from '@/components/devices/UnregisteredSightings'
 import MultiSelectDropdown from '@/components/filters/MultiSelectDropdown'
 import { useClusters, useDevices } from '@/hooks/device'
 import { useRole } from '@/hooks/useRole'
@@ -150,6 +151,7 @@ function DevicesPage() {
 
   return (
     <div className='w-full h-full flex flex-col bg-white font-raleway rounded-lg py-6 px-4 sm:py-8 sm:px-8'>
+        <UnregisteredSightingsSection />
         <div className='flex flex-col lg:flex-row lg:justify-between gap-4'>
           <div className='flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:items-center'>
 

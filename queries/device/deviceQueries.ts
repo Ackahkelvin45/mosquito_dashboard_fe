@@ -125,3 +125,22 @@ export async function getAllSensorReadings(
         method: "GET",
     });
 }
+
+// ── Unregistered-device sightings (SUPER_ADMIN) ──────────────────────────────
+// UUIDs publishing MQTT data with no registered device — the backend upserts
+// one row per stray UUID so it can be registered (or dismissed) from the UI.
+
+export type UnregisteredSighting = {
+  device_uuid: string;
+  first_seen: string;
+  last_seen: string;
+  message_count: number;
+  last_topic: string | null;
+  /** Last GPS fix seen in its payloads, for prefilling the add-device form */
+  latitude: number | null;
+  longitude: number | null;
+};
+
+export async function getUnregisteredSightings(): Promise<Paginated<UnregisteredSighting>> {
+  return apiFetch("/devices/unregistered?page=1&page_size=50");
+}

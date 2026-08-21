@@ -8,7 +8,8 @@ import { Eye, EyeOff } from "lucide-react"
 import logo from "../../public/images/logo.png"
 import name from "../../public/images/name.png"
 import loginiage from "../../public/images/loginimage.png"
-import { useLogin } from "@/hooks/authentication"
+import { useLogin, useVerifyTwoFactor } from "@/hooks/authentication"
+import { resendTwoFactor } from "@/actions/authentication/authenticationMutation"
 import { useAuthStore } from "@/store/authStore"
 
 export default function LoginPage() {
@@ -19,6 +20,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
+  // 2FA step (FR-4): set when login returns a challenge instead of tokens.
+  // Deliberately component state, never the persisted auth store — a
+  // half-authenticated challenge must not survive a refresh.
+  const [challengeToken, setChallengeToken] = useState<string | null>(null)
+  const [code, setCode] = useState("")
+  const [notice, setNotice] = useState<string | null>(null)
+  const verify2fa = useVerifyTwoFactor()
+  const [resending, setResending] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,7 +38,11 @@ export default function LoginPage() {
         onSuccess: (data) => {
           if (data.success) {
             router.push("/")
-          } else {
+          } else if ("two_factor_required" in data && data.two_factor_required) {
+            setChallengeToken(data.two_factor_token)
+            setNotice(data.message)
+            setCode("")
+          } else if ("error" in data) {
             setLoginError(data.error)
           }
         },
@@ -38,6 +51,42 @@ export default function LoginPage() {
         },
       }
     )
+  }
+
+  const handleVerify = (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoginError(null)
+    if (!challengeToken || !/^\d{6}$/.test(code)) {
+      setLoginError("Enter the 6-digit code from your email.")
+      return
+    }
+    verify2fa.mutate(
+      { two_factor_token: challengeToken, code },
+      {
+        onSuccess: (data) => {
+          if (data.success) router.push("/")
+          else setLoginError(data.error)
+        },
+        onError: () => setLoginError("Something went wrong. Please try again."),
+      }
+    )
+  }
+
+  const handleResend = async () => {
+    if (!challengeToken) return
+    setResending(true)
+    setLoginError(null)
+    const res = await resendTwoFactor(challengeToken)
+    setResending(false)
+    setNotice(res.message)
+    if (!res.success) setLoginError(res.message)
+  }
+
+  const backToLogin = () => {
+    setChallengeToken(null)
+    setCode("")
+    setNotice(null)
+    setLoginError(null)
   }
 
   return (
@@ -80,6 +129,50 @@ export default function LoginPage() {
           </button>
         </div>
       )}
+          {challengeToken ? (
+          <form onSubmit={handleVerify} className="flex flex-col gap-4 font-raleway mt-4">
+            {notice && (
+              <div className="rounded-md bg-blue-50 border border-blue-200 text-blue-700 text-sm px-3 py-2.5">
+                {notice}
+              </div>
+            )}
+            <div>
+              <label htmlFor="otp" className="text-dark text-sm mb-2 font-medium block">
+                Verification code
+              </label>
+              <input
+                id="otp"
+                inputMode="numeric"
+                maxLength={6}
+                autoFocus
+                placeholder="••••••"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                className="w-full py-2.5 px-3 border border-gray focus:ring-0 text-center tracking-[0.5em] text-lg focus:border-primary focus:outline-none rounded-md"
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                We emailed a 6-digit code to <span className="font-medium">{email}</span>. It expires in 10 minutes.
+              </p>
+            </div>
+            <button
+              type="submit"
+              disabled={verify2fa.isPending || code.length !== 6}
+              className="w-full py-2.5 px-3 flex items-center justify-center bg-linear-to-r from-secondary to-primary font-semibold text-white text-sm rounded-md disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {verify2fa.isPending ? <div className="spinner1"></div> : "Verify & sign in"}
+            </button>
+            <div className="flex items-center justify-between text-sm">
+              <button type="button" onClick={handleResend} disabled={resending}
+                      className="text-primary font-medium hover:underline disabled:opacity-50">
+                {resending ? "Sending…" : "Resend code"}
+              </button>
+              <button type="button" onClick={backToLogin}
+                      className="text-gray-500 hover:underline">
+                Use a different account
+              </button>
+            </div>
+          </form>
+          ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4 font-raleway mt-4">
             <div>
               <label htmlFor="email" className="text-dark text-sm mb-2 font-medium block">
@@ -147,6 +240,7 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
+          )}
 
           {/* Explore without an account: read-only access to public data. */}
           <div className="mt-4 w-full font-raleway flex items-center gap-3">

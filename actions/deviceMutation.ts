@@ -92,3 +92,11 @@ export async function updateDevice(deviceId: string | number, data: UpdateDevice
         throw err;
     }
 }
+
+/** Dismiss an unregistered-device sighting (SUPER_ADMIN). It reappears if the
+ * device keeps publishing — dismissal is "not now", not "never". */
+export async function dismissUnregisteredSighting(deviceUuid: string) {
+    return apiFetch(`/devices/unregistered/${encodeURIComponent(deviceUuid)}`, {
+        method: "DELETE",
+    });
+}

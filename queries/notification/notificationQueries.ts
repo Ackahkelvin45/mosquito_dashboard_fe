@@ -35,6 +35,8 @@ export type Notification = {
 
 export type NotificationPreferences = {
     species_alerts: boolean;
+    surge_alerts: boolean;
+    environment_alerts: boolean;
     battery_alerts: boolean;
     offline_alerts: boolean;
     admin_alerts: boolean;
@@ -42,6 +44,12 @@ export type NotificationPreferences = {
     email_enabled: boolean;
     push_enabled: boolean;
     in_app_enabled: boolean;
+    // Personal thresholds (FR-18): null = use the system setting. Sending an
+    // explicit null CLEARS a value — omitting the key leaves it unchanged.
+    personal_temp_max: number | null;
+    personal_humidity_max: number | null;
+    personal_battery_min_v: number | null;
+    personal_surge_threshold: number | null;
 };
 
 export type GetNotificationsFilters = {
@@ -110,4 +118,15 @@ export async function getPushSubscriptions(): Promise<PushSubscriptionRecord[]> 
     return apiFetch("/push/subscriptions", {
         method: "GET",
     });
+}
+
+// ── Global alert thresholds (SUPER_ADMIN, FR-18 Phase A) ─────────────────────
+
+export type AlertSettingsPayload = {
+  values: Record<string, number>;
+  bounds: Record<string, [number, number]>;
+};
+
+export async function getAlertSettings(): Promise<AlertSettingsPayload> {
+  return apiFetch("/notifications/alert-settings");
 }

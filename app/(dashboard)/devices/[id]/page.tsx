@@ -87,6 +87,11 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
             </h1>
             <p className="text-xs text-gray-400 mt-1">
               Last Activity: {device.last_activity ? new Date(device.last_activity).toLocaleString() : "N/A"}
+              {/* Telemetry heartbeat drives the Online badge; it diverging from
+                  Last Activity means the device is alive but its sensor loop is down. */}
+              <span className="ml-3">
+                Last Telemetry: {device.last_sensor_data_at ? new Date(device.last_sensor_data_at).toLocaleString() : "Never"}
+              </span>
             </p>
           </div>
         </div>

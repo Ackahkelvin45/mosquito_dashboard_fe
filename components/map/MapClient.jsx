@@ -3,7 +3,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import L from "leaflet";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { MapPin,Tag } from "lucide-react";
 
 function normalizeCoordinate(value, maxAbs) {
@@ -28,21 +28,29 @@ function getDeviceLatLng(device) {
   return [lat, lng];
 }
 
-// Status colors: green = active sensor, red = inactive sensor
+// Status colors per spec FR-11: green = ONLINE (device communicating),
+// red = OFFLINE. Trap on/off is a different concept and lives in the panel.
 const STATUS_COLORS = {
   active: { from: "#16a34a", to: "#22c55e", glow: "rgba(34,197,94,0.5)" },
   inactive: { from: "#dc2626", to: "#ef4444", glow: "rgba(239,68,68,0.5)" },
 };
 
-// Build a mosquito-trap marker icon colored by sensor status.
+// Icons are cached: only 4 (online/offline x selected/not) ever exist, and
+// the page re-renders every poll — minting a divIcon per marker per render
+// wastes work and flickers.
+const _iconCache = new Map();
+
+// Build a mosquito-trap marker icon colored by connectivity.
 // `selected` adds a stronger glow so the active selection stays distinguishable.
 function buildDeviceIcon({ isActive, selected }) {
+  const cacheKey = `${isActive}-${selected}`;
+  if (_iconCache.has(cacheKey)) return _iconCache.get(cacheKey);
   const color = isActive ? STATUS_COLORS.active : STATUS_COLORS.inactive;
   const shadow = selected
     ? `0 2px 14px ${color.glow}`
     : "0 2px 8px rgba(0,0,0,0.3)";
   const border = selected ? "3px solid white" : "2px solid white";
-  return L.divIcon({
+  const icon = L.divIcon({
     className: "",
     html: `
       <div style="
@@ -60,11 +68,14 @@ function buildDeviceIcon({ isActive, selected }) {
     iconAnchor: [18, 36],
     popupAnchor: [0, -36],
   });
+  _iconCache.set(cacheKey, icon);
+  return icon;
 }
 
-// A sensor is active when its latest reading reports the trap as running.
+// Connectivity, computed server-side from the sensor_data heartbeat — NOT
+// the trap on/off state (a trap can be off while the device is online).
 function isDeviceActive(device) {
-  return Boolean(device?.latest_reading?.trap_status);
+  return Boolean(device?.is_active);
 }
 
 function FlyToDevice({ device }) {
@@ -97,9 +108,12 @@ function FlyToLocation({ location }) {
  * @param {{ position: [number, number], zoom: number, devices: any[], selectedDevice: any, onMarkerClick?: (device: any) => void, flyToLocation?: { lat: number, lng: number, bounds?: [[number, number], [number, number]] | null } | null }} props
  */
 export default function MapClient({ position, zoom, devices = [], selectedDevice, onMarkerClick, flyToLocation }) {
-  const devicesWithLatLng = devices
-    .map((device) => ({ device, latLng: getDeviceLatLng(device) }))
-    .filter(({ latLng }) => Boolean(latLng));
+  const devicesWithLatLng = useMemo(
+    () => devices
+      .map((device) => ({ device, latLng: getDeviceLatLng(device) }))
+      .filter(({ latLng }) => Boolean(latLng)),
+    [devices]
+  );
 
   useEffect(() => {
     const invalid = devices.filter((d) => !getDeviceLatLng(d));
@@ -135,11 +149,11 @@ export default function MapClient({ position, zoom, devices = [], selectedDevice
       >
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
           <span style={{ width: 12, height: 12, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
-          Active sensor
+          Online
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ width: 12, height: 12, borderRadius: "50%", background: "#ef4444", display: "inline-block" }} />
-          Inactive sensor
+          Offline
         </div>
       </div>
       <MapContainer

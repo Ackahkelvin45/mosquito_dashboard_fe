@@ -7,6 +7,7 @@ import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import NotificationItem from '@/components/notifications/NotificationItem'
 import NotificationPreferencesCard from '@/components/notifications/NotificationPreferences'
+import AlertSettingsCard from '@/components/notifications/AlertSettingsCard'
 import DeleteNotificationModal from '@/components/modal/DeleteNotificationModal'
 import { safeUrl } from '@/lib/url'
 import {
@@ -398,6 +399,9 @@ function NotificationsPage() {
 
       {/* Preferences */}
       <NotificationPreferencesCard />
+
+      {/* SUPER_ADMIN only — renders null for everyone else */}
+      <AlertSettingsCard />
 
       <DeleteNotificationModal
         isOpen={deleteTarget !== null}

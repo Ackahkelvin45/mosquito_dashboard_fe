@@ -130,3 +130,11 @@ export async function deletePushSubscription(endpoint: string): Promise<null> {
         throw err;
     }
 }
+
+/** SUPER_ADMIN: upsert global alert thresholds — takes effect immediately. */
+export async function updateAlertSettings(changes: Record<string, number>) {
+  return apiFetch("/notifications/alert-settings", {
+    method: "PUT",
+    body: JSON.stringify(changes),
+  });
+}

@@ -277,7 +277,7 @@ export default function SensorDetailPage() {
                   className={`font-semibold ${
                     device?.is_active ? "text-green-600" : "text-red-500"
                   }`}
-                  title="Reported within the last 24 hours"
+                  title="Sent sensor data within the last 10 minutes"
                 >
                   {device?.is_active ? "Online" : "Offline"}
                 </span>

@@ -29,12 +29,14 @@ async function refreshAccessToken(): Promise<string> {
 
   if (!refreshPromise) {
     refreshPromise = (async () => {
-      // The backend expects refresh_token as a query parameter, not a JSON body.
-      const refreshUrl = `${API_URL}/auth/refresh-token?refresh_token=${encodeURIComponent(refreshToken)}`
-      const refreshRes = await fetch(refreshUrl, {
+      // Refresh token goes in the BODY — a query parameter would land the
+      // credential in server/proxy access logs. (The backend still accepts
+      // the old query form for previously-deployed clients.)
+      const refreshRes = await fetch(`${API_URL}/auth/refresh-token`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
       }).catch(() => null)
 
       if (!refreshRes || !refreshRes.ok) {

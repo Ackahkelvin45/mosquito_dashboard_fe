@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { getCurrentUser } from "@/queries/authentication/authenticationQueries"
-import { loginUser, type LoginResult, registerUser, type RegisterFormData, updateResearcherRequestStatus, requestPasswordReset, verifyPasswordResetOtp, resetPassword } from "@/actions/authentication/authenticationMutation"
+import { loginUser, type LoginResult, registerUser, type RegisterFormData, updateResearcherRequestStatus, requestPasswordReset, verifyPasswordResetOtp, resetPassword, verifyTwoFactor, type Verify2faResult, setTwoFactor } from "@/actions/authentication/authenticationMutation"
 import { useAuthStore } from "@/store/authStore"
 
 export const useCurrentUser = () => {
@@ -24,6 +24,29 @@ export const useLogin = () => {
         useAuthStore.getState().setAuth(data.access_token,data.refresh_token,data.user_id)
         queryClient.invalidateQueries({ queryKey: ["currentUser"] })
       }
+    },
+  })
+}
+
+export const useVerifyTwoFactor = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { two_factor_token: string; code: string }) => verifyTwoFactor(data),
+    onSuccess: (data: Verify2faResult) => {
+      if (data.success) {
+        useAuthStore.getState().setAuth(data.access_token, data.refresh_token, data.user_id)
+        queryClient.invalidateQueries({ queryKey: ["currentUser"] })
+      }
+    },
+  })
+}
+
+export const useSetTwoFactor = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { enabled: boolean; current_password: string }) => setTwoFactor(data),
+    onSuccess: (data) => {
+      if (data.success) queryClient.invalidateQueries({ queryKey: ["currentUser"] })
     },
   })
 }

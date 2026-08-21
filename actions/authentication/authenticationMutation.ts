@@ -2,7 +2,10 @@ import { apiFetch } from "@/api/base"
 
 export type LoginResult =
   | { success: true; access_token: string; refresh_token: string; user_id: number }
-  | { success: false; error: string }
+  // 2FA challenge (FR-4): password verified, but a code was emailed and must
+  // be exchanged (with the challenge token) before tokens are issued.
+  | { success: false; two_factor_required: true; two_factor_token: string; message: string }
+  | { success: false; two_factor_required?: false; error: string }
 
 export async function loginUser(data: { email: string; password: string }): Promise<LoginResult> {
   try {                                        // ✅ wrap everything
@@ -11,10 +14,66 @@ export async function loginUser(data: { email: string; password: string }): Prom
       { method: "POST", body: JSON.stringify(data) },
       true
     )
+    if (res.two_factor_required) {
+      return {
+        success: false,
+        two_factor_required: true,
+        two_factor_token: res.two_factor_token,
+        message: res.message ?? "A verification code was sent to your email.",
+      }
+    }
     return { success: true, access_token: res.access_token, refresh_token: res.refresh_token, user_id: res.user_id }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Login failed. Please try again."
     return { success: false, error: message }  // ✅ return, never throw
+  }
+}
+
+export type Verify2faResult =
+  | { success: true; access_token: string; refresh_token: string; user_id: number }
+  | { success: false; error: string }
+
+export async function verifyTwoFactor(data: { two_factor_token: string; code: string }): Promise<Verify2faResult> {
+  try {
+    const res = await apiFetch(
+      "/auth/login/verify-2fa",
+      { method: "POST", body: JSON.stringify(data) },
+      true
+    )
+    return { success: true, access_token: res.access_token, refresh_token: res.refresh_token, user_id: res.user_id }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Verification failed. Please try again."
+    return { success: false, error: message }
+  }
+}
+
+export async function resendTwoFactor(two_factor_token: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const res = await apiFetch(
+      "/auth/login/resend-2fa",
+      { method: "POST", body: JSON.stringify({ two_factor_token }) },
+      true
+    )
+    return { success: true, message: res.message ?? "A new code was sent." }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not resend the code."
+    return { success: false, message }
+  }
+}
+
+/** Self-service 2FA toggle (settings page). Requires the current password. */
+export async function setTwoFactor(data: { enabled: boolean; current_password: string }): Promise<
+  { success: true; two_factor_enabled: boolean; reauth_required: boolean } | { success: false; error: string }
+> {
+  try {
+    const res = await apiFetch("/auth/me/two-factor", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+    return { success: true, two_factor_enabled: res.two_factor_enabled, reauth_required: res.reauth_required }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not update two-factor authentication."
+    return { success: false, error: message }
   }
 }
 

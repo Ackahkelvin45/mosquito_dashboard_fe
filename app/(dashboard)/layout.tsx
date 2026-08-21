@@ -21,6 +21,8 @@ const ROUTE_ROLES: { prefix: string; allow: Role[] }[] = [
   { prefix: "/devices/add", allow: ["SUPER_ADMIN"] },
   { prefix: "/users", allow: ["SUPER_ADMIN", "ADMIN"] },
   { prefix: "/approval", allow: ["SUPER_ADMIN"] },
+  { prefix: "/system-health", allow: ["SUPER_ADMIN"] },
+  { prefix: "/audit-logs", allow: ["SUPER_ADMIN"] },
 ]
 
 // Guests may only browse the public read-only pages: Dashboard, Devices

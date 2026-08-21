@@ -6,7 +6,7 @@ import name from '../../public/images/name.png'
 import Image from 'next/image'
 import profile from '../../public/images/profile.png'
 import {
-  House, Map, ChartNoAxesCombined, Satellite, CirclePile,
+  Activity, House, Map, ChartNoAxesCombined, Satellite, CirclePile,
   UserRoundPlus, ShieldUser, Bell, ChevronDown, ChevronRight,
   EllipsisVertical, KeyRound, LogIn, LogOut, Thermometer, User, X
 } from 'lucide-react'
@@ -83,6 +83,19 @@ const navItems: NavItem[] = [
     label: 'Notifications',
     icon: <Bell size={19} />,
     href: '/notifications',
+  },
+  {
+    // Grouped so operational-observability pages don't each cost a sidebar
+    // row. Unlike Approvals, the parent href is a REAL route, so the item
+    // highlights correctly when active.
+    label: 'System',
+    icon: <Activity size={19} />,
+    href: '/system-health',
+    roles: ['SUPER_ADMIN'],
+    subItems: [
+      { label: 'System Health', href: '/system-health' },
+      { label: 'Audit Logs', href: '/audit-logs' },
+    ],
   },
   {
     // No roles array: every authenticated user may hold API keys (and it

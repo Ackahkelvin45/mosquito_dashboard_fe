@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query"
-import { createDevice, type CreateDevicePayload, createDeviceCluster, type CreateDeviceClusterPayload, deleteDevice, updateDevice, type UpdateDevicePayload, updateDeviceCluster, type UpdateDeviceClusterPayload } from "@/actions/deviceMutation"
-import { getDevices, type GetDevicesFilters, getClusters, getClusterById, getDeviceById, getAllSensorReadings, type GetAllSensorReadingsFilters } from "@/queries/device/deviceQueries"
+import { createDevice, type CreateDevicePayload, createDeviceCluster, type CreateDeviceClusterPayload, deleteDevice, dismissUnregisteredSighting, updateDevice, type UpdateDevicePayload, updateDeviceCluster, type UpdateDeviceClusterPayload } from "@/actions/deviceMutation"
+import { getDevices, type GetDevicesFilters, getClusters, getClusterById, getDeviceById, getAllSensorReadings, getUnregisteredSightings, type GetAllSensorReadingsFilters } from "@/queries/device/deviceQueries"
 import { getDeviceCharts, type ChartGroupBy } from "@/queries/device/deviceChartsQueries"
 import type { PaginationParams } from "@/lib/pagination"
 
@@ -144,5 +144,28 @@ export const useAllSensorReadings = (
         placeholderData: keepPreviousData,
         refetchInterval: LIVE_REFETCH_MS,
         refetchOnWindowFocus: true,
+    })
+}
+
+// ── Unregistered-device sightings (SUPER_ADMIN only — pass enabled=false
+// for other roles so the 403 is never even requested) ────────────────────────
+
+export const useUnregisteredSightings = (enabled: boolean) => {
+    return useQuery({
+        queryKey: ["devices", "unregistered"],
+        queryFn: getUnregisteredSightings,
+        enabled,
+        refetchInterval: LIVE_REFETCH_MS,
+        refetchOnWindowFocus: true,
+    })
+}
+
+export const useDismissSighting = () => {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (deviceUuid: string) => dismissUnregisteredSighting(deviceUuid),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["devices", "unregistered"] })
+        },
     })
 }

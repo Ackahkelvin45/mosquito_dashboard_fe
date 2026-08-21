@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useClusters, useDevices } from "@/hooks/device";
 import { useRole } from "@/hooks/useRole";
+import { filterHumidity, filterTemp, fmtReading, internalHumidity, internalPressure, internalTemp, externalHumidity, externalPressure, externalTemp } from "@/lib/reading";
 import LocationSearch, { type GeoLocation } from "@/components/map/LocationSearch";
 import MultiSelectDropdown from "@/components/filters/MultiSelectDropdown";
 import { extractItems, MAX_PAGE_SIZE } from "@/lib/pagination";
@@ -213,26 +214,26 @@ function EnvDataTab({ device }: { device: Device | null }) {
       <div className="mb-3">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Internal</p>
         <Row label="Temperature" icon={<Thermometer size={14} />}>
-          <span className="text-sm font-semibold">{r.internal_temperature} °C</span>
+          <span className="text-sm font-semibold">{fmtReading(internalTemp(r), " °C")}</span>
         </Row>
         <Row label="Humidity" icon={<Droplets size={14} />}>
-          <span className="text-sm font-semibold">{r.internal_humidity} %</span>
+          <span className="text-sm font-semibold">{fmtReading(internalHumidity(r), " %")}</span>
         </Row>
         <Row label="Pressure" icon={<Gauge size={14} />}>
-          <span className="text-sm font-semibold">{r.internal_pressure} hPa</span>
+          <span className="text-sm font-semibold">{fmtReading(internalPressure(r), " hPa")}</span>
         </Row>
       </div>
 
       <div>
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">External</p>
         <Row label="Temperature" icon={<Thermometer size={14} />}>
-          <span className="text-sm font-semibold">{r.external_temperature} °C</span>
+          <span className="text-sm font-semibold">{fmtReading(externalTemp(r), " °C")}</span>
         </Row>
         <Row label="Humidity" icon={<Droplets size={14} />}>
-          <span className="text-sm font-semibold">{r.external_humidity} %</span>
+          <span className="text-sm font-semibold">{fmtReading(externalHumidity(r), " %")}</span>
         </Row>
         <Row label="Pressure" icon={<Gauge size={14} />}>
-          <span className="text-sm font-semibold">{r.external_pressure} hPa</span>
+          <span className="text-sm font-semibold">{fmtReading(externalPressure(r), " hPa")}</span>
         </Row>
         <Row label="Light" icon={<span className="text-xs">☀️</span>}>
           <span className="text-sm font-semibold">{r.external_light} lux</span>
@@ -286,6 +287,14 @@ export default function MapPage() {
   const [query, setQuery] = useState("");
   const [clusterIds, setClusterIds] = useState<string[]>([]);
   const [trapStatuses, setTrapStatuses] = useState<string[]>([]);
+  // FR-13: connectivity (online/offline markers) + environmental thresholds,
+  // both filtered client-side — the payload already carries is_active and
+  // latest_reading, so no extra requests.
+  const [connectivity, setConnectivity] = useState<string[]>([]);
+  const [tempMin, setTempMin] = useState("");
+  const [tempMax, setTempMax] = useState("");
+  const [humidityMin, setHumidityMin] = useState("");
+  const [humidityMax, setHumidityMax] = useState("");
   const [createdAfter, setCreatedAfter] = useState("");
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [searchedLocation, setSearchedLocation] = useState<GeoLocation | null>(null);
@@ -316,7 +325,29 @@ export default function MapPage() {
       ? devices
       : devices.filter((d) => clusterIds.includes(String(d.cluster_id)));
 
+  const parsedEnv = {
+    tempMin: tempMin === "" ? null : Number(tempMin),
+    tempMax: tempMax === "" ? null : Number(tempMax),
+    humidityMin: humidityMin === "" ? null : Number(humidityMin),
+    humidityMax: humidityMax === "" ? null : Number(humidityMax),
+  };
+  const envFilterActive = Object.values(parsedEnv).some((v) => v !== null && !Number.isNaN(v));
+
   const filteredDevices = clusterFilteredDevices.filter((d) => {
+    // Both selected = no filter, same convention as the trap dropdown.
+    if (connectivity.length === 1) {
+      const wantOnline = connectivity[0] === "online";
+      if (Boolean(d.is_active) !== wantOnline) return false;
+    }
+    if (envFilterActive) {
+      const t = filterTemp(d.latest_reading);
+      const h = filterHumidity(d.latest_reading);
+      // A device with no reading can't prove it matches an env constraint.
+      if (parsedEnv.tempMin !== null && !Number.isNaN(parsedEnv.tempMin) && (t === null || t < parsedEnv.tempMin)) return false;
+      if (parsedEnv.tempMax !== null && !Number.isNaN(parsedEnv.tempMax) && (t === null || t > parsedEnv.tempMax)) return false;
+      if (parsedEnv.humidityMin !== null && !Number.isNaN(parsedEnv.humidityMin) && (h === null || h < parsedEnv.humidityMin)) return false;
+      if (parsedEnv.humidityMax !== null && !Number.isNaN(parsedEnv.humidityMax) && (h === null || h > parsedEnv.humidityMax)) return false;
+    }
     const q = query.trim().toLowerCase();
     if (!q) return true;
     return (
@@ -332,7 +363,8 @@ export default function MapPage() {
   };
 
   const activeExtraCount =
-    (clusterIds.length > 0 ? 1 : 0) + (trapStatuses.length > 0 ? 1 : 0);
+    (clusterIds.length > 0 ? 1 : 0) + (trapStatuses.length > 0 ? 1 : 0) +
+    (connectivity.length > 0 ? 1 : 0) + (envFilterActive ? 1 : 0);
 
   const tabs: { label: string; value: TabValue; icon: (active: boolean) => React.ReactNode }[] = [
     { label: "Count", value: "count", icon: (active) => <CountIcon active={active} /> },
@@ -487,7 +519,10 @@ export default function MapPage() {
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Extra Filters</p>
                 {activeExtraCount > 0 && (
                   <button
-                    onClick={() => { setClusterIds([]); setTrapStatuses([]); }}
+                    onClick={() => {
+                      setClusterIds([]); setTrapStatuses([]); setConnectivity([]);
+                      setTempMin(""); setTempMax(""); setHumidityMin(""); setHumidityMax("");
+                    }}
                     className="text-xs font-medium text-primary hover:underline"
                   >
                     Clear all
@@ -511,7 +546,9 @@ export default function MapPage() {
                   </div>
                 )}
                 <div className="flex-1">
-                  <label className="block text-xs text-gray-500 mb-1">Trap Status</label>
+                  {/* Trap on/off — NOT what the marker colors show (that's
+                      connectivity); keep the labels visibly distinct. */}
+                  <label className="block text-xs text-gray-500 mb-1">Trap Status (on/off)</label>
                   <MultiSelectDropdown
                     label="All statuses"
                     options={[
@@ -522,6 +559,38 @@ export default function MapPage() {
                     onChange={setTrapStatuses}
                     className="w-full"
                   />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">Connectivity (marker color)</label>
+                  <MultiSelectDropdown
+                    label="Online & offline"
+                    options={[
+                      { value: "online", label: "Online" },
+                      { value: "offline", label: "Offline" },
+                    ]}
+                    selected={connectivity}
+                    onChange={setConnectivity}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              <div className="mt-3">
+                <label className="block text-xs text-gray-500 mb-1">
+                  Environmental range (latest reading; devices without one are hidden while set)
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <input type="number" placeholder="Temp ≥ °C" value={tempMin}
+                    onChange={(e) => setTempMin(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm w-full" />
+                  <input type="number" placeholder="Temp ≤ °C" value={tempMax}
+                    onChange={(e) => setTempMax(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm w-full" />
+                  <input type="number" placeholder="Humidity ≥ %" value={humidityMin}
+                    onChange={(e) => setHumidityMin(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm w-full" />
+                  <input type="number" placeholder="Humidity ≤ %" value={humidityMax}
+                    onChange={(e) => setHumidityMax(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm w-full" />
                 </div>
               </div>
             </div>

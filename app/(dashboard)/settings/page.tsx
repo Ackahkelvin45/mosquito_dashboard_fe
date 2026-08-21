@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { KeyRound, LogOut, Mail, Shield, BadgeCheck, CalendarClock, Hash, MapPin } from "lucide-react";
-import { useCurrentUser } from "@/hooks/authentication";
+import { useCurrentUser, useSetTwoFactor } from "@/hooks/authentication";
+import { useRole } from "@/hooks/useRole";
 import { useAuthStore } from "@/store/authStore";
 
 // Mirrors the /auth/me (UserResponse) shape. `cluster`/`community` are optional
@@ -178,6 +180,8 @@ export default function ProfilePage() {
             )}
           </div>
 
+          <TwoFactorCard />
+
           {/* Actions */}
           <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
             <div>
@@ -206,6 +210,85 @@ export default function ProfilePage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+
+// FR-4: self-service email-OTP 2FA. Admins are locked on (mandatory);
+// enabling invalidates the current session, so we sign the user out to
+// re-login through the challenge.
+function TwoFactorCard() {
+  const { data: user } = useCurrentUser();
+  const { isAdmin, isSuperAdmin } = useRole();
+  const setTwoFactor = useSetTwoFactor();
+  const logout = useAuthStore((s) => s.logout);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const mandatory = isAdmin || isSuperAdmin;
+  const enabled = mandatory || Boolean(user?.two_factor_enabled);
+
+  const toggle = () => {
+    setError(null);
+    if (!password) {
+      setError("Enter your current password to change this setting.");
+      return;
+    }
+    setTwoFactor.mutate(
+      { enabled: !enabled, current_password: password },
+      {
+        onSuccess: (res) => {
+          setPassword("");
+          if (!res.success) {
+            setError(res.error);
+            return;
+          }
+          if (res.reauth_required) {
+            setNotice("Two-factor enabled. Please sign in again.");
+            setTimeout(() => logout(), 1500);
+          } else {
+            setNotice(res.two_factor_enabled
+              ? "Two-factor authentication is on."
+              : "Two-factor authentication is off.");
+          }
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-100">
+      <p className="text-sm font-semibold text-gray-800">Two-factor authentication</p>
+      <p className="text-xs text-gray-500 mt-0.5">
+        A 6-digit code is emailed to you at every sign-in.
+        {mandatory && " Mandatory for administrator accounts — it cannot be turned off."}
+      </p>
+      <p className={`text-sm font-semibold mt-2 ${enabled ? "text-green-600" : "text-gray-500"}`}>
+        {enabled ? "On" : "Off"}
+      </p>
+      {!mandatory && (
+        <div className="mt-3 flex flex-col sm:flex-row gap-3 sm:items-center">
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Current password"
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full sm:w-64"
+          />
+          <button
+            type="button"
+            onClick={toggle}
+            disabled={setTwoFactor.isPending}
+            className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 w-fit"
+          >
+            {setTwoFactor.isPending ? "Saving…" : enabled ? "Turn off" : "Turn on"}
+          </button>
+        </div>
+      )}
+      {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+      {notice && <p className="text-xs text-green-600 mt-2">{notice}</p>}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { CalendarDays } from 'lucide-react'
 import Card from '@/components/cards/Card'
+import { UnregisteredBanner } from '@/components/devices/UnregisteredSightings'
 import MosquitoMonitoringChart from '@/components/Charts/MosquitoMonitoringChart'
 import MosquitoBreakdown from '@/components/tables/MosquitoBreakdownTable'
 import MosquitoGenderDistribution from '@/components/Charts/MosquitoGenderDistribution'
@@ -232,6 +233,8 @@ function Dashboard() {
 
   return (
     <div className="flex flex-col gap-4">
+
+        <UnregisteredBanner />
 
         <div className="flex flex-wrap items-center justify-between gap-3 px-2 mb-2">
           <h1 className="text-xl font-semibold font-mulish text-primary">

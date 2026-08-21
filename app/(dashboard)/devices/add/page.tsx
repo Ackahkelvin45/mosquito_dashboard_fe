@@ -25,6 +25,24 @@ export default function AddDevicePage() {
     cluster_id: "",
   })
 
+  // Prefill from the "Register" button on an unregistered-device sighting
+  // (?device_uuid=…&latitude=…&longitude=…). Read via window.location instead
+  // of useSearchParams so this statically-rendered page needs no Suspense
+  // boundary; runs once on mount, only filling fields still blank.
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const uuid = params.get("device_uuid")
+    const lat = params.get("latitude")
+    const lon = params.get("longitude")
+    if (!uuid && !lat && !lon) return
+    setForm((prev) => ({
+      ...prev,
+      device_uuid: prev.device_uuid || (uuid ?? ""),
+      latitude: prev.latitude || (lat ?? ""),
+      longitude: prev.longitude || (lon ?? ""),
+    }))
+  }, [])
+
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {

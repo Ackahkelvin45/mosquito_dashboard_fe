@@ -7,6 +7,7 @@ import {
     type QueryClient,
 } from "@tanstack/react-query"
 import {
+    getAlertSettings,
     getNotificationPreferences,
     getNotifications,
     getPushSubscriptions,
@@ -22,6 +23,7 @@ import {
     markNotificationRead,
     markNotificationUnread,
     unarchiveNotification,
+    updateAlertSettings,
     updateNotificationPreferences,
     type UpdateNotificationPreferencesPayload,
 } from "@/actions/notificationMutation"
@@ -256,4 +258,24 @@ export const useUpdatePreferences = () => {
             queryClient.invalidateQueries({ queryKey: ["notification-preferences"] })
         },
     })
+}
+
+// ── Global alert thresholds (SUPER_ADMIN) ────────────────────────────────────
+
+export const useAlertSettings = (enabled: boolean) => {
+  return useQuery({
+    queryKey: ["alert-settings"],
+    queryFn: getAlertSettings,
+    enabled,
+  })
+}
+
+export const useUpdateAlertSettings = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (changes: Record<string, number>) => updateAlertSettings(changes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["alert-settings"] })
+    },
+  })
 }
