@@ -7,8 +7,8 @@ import Image from 'next/image'
 import profile from '../../public/images/profile.png'
 import {
   Activity, House, Map, ChartNoAxesCombined, Satellite, CirclePile,
-  UserRoundPlus, ShieldUser, Bell, ChevronDown, ChevronRight,
-  EllipsisVertical, KeyRound, LogIn, LogOut, Thermometer, User, X
+  UserRoundPlus, ShieldUser, ChevronDown, ChevronRight,
+  EllipsisVertical, KeyRound, LogIn, LogOut, Settings, Thermometer, User, X
 } from 'lucide-react'
 import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/authentication'
@@ -80,11 +80,6 @@ const navItems: NavItem[] = [
     ]
   },
   {
-    label: 'Notifications',
-    icon: <Bell size={19} />,
-    href: '/notifications',
-  },
-  {
     // Grouped so operational-observability pages don't each cost a sidebar
     // row. Unlike Approvals, the parent href is a REAL route, so the item
     // highlights correctly when active.
@@ -105,13 +100,10 @@ const navItems: NavItem[] = [
     href: '/apis',
   },
   {
+    // Notification preferences + (for super admins) the system alert
+    // thresholds. Account identity/password live on /profile instead.
     label: 'Settings',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-      </svg>
-    ),
+    icon: <Settings size={19} />,
     href: '/settings',
   },
 ]
@@ -309,7 +301,7 @@ function Sidebar() {
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-[210px] bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
               <div className="p-3 flex flex-col gap-1.5">
                 <Link
-                  href="/settings"
+                  href="/profile"
                   onClick={() => setIsAccountMenuOpen(false)}
                   className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                 >

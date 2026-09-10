@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff } from "lucide-react"
+import OtpInput from "@/components/auth/OtpInput"
 import logo from "../../public/images/logo.png"
 import name from "../../public/images/name.png"
 import loginiage from "../../public/images/loginimage.png"
@@ -137,18 +138,14 @@ export default function LoginPage() {
               </div>
             )}
             <div>
-              <label htmlFor="otp" className="text-dark text-sm mb-2 font-medium block">
+              <span className="text-dark text-sm mb-2 font-medium block">
                 Verification code
-              </label>
-              <input
-                id="otp"
-                inputMode="numeric"
-                maxLength={6}
-                autoFocus
-                placeholder="••••••"
+              </span>
+              <OtpInput
                 value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                className="w-full py-2.5 px-3 border border-gray focus:ring-0 text-center tracking-[0.5em] text-lg focus:border-primary focus:outline-none rounded-md"
+                onChange={setCode}
+                autoFocus
+                disabled={verify2fa.isPending}
               />
               <p className="text-xs text-gray-500 mt-2">
                 We emailed a 6-digit code to <span className="font-medium">{email}</span>. It expires in 10 minutes.

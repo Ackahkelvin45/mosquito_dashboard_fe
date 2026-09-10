@@ -11,6 +11,7 @@ export type GetDashboardFilters = {
   breakdown_group_by?: DashboardGroupBy;
   correlation_group_by?: DashboardGroupBy;
   genus_heatmap_group_by?: DashboardGroupBy;
+  hourly_group_by?: DashboardGroupBy;
   // Custom window (ISO strings) — must be sent together; overrides every
   // group_by on the backend, which echoes group_by: "custom".
   start_date?: string;
@@ -90,6 +91,7 @@ export type DashboardResponse = {
   };
   correlation_chart?: CorrelationChart;
   genus_heatmap?: GenusHeatmap;
+  hourly_activity?: DashboardHourlyActivity;
   region?: string | null;
   cluster_id?: number[] | null;
   device_id?: number | null;
@@ -128,6 +130,23 @@ export type GenusHeatmap = {
   window_end: string;
 };
 
+export type HourlyActivityPoint = {
+  hour: number;
+  label: string;
+  total: number;
+  by_genus: Record<string, number>;
+};
+
+export type DashboardHourlyActivity = {
+  genera: string[];
+  data: HourlyActivityPoint[];
+  total: number;
+  peak_hour: number | null;
+  group_by: string;
+  window_start: string;
+  window_end: string;
+};
+
 export async function getDashboardData(filters?: GetDashboardFilters): Promise<DashboardResponse> {
   const params = new URLSearchParams();
   if (filters?.totals_group_by) params.set("totals_group_by", filters.totals_group_by);
@@ -138,6 +157,7 @@ export async function getDashboardData(filters?: GetDashboardFilters): Promise<D
   if (filters?.breakdown_group_by) params.set("breakdown_group_by", filters.breakdown_group_by);
   if (filters?.correlation_group_by) params.set("correlation_group_by", filters.correlation_group_by);
   if (filters?.genus_heatmap_group_by) params.set("genus_heatmap_group_by", filters.genus_heatmap_group_by);
+  if (filters?.hourly_group_by) params.set("hourly_group_by", filters.hourly_group_by);
   if (filters?.start_date) params.set("start_date", filters.start_date);
   if (filters?.end_date) params.set("end_date", filters.end_date);
   if (filters?.region) params.set("region", filters.region);

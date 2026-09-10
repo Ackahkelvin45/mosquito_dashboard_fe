@@ -37,6 +37,10 @@ const ERROR_META: Record<string, { label: string; explain: string }> = {
     label: 'Broker connection lost',
     explain: 'The server lost its connection to the message broker. Data sent during the gap may be missing.',
   },
+  empty_reading: {
+    label: 'Unreadable sensor fields',
+    explain: 'A message arrived but none of its sensor fields could be read — the device firmware is likely sending data under different field names. The raw message is attached.',
+  },
 }
 
 function StatusCard({ title, value, sub, icon, tone }: {

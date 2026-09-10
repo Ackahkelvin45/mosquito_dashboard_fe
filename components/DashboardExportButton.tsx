@@ -22,6 +22,7 @@ export type DashboardExportSections = Partial<
     | "breakdown"
     | "correlation_chart"
     | "genus_heatmap"
+    | "hourly_activity"
   >
 >;
 
@@ -123,6 +124,13 @@ export function buildDashboardExportRows(s: DashboardExportSections): Row[] {
 
   for (const c of s.genus_heatmap?.data ?? []) {
     rows.push({ section: "Genus Heatmap", item: `${c.genus} @ ${c.label}`, metric: "Mosquito Count", value: c.count });
+  }
+
+  for (const p of s.hourly_activity?.data ?? []) {
+    rows.push({ section: "Hourly Activity", item: p.label, metric: "Detections", value: p.total ?? 0 });
+    for (const [genus, count] of Object.entries(p.by_genus ?? {})) {
+      rows.push({ section: "Hourly Activity", item: `${p.label} — ${genus}`, metric: "Detections", value: count ?? 0 });
+    }
   }
 
   return rows;

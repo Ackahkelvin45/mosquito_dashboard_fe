@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { getCurrentUser } from "@/queries/authentication/authenticationQueries"
-import { loginUser, type LoginResult, registerUser, type RegisterFormData, updateResearcherRequestStatus, requestPasswordReset, verifyPasswordResetOtp, resetPassword, verifyTwoFactor, type Verify2faResult, setTwoFactor } from "@/actions/authentication/authenticationMutation"
+import { loginUser, type LoginResult, registerUser, type RegisterFormData, updateResearcherRequestStatus, requestPasswordReset, verifyPasswordResetOtp, resetPassword, verifyTwoFactor, type Verify2faResult, setTwoFactor, updateProfile, changePassword } from "@/actions/authentication/authenticationMutation"
 import { useAuthStore } from "@/store/authStore"
 
 export const useCurrentUser = () => {
@@ -84,5 +84,20 @@ export const useUpdateResearcherStatus = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["researcherRequests"] })
     },
+  })
+}
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { first_name?: string; last_name?: string }) => updateProfile(data),
+    onSuccess: (data) => {
+      if (data.success) queryClient.invalidateQueries({ queryKey: ["currentUser"] })
+    },
+  })
+}
+
+export const useChangePassword = () => {
+  return useMutation({
+    mutationFn: (data: { current_password: string; new_password: string }) => changePassword(data),
   })
 }

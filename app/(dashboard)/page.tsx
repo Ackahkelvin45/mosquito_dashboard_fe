@@ -10,6 +10,7 @@ import MosquitoBreakdown from '@/components/tables/MosquitoBreakdownTable'
 import MosquitoGenderDistribution from '@/components/Charts/MosquitoGenderDistribution'
 import SensorStatusChart from '@/components/Charts/SensorStatusChart'
 import MosquitoBarChart from '@/components/Charts/MosquitoRegionBarChart'
+import HourlyActivityChart from '@/components/Charts/HourlyActivityChart'
 import CorrelationChart from '@/components/Charts/CorrelationChart'
 import GenusHeatmap from '@/components/Charts/GenusHeatmap'
 import {
@@ -18,6 +19,7 @@ import {
   useMosquitoBreakdown,
   useGenderDistribution,
   useRegionBreakdown,
+  useHourlyActivity,
   useSensorStatus,
   useCorrelationChart,
   useGenusHeatmap
@@ -49,6 +51,7 @@ function Dashboard() {
   const [chartGroupBy, setChartGroupBy] = useState<DashboardGroupBy>("month")
   const [genderGroupBy, setGenderGroupBy] = useState<DashboardGroupBy>("month")
   const [regionGroupBy, setRegionGroupBy] = useState<DashboardGroupBy>("month")
+  const [hourlyGroupBy, setHourlyGroupBy] = useState<DashboardGroupBy>("month")
   const [sensorStatusGroupBy, setSensorStatusGroupBy] = useState<DashboardGroupBy>("month")
   const [breakdownGroupBy, setBreakdownGroupBy] = useState<DashboardGroupBy>("month")
   const [correlationGroupBy, setCorrelationGroupBy] = useState<DashboardGroupBy>("month")
@@ -62,6 +65,7 @@ function Dashboard() {
     setChartGroupBy(value)
     setGenderGroupBy(value)
     setRegionGroupBy(value)
+    setHourlyGroupBy(value)
     setSensorStatusGroupBy(value)
     setBreakdownGroupBy(value)
     setCorrelationGroupBy(value)
@@ -76,6 +80,7 @@ function Dashboard() {
   const { data: genderData, isLoading: isGenderLoading } = useGenderDistribution(genderGroupBy, selectedClusterIds)
   const { data: breakdownDataResponse, isLoading: isBreakdownLoading } = useMosquitoBreakdown(breakdownGroupBy, selectedClusterIds)
   const { data: regionDataResponse, isLoading: isRegionLoading } = useRegionBreakdown(regionGroupBy, selectedClusterIds)
+  const { data: hourlyActivityData, isLoading: isHourlyLoading } = useHourlyActivity(hourlyGroupBy, selectedClusterIds)
   const { data: sensorStatusResponse, isLoading: isSensorStatusLoading } = useSensorStatus(sensorStatusGroupBy, selectedClusterIds)
   const { data: correlationData, isLoading: isCorrelationLoading } = useCorrelationChart(correlationGroupBy, selectedClusterIds)
   const { data: genusHeatmapData, isLoading: isGenusHeatmapLoading } = useGenusHeatmap(genusHeatmapGroupBy, selectedClusterIds)
@@ -251,11 +256,12 @@ function Dashboard() {
                 sensor_status_chart: sensorStatusResponse,
                 correlation_chart: correlationData,
                 genus_heatmap: genusHeatmapData,
+                hourly_activity: hourlyActivityData,
               }}
               disabled={
                 isTotalsLoading || isChartLoading || isGenderLoading ||
                 isBreakdownLoading || isRegionLoading || isSensorStatusLoading ||
-                isCorrelationLoading || isGenusHeatmapLoading
+                isCorrelationLoading || isGenusHeatmapLoading || isHourlyLoading
               }
             />
             {!isGuest && (
@@ -369,27 +375,37 @@ function Dashboard() {
 
 	    </div>
 	    <div className='w-full lg:w-[50%]'>
-	        <MosquitoBarChart
-	          data={(() => {
-	            const list = regionData?.data ?? []
-	            return list.length > 0
-	              ? list.map((d) => ({
-	                  region: (d.region ?? "").trim() || "Unknown",
-	                  count: d.count ?? 0,
-	                  communities: (d.communities ?? []).map((c) => ({
-	                    community: (c.community ?? "").trim() || "Unknown",
-	                    count: c.count ?? 0,
-	                  })),
-	                }))
-	              : undefined
-	          })()}
-	          communities={regionData?.communities}
-	          groupBy={regionGroupBy}
-	          onGroupByChange={(value) => setRegionGroupBy(value)}
-            isLoading={isRegionLoading}
+	        <HourlyActivityChart
+	          activity={hourlyActivityData}
+	          groupBy={hourlyGroupBy}
+	          onGroupByChange={(value) => setHourlyGroupBy(value)}
+	          isLoading={isHourlyLoading}
 	        />
 	    </div>
 
+    </div>
+
+    {/* Region gets the full width its community drill-down bars need. */}
+    <div className='mt-2'>
+        <MosquitoBarChart
+          data={(() => {
+            const list = regionData?.data ?? []
+            return list.length > 0
+              ? list.map((d) => ({
+                  region: (d.region ?? "").trim() || "Unknown",
+                  count: d.count ?? 0,
+                  communities: (d.communities ?? []).map((c) => ({
+                    community: (c.community ?? "").trim() || "Unknown",
+                    count: c.count ?? 0,
+                  })),
+                }))
+              : undefined
+          })()}
+          communities={regionData?.communities}
+          groupBy={regionGroupBy}
+          onGroupByChange={(value) => setRegionGroupBy(value)}
+          isLoading={isRegionLoading}
+        />
     </div>
 
     <div className='mt-2'>

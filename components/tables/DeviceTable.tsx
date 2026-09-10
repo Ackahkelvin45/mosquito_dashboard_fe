@@ -11,24 +11,10 @@ import "react-loading-skeleton/dist/skeleton.css";
 import DownloadCsvButton from "./DownloadCsvButton";
 import ColumnVisibilityDropdown, { useColumnVisibility } from "./ColumnVisibilityDropdown";
 
-export type DeviceRow = {
-  name: string;
-  // Position and its derived labels are absent until the device reports.
-  longitude?: number | null;
-  latitude?: number | null;
-  region?: string | null;
-  community?: string | null;
-  description?: string | null;
-  gmap_link?: string | null;
-  id: number;
-  last_activity: string;
-  created_at: string;
-  updated_at: string;
-  total_mosquito_count: number;
-  // Computed device liveness (reported within last 24h) — independent of trap on/off.
-  is_active?: boolean;
-  trap_status?: boolean;
-};
+import type { Device } from "@/types/api";
+
+// The table renders devices exactly as the API sends them — one shared model.
+export type DeviceRow = Device;
 
 function formatDate(iso: string): string {
   const date = new Date(iso);

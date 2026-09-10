@@ -188,3 +188,30 @@ export async function updateResearcherRequestStatus(
     return { success: false, error: message }
   }
 }
+
+export async function updateProfile(data: { first_name?: string; last_name?: string }): Promise<
+  { success: true } | { success: false; error: string }
+> {
+  try {
+    await apiFetch("/auth/me", { method: "PATCH", body: JSON.stringify(data) })
+    return { success: true }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not update your profile."
+    return { success: false, error: message }
+  }
+}
+
+export async function changePassword(data: { current_password: string; new_password: string }): Promise<
+  { success: true; message: string } | { success: false; error: string }
+> {
+  try {
+    const res = await apiFetch("/auth/me/change-password", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+    return { success: true, message: res.message }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not change your password."
+    return { success: false, error: message }
+  }
+}

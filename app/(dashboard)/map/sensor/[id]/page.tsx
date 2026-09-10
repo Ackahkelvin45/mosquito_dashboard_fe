@@ -482,8 +482,8 @@ export default function SensorDetailPage() {
                 icon={temperatureIcon.src}
                 iconBg="rgba(21, 101, 192, 0.15)"
                 lines={[
-                  { label: "external", value: formatReading(device?.latest_reading?.external_temperature, "°C") },
-                  { label: "Internal", value: formatReading(device?.latest_reading?.internal_temperature, "°C") },
+                  { label: "external", value: formatReading(device?.latest_reading?.temp_external, "°C") },
+                  { label: "Internal", value: formatReading(device?.latest_reading?.temp_internal, "°C") },
                 ]}
               />
               <SensorMetricCard
@@ -491,8 +491,8 @@ export default function SensorDetailPage() {
                 icon={humidityIcon.src}
                 iconBg="rgba(21, 101, 192, 0.15)"
                 lines={[
-                  { label: "external", value: formatReading(device?.latest_reading?.external_humidity, "%") },
-                  { label: "Internal", value: formatReading(device?.latest_reading?.internal_humidity, "%") },
+                  { label: "external", value: formatReading(device?.latest_reading?.humidity_external, "%") },
+                  { label: "Internal", value: formatReading(device?.latest_reading?.humidity_internal, "%") },
                 ]}
               />
               <SensorMetricCard
@@ -501,14 +501,14 @@ export default function SensorDetailPage() {
                 iconBg="rgba(21, 101, 192, 0.15)"
                 lines={[
                   { label: "external", value: formatReading(device?.latest_reading?.external_pressure, "hPa") },
-                  { label: "Internal", value: formatReading(device?.latest_reading?.internal_pressure, "hPa") },
+                  { label: "Internal", value: formatReading(device?.latest_reading?.pressure_internal, "hPa") },
                 ]}
               />
               <SensorMetricCard
                 title="Battery"
                 icon={batteryIcon.src}
                 iconBg="rgba(251, 191, 36, 0.2)"
-                lines={[{ label: "Reading", value: formatReading(device?.latest_reading?.battery_voltage, "V") }]}
+                lines={[{ label: "Reading", value: formatReading(device?.latest_reading?.battery, "V") }]}
               />
             </div>
 

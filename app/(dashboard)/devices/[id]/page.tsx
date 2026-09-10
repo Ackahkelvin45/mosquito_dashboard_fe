@@ -205,8 +205,8 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
             icon={temperatureIcon.src}
             iconBg="rgba(21, 101, 192, 0.15)"
             lines={[
-              { label: "External", value: `${device.latest_reading?.external_temperature || 0} °C` },
-              { label: "Internal", value: `${device.latest_reading?.internal_temperature || 0} °C` },
+              { label: "External", value: `${device.latest_reading?.temp_external || 0} °C` },
+              { label: "Internal", value: `${device.latest_reading?.temp_internal || 0} °C` },
             ]}
           />
           <SensorMetricCard
@@ -214,8 +214,8 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
             icon={humidityIcon.src}
             iconBg="rgba(21, 101, 192, 0.15)"
             lines={[
-              { label: "External", value: `${device.latest_reading?.external_humidity || 0} %` },
-              { label: "Internal", value: `${device.latest_reading?.internal_humidity || 0} %` },
+              { label: "External", value: `${device.latest_reading?.humidity_external || 0} %` },
+              { label: "Internal", value: `${device.latest_reading?.humidity_internal || 0} %` },
             ]}
           />
           <SensorMetricCard
@@ -223,7 +223,7 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
             icon={pressureIcon.src}
             iconBg="rgba(21, 101, 192, 0.15)"
             lines={[
-              { label: "Internal", value: `${device.latest_reading?.internal_pressure || 0} hPa` },
+              { label: "Internal", value: `${device.latest_reading?.pressure_internal || 0} hPa` },
 
               { label: "External", value: `${device.latest_reading?.external_pressure || 0} hPa` },
             ]}
@@ -232,7 +232,7 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
             title="Battery"
             icon={batteryIcon.src}
             iconBg="rgba(251, 191, 36, 0.2)"
-            lines={[{ label: "Reading", value: `${device.latest_reading?.battery_voltage || 0} V` }]}
+            lines={[{ label: "Reading", value: `${device.latest_reading?.battery || 0} V` }]}
           />
         </div>
       </div>

@@ -13,7 +13,7 @@ import { extractItems, MAX_PAGE_SIZE } from '@/lib/pagination'
 const SEARCH_DEBOUNCE_MS = 1000
 const DATE_DEBOUNCE_MS = 1000
 
-type DeviceLike = { device_uuid?: string; name?: string }
+import type { DeviceLike } from "@/types/api"
 type Cluster = { id: number; name: string }
 
 function toIsoStartOfDay(dateOnly: string): string {

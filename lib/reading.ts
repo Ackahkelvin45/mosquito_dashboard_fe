@@ -6,12 +6,15 @@
 // were typed against the aliases. Read through these accessors instead of
 // touching the raw keys, so a payload in either spelling just works.
 
-export type AnyReading = Record<string, unknown> | null | undefined;
+import type { SensorReading } from "@/types/api";
+
+export type AnyReading = SensorReading | Record<string, unknown> | null | undefined;
 
 function num(reading: AnyReading, ...keys: string[]): number | null {
   if (!reading) return null;
+  const record = reading as Record<string, unknown>;
   for (const key of keys) {
-    const value = reading[key];
+    const value = record[key];
     if (typeof value === "number" && Number.isFinite(value)) return value;
   }
   return null;

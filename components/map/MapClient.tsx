@@ -5,8 +5,21 @@ import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility
 import L from "leaflet";
 import { useEffect, useMemo } from "react";
 import { MapPin,Tag } from "lucide-react";
+import type { Device } from "@/types/api";
+import type { GeoLocation } from "@/components/map/LocationSearch";
 
-function normalizeCoordinate(value, maxAbs) {
+type LatLng = [number, number];
+
+export type MapClientProps = {
+  position: LatLng;
+  zoom: number;
+  devices?: Device[];
+  selectedDevice?: Device | null;
+  onMarkerClick?: (device: Device) => void;
+  flyToLocation?: GeoLocation | null;
+};
+
+function normalizeCoordinate(value: unknown, maxAbs: number): number | null {
   const numeric = typeof value === "number" ? value : Number.parseFloat(String(value));
   if (!Number.isFinite(numeric)) return null;
   if (Math.abs(numeric) <= maxAbs) return numeric;
@@ -21,7 +34,7 @@ function normalizeCoordinate(value, maxAbs) {
   return null;
 }
 
-function getDeviceLatLng(device) {
+function getDeviceLatLng(device: Device | null | undefined): LatLng | null {
   const lat = normalizeCoordinate(device?.latitude, 90);
   const lng = normalizeCoordinate(device?.longitude, 180);
   if (lat === null || lng === null) return null;
@@ -38,13 +51,14 @@ const STATUS_COLORS = {
 // Icons are cached: only 4 (online/offline x selected/not) ever exist, and
 // the page re-renders every poll — minting a divIcon per marker per render
 // wastes work and flickers.
-const _iconCache = new Map();
+const _iconCache = new Map<string, L.DivIcon>();
 
 // Build a mosquito-trap marker icon colored by connectivity.
 // `selected` adds a stronger glow so the active selection stays distinguishable.
-function buildDeviceIcon({ isActive, selected }) {
+function buildDeviceIcon({ isActive, selected }: { isActive: boolean; selected: boolean }): L.DivIcon {
   const cacheKey = `${isActive}-${selected}`;
-  if (_iconCache.has(cacheKey)) return _iconCache.get(cacheKey);
+  const cached = _iconCache.get(cacheKey);
+  if (cached) return cached;
   const color = isActive ? STATUS_COLORS.active : STATUS_COLORS.inactive;
   const shadow = selected
     ? `0 2px 14px ${color.glow}`
@@ -74,11 +88,11 @@ function buildDeviceIcon({ isActive, selected }) {
 
 // Connectivity, computed server-side from the sensor_data heartbeat — NOT
 // the trap on/off state (a trap can be off while the device is online).
-function isDeviceActive(device) {
+function isDeviceActive(device: Device): boolean {
   return Boolean(device?.is_active);
 }
 
-function FlyToDevice({ device }) {
+function FlyToDevice({ device }: { device: Device }) {
   const map = useMap();
   useEffect(() => {
     if (!device) return;
@@ -91,7 +105,7 @@ function FlyToDevice({ device }) {
 
 // Flies to a geocoded place picked in the location search. Uses the place's
 // bounding box when available so countries/regions frame correctly.
-function FlyToLocation({ location }) {
+function FlyToLocation({ location }: { location: GeoLocation }) {
   const map = useMap();
   useEffect(() => {
     if (!location) return;
@@ -104,14 +118,11 @@ function FlyToLocation({ location }) {
   return null;
 }
 
-/**
- * @param {{ position: [number, number], zoom: number, devices: any[], selectedDevice: any, onMarkerClick?: (device: any) => void, flyToLocation?: { lat: number, lng: number, bounds?: [[number, number], [number, number]] | null } | null }} props
- */
-export default function MapClient({ position, zoom, devices = [], selectedDevice, onMarkerClick, flyToLocation }) {
+export default function MapClient({ position, zoom, devices = [], selectedDevice, onMarkerClick, flyToLocation }: MapClientProps) {
   const devicesWithLatLng = useMemo(
     () => devices
       .map((device) => ({ device, latLng: getDeviceLatLng(device) }))
-      .filter(({ latLng }) => Boolean(latLng)),
+      .filter((entry): entry is { device: Device; latLng: LatLng } => entry.latLng !== null),
     [devices]
   );
 

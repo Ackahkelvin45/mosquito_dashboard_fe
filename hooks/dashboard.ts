@@ -91,6 +91,16 @@ export const useGenusHeatmap = (groupBy: DashboardGroupBy, clusterIds?: number[]
 	})
 }
 
+export const useHourlyActivity = (groupBy: DashboardGroupBy, clusterIds?: number[]) => {
+	return useQuery({
+		queryKey: ["dashboard", "hourly_activity", groupBy, clusterIds ?? null],
+		queryFn: () => getDashboardData({ hourly_group_by: groupBy, cluster_id: clusterIds }),
+		select: (data) => data.hourly_activity,
+		refetchInterval: LIVE_REFETCH_MS,
+		refetchOnWindowFocus: true,
+	})
+}
+
 // Custom date range — one call scopes EVERY section (totals, charts, breakdown,
 // correlation, heatmap) to the same window, so the whole response is returned.
 // Not polled: a user-picked historical range isn't "live now" data.

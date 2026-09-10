@@ -1,5 +1,6 @@
 import { apiFetch } from "@/api/base";
 import { appendPagination, type PaginationParams, type Paginated } from "@/lib/pagination";
+import type { Device, SensorReadingWithDevice } from "@/types/api";
 
 export type GetDevicesFilters = {
     name?: string;
@@ -18,7 +19,7 @@ export type GetDevicesFilters = {
     trap_status?: boolean;
 };
 
-export async function getDevices(filters?: GetDevicesFilters, pagination?: PaginationParams){
+export async function getDevices(filters?: GetDevicesFilters, pagination?: PaginationParams): Promise<Paginated<Device>> {
     const params = new URLSearchParams();
     if (filters?.name) params.set("name", filters.name);
     if (filters?.region) params.set("region", filters.region);
@@ -46,7 +47,7 @@ export async function getDevices(filters?: GetDevicesFilters, pagination?: Pagin
     })
 }
 
-export async function getDeviceById(id: string | number) {
+export async function getDeviceById(id: string | number): Promise<Device> {
     return apiFetch(`/devices/${id}`, {
         method: "GET",
     })
@@ -69,28 +70,9 @@ export async function getClusterById(id: string) {
 
 
 
-export type SensorReadingRow = {
-    id: number;
-    device_id: number;
-    timestamp: string;
-    temp_external?: number | null;
-    temp_internal?: number | null;
-    humidity_external?: number | null;
-    humidity_internal?: number | null;
-    pressure_internal?: number | null;
-    external_pressure?: number | null;
-    external_light?: number | null;
-    battery?: number | null;
-    /** 0-100, already normalised for the device's configured battery profile. */
-    battery_pct?: number | null;
-    trap_status?: boolean | null;
-    /** Whether the Gateway currently has a live link to the Listener Unit —
-     * false means "no mosquitoes detected" can't be trusted (detector may be offline). */
-    esp1_link_alive?: boolean | null;
-    device_uuid?: string | null;
-    device_name?: string | null;
-    region?: string | null;
-};
+// Kept as an alias so existing imports keep working; the shape now lives in
+// the ONE shared model (types/api.ts).
+export type SensorReadingRow = SensorReadingWithDevice;
 
 export type GetAllSensorReadingsFilters = {
     start_date?: string;

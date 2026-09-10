@@ -3,6 +3,7 @@
 import React, { useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import OtpInput from "@/components/auth/OtpInput"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, ArrowLeft, CheckCircle2 } from "lucide-react"
 import logo from "../../public/images/logo.png"
@@ -193,17 +194,12 @@ export default function ForgotPasswordPage() {
                 Enter the 6-digit code sent to <span className="font-medium text-gray-700">{email}</span>. It expires in 10 minutes.
               </p>
               <div>
-                <label htmlFor="otp" className="text-dark text-sm mb-2 font-medium block">Verification Code</label>
-                <input
-                  type="text"
-                  id="otp"
-                  inputMode="numeric"
-                  maxLength={6}
-                  placeholder="123456"
+                <span className="text-dark text-sm mb-2 font-medium block">Verification Code</span>
+                <OtpInput
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  required
-                  className={`${inputClass} tracking-[0.5em] text-center text-lg`}
+                  onChange={setOtp}
+                  autoFocus
+                  disabled={verifyOtp.isPending}
                 />
               </div>
               <button type="submit" disabled={verifyOtp.isPending} className={`${buttonClass} mt-4`}>

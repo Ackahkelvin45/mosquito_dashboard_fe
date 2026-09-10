@@ -12,19 +12,8 @@ import MultiSelectDropdown from "@/components/filters/MultiSelectDropdown";
 import { extractItems, MAX_PAGE_SIZE } from "@/lib/pagination";
 import { locationLabel, locationSearchText } from "@/lib/location";
 import type React from "react";
-
-// ------- MapClient props type (mirrors MapClient.jsx interface) -------
-type MapClientProps = {
-  position: [number, number];
-  zoom: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  devices: any[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  selectedDevice: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onMarkerClick: (device: any) => void;
-  flyToLocation?: GeoLocation | null;
-};
+import type { Device } from "@/types/api";
+import type { MapClientProps } from "@/components/map/MapClient";
 
 // ------- Helpers -------
 function formatTimestamp(iso: string | undefined): string {
@@ -57,40 +46,6 @@ function Row({
 }
 
 // ------- Tab content -------
-type LatestReading = {
-  id: number;
-  device_id: number;
-  timestamp: string;
-  external_temperature: number;
-  internal_temperature: number;
-  external_humidity: number;
-  internal_humidity: number;
-  internal_pressure: number;
-  external_pressure: number;
-  external_light: number;
-  battery_voltage: number;
-  trap_status: boolean;
-};
-
-type Device = {
-  id: number;
-  name: string;
-  latitude: number;
-  longitude: number;
-  region?: string | null;
-  community?: string | null;
-  description: string;
-  gmap_link: string;
-  last_activity: string;
-  created_at: string;
-  updated_at: string;
-  total_mosquito_count: number;
-  cluster_id: number;
-  device_uuid: string;
-  is_active?: boolean;
-  latest_reading?: LatestReading;
-};
-
 type Cluster = {
   id: number;
   name: string;
@@ -150,7 +105,7 @@ function DeviceStatusTab({ device }: { device: Device | null }) {
 
       <Row label="Battery Voltage" icon={<BatteryCharging size={14} />}>
         <span className="text-sm font-semibold">
-          {r ? `${r.battery_voltage}V` : "—"}
+          {r ? `${r.battery ?? "—"}V` : "—"}
         </span>
       </Row>
 
@@ -353,7 +308,7 @@ export default function MapPage() {
     return (
       d.name.toLowerCase().includes(q) ||
       locationSearchText(d).includes(q) ||
-      d.device_uuid.toLowerCase().includes(q)
+      (d.device_uuid ?? "").toLowerCase().includes(q)
     );
   });
 
