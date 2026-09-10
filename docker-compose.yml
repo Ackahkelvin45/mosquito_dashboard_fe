@@ -1,0 +1,21 @@
+# PRODUCTION frontend — serves the dashboard on host port 3000, which the
+# nginx vhost for mosquitosurveillancedashboard.website proxies to.
+#
+#   sudo docker compose up -d --build
+#
+# The API URL is baked in at BUILD time (Next.js public env), read from .env
+# via the ENV_FILE build arg — make sure .env holds the prod
+# NEXT_PUBLIC_BACKEND_API_URL *before* building, and rebuild after changing it.
+# The test stack (docker-compose.test.yml, port 3001, .env.test) is separate
+# and can run alongside this one.
+name: mosquito-frontend
+
+services:
+  frontend:
+    build:
+      context: .
+      args:
+        ENV_FILE: .env
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
