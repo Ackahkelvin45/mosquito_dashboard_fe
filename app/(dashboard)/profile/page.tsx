@@ -2,10 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound, Mail, MapPin, Shield, ShieldCheck, UserRound } from "lucide-react";
+import { KeyRound, Mail, MapPin, Shield, UserRound } from "lucide-react";
 import Skeleton from "react-loading-skeleton";
-import { useChangePassword, useCurrentUser, useSetTwoFactor, useUpdateProfile } from "@/hooks/authentication";
-import { useRole } from "@/hooks/useRole";
+import { useChangePassword, useCurrentUser, useUpdateProfile } from "@/hooks/authentication";
 import { useAuthStore } from "@/store/authStore";
 import "react-loading-skeleton/dist/skeleton.css";
 
@@ -23,94 +22,6 @@ const roleLabel = (role?: string) =>
 
 const inputClass =
   "w-full py-2.5 px-3 border border-gray focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-md";
-
-// FR-4: self-service email-OTP 2FA (moved here from the removed Settings
-// page). Admins are locked on; enabling invalidates the current session, so
-// the user is signed out to re-login through the challenge.
-function TwoFactorCard() {
-  const router = useRouter();
-  const { data: user } = useCurrentUser();
-  const { isAdmin, isSuperAdmin } = useRole();
-  const setTwoFactor = useSetTwoFactor();
-  const logout = useAuthStore((s) => s.logout);
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-
-  const mandatory = isAdmin || isSuperAdmin;
-  const enabled = mandatory || Boolean(user?.two_factor_enabled);
-
-  const toggle = () => {
-    setError(null);
-    if (!password) {
-      setError("Enter your current password to change this setting.");
-      return;
-    }
-    setTwoFactor.mutate(
-      { enabled: !enabled, current_password: password },
-      {
-        onSuccess: (res) => {
-          setPassword("");
-          if (!res.success) {
-            setError(res.error);
-            return;
-          }
-          if (res.reauth_required) {
-            setNotice("Two-factor enabled. Please sign in again.");
-            setTimeout(() => {
-              logout();
-              router.replace("/login");
-            }, 1500);
-          } else {
-            setNotice(res.two_factor_enabled
-              ? "Two-factor authentication is on."
-              : "Two-factor authentication is off.");
-          }
-        },
-      }
-    );
-  };
-
-  return (
-    <div className="border border-gray-200 rounded-lg p-5 flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <ShieldCheck size={16} className="text-primary" />
-        <h2 className="text-sm font-semibold text-gray-800">Two-factor authentication</h2>
-        <span className={`ml-auto text-xs font-semibold rounded-full px-2.5 py-0.5 ${
-          enabled ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"
-        }`}>
-          {enabled ? "On" : "Off"}
-        </span>
-      </div>
-      <p className="text-xs text-gray-500">
-        A 6-digit code is emailed to you at every sign-in.
-        {mandatory && " Mandatory for administrator accounts — it cannot be turned off."}
-      </p>
-      {!mandatory && (
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Current password"
-            autoComplete="current-password"
-            className={`${inputClass} sm:w-64`}
-          />
-          <button
-            type="button"
-            onClick={toggle}
-            disabled={setTwoFactor.isPending}
-            className="rounded-md border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 w-fit"
-          >
-            {setTwoFactor.isPending ? "Saving…" : enabled ? "Turn off" : "Turn on"}
-          </button>
-        </div>
-      )}
-      {error && <p className="text-xs text-red-600">{error}</p>}
-      {notice && <p className="text-xs text-green-600">{notice}</p>}
-    </div>
-  );
-}
 
 function Banner({ tone, children }: { tone: "error" | "success"; children: React.ReactNode }) {
   const styles =
@@ -307,7 +218,6 @@ export default function ProfilePage() {
         </form>
       </div>
 
-      <TwoFactorCard />
     </div>
   );
 }
