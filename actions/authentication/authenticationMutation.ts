@@ -215,3 +215,19 @@ export async function changePassword(data: { current_password: string; new_passw
     return { success: false, error: message }
   }
 }
+
+/** Super admin: master switch for the whole app's sign-in codes. */
+export async function setSecuritySettings(data: { two_factor_login_enabled: boolean }): Promise<
+  { success: true; two_factor_login_enabled: boolean } | { success: false; error: string }
+> {
+  try {
+    const res = await apiFetch("/auth/security-settings", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    })
+    return { success: true, two_factor_login_enabled: res.two_factor_login_enabled }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not update security settings."
+    return { success: false, error: message }
+  }
+}

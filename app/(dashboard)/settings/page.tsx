@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import GlobalTwoFactorCard from "@/components/auth/GlobalTwoFactorCard";
 import TwoFactorCard from "@/components/auth/TwoFactorCard";
 import NotificationPreferencesCard from "@/components/notifications/NotificationPreferences";
 import AlertSettingsCard from "@/components/notifications/AlertSettingsCard";
@@ -17,6 +18,9 @@ export default function SettingsPage() {
           Your sign-in security, which alerts you receive and how they reach you.
         </p>
       </div>
+
+      {/* SUPER_ADMIN only — renders null for everyone else */}
+      <GlobalTwoFactorCard />
 
       <TwoFactorCard />
 

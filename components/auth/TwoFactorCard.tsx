@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
-import { useCurrentUser, useSetTwoFactor } from "@/hooks/authentication";
+import { useCurrentUser, useSecuritySettings, useSetTwoFactor } from "@/hooks/authentication";
 import { useAuthStore } from "@/store/authStore";
 
 const inputClass =
@@ -21,6 +21,9 @@ export default function TwoFactorCard() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const { data: security } = useSecuritySettings();
+  const globallyOff = security?.two_factor_login_enabled === false;
 
   const enabled = Boolean(user?.two_factor_enabled);
 
@@ -70,6 +73,13 @@ export default function TwoFactorCard() {
         A 6-digit code is emailed to you at every sign-in. Confirm your password
         to turn it {enabled ? "off" : "on"}.
       </p>
+      {globallyOff && (
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+          Sign-in codes are currently turned off for the whole app by an
+          administrator — your setting is saved but won&apos;t apply until they
+          are turned back on.
+        </p>
+      )}
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
         <input
           type="password"

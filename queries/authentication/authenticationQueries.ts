@@ -8,3 +8,8 @@ export async function getCurrentUser(){
       
     })
 }
+export type SecuritySettings = { two_factor_login_enabled: boolean }
+
+export async function getSecuritySettings(): Promise<SecuritySettings> {
+  return apiFetch("/auth/security-settings")
+}

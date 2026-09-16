@@ -1,8 +1,8 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { getCurrentUser } from "@/queries/authentication/authenticationQueries"
-import { loginUser, type LoginResult, registerUser, type RegisterFormData, updateResearcherRequestStatus, requestPasswordReset, verifyPasswordResetOtp, resetPassword, verifyTwoFactor, type Verify2faResult, setTwoFactor, updateProfile, changePassword } from "@/actions/authentication/authenticationMutation"
+import { getCurrentUser, getSecuritySettings } from "@/queries/authentication/authenticationQueries"
+import { loginUser, type LoginResult, registerUser, type RegisterFormData, updateResearcherRequestStatus, requestPasswordReset, verifyPasswordResetOtp, resetPassword, verifyTwoFactor, type Verify2faResult, setTwoFactor, updateProfile, changePassword, setSecuritySettings } from "@/actions/authentication/authenticationMutation"
 import { useAuthStore } from "@/store/authStore"
 
 export const useCurrentUser = () => {
@@ -99,5 +99,24 @@ export const useUpdateProfile = () => {
 export const useChangePassword = () => {
   return useMutation({
     mutationFn: (data: { current_password: string; new_password: string }) => changePassword(data),
+  })
+}
+
+export const useSecuritySettings = () => {
+  const isGuest = useAuthStore((s) => s.isGuest)
+  return useQuery({
+    queryKey: ["security-settings"],
+    queryFn: getSecuritySettings,
+    enabled: !isGuest,
+  })
+}
+
+export const useSetSecuritySettings = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { two_factor_login_enabled: boolean }) => setSecuritySettings(data),
+    onSuccess: (data) => {
+      if (data.success) queryClient.invalidateQueries({ queryKey: ["security-settings"] })
+    },
   })
 }
