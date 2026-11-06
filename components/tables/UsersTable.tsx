@@ -7,6 +7,13 @@ import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import DownloadCsvButton from "./DownloadCsvButton";
 import type { CsvColumn } from "@/lib/csv";
+import { useRole } from "@/hooks/useRole";
+
+// Only a super admin may edit an ADMIN / SUPER_ADMIN account (the backend
+// returns 403 otherwise). Mirrors that rule so the pencil isn't a dead end.
+export function canEditUser(viewerIsSuperAdmin: boolean, targetRole?: string): boolean {
+  return viewerIsSuperAdmin || (targetRole !== "ADMIN" && targetRole !== "SUPER_ADMIN");
+}
 
 export type UserRow = {
   id: number;
@@ -47,6 +54,7 @@ export default function UsersTable({
   data = [],
   isLoading = false,
 }: UsersTableProps) {
+  const { isSuperAdmin } = useRole();
   return (
     <div className="bg-white">
       <div className="flex justify-end">
@@ -116,13 +124,23 @@ export default function UsersTable({
                     </td>
                     <td className="px-5 py-5 font-mulish font-semibold text-black">
                       <div className="flex gap-2 justify-end items-center">
-                        <Link
-                          href={`/users/${row.id}/edit`}
-                          aria-label={`Edit ${row.first_name || row.email}`}
-                          className="hover:bg-primary/10 p-2 rounded-md transition-colors"
-                        >
-                          <PencilLine size={16} className="text-primary" />
-                        </Link>
+                        {canEditUser(isSuperAdmin, row.role) ? (
+                          <Link
+                            href={`/users/${row.id}/edit`}
+                            aria-label={`Edit ${row.first_name || row.email}`}
+                            className="hover:bg-primary/10 p-2 rounded-md transition-colors"
+                          >
+                            <PencilLine size={16} className="text-primary" />
+                          </Link>
+                        ) : (
+                          <span
+                            title="Only a super admin can edit an admin account"
+                            aria-label="Only a super admin can edit an admin account"
+                            className="p-2 cursor-not-allowed"
+                          >
+                            <PencilLine size={16} className="text-gray-300" />
+                          </span>
+                        )}
 
                         <button className="hover:bg-red-500/10 p-2 rounded-md transition-colors">
                           <Trash2 size={16} className="text-red-500" />

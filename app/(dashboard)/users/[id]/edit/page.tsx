@@ -11,6 +11,7 @@ import { useClusters } from "@/hooks/device"
 import { useRole } from "@/hooks/useRole"
 import { extractItems, MAX_PAGE_SIZE } from "@/lib/pagination"
 import type { UserRoleValue } from "@/actions/userMutation"
+import { canEditUser } from "@/components/tables/UsersTable"
 
 type ClusterOption = { id: number; name: string }
 
@@ -33,7 +34,7 @@ export default function EditUserPage() {
   const params = useParams()
   const userId = params?.id as string
   const router = useRouter()
-  const { isSuperAdmin } = useRole()
+  const { isSuperAdmin, isLoading: roleLoading } = useRole()
   const { data: user, isLoading, error } = useUser(userId)
   const { mutate: update, isPending } = useUpdateUser()
   const { data: clustersRaw, isLoading: clustersLoading } = useClusters({ page_size: MAX_PAGE_SIZE })
@@ -141,7 +142,11 @@ export default function EditUserPage() {
         </div>
       )}
 
-      {isLoading || !form ? (
+      {user && !roleLoading && !canEditUser(isSuperAdmin, user.role) ? (
+        <div className="flex items-start gap-2 p-4 mb-6 text-sm border-t-4 bg-[#fef2f2] text-[#991b1b] border-[#fecaca] rounded-b">
+          <span>Only a super admin can edit an admin account.</span>
+        </div>
+      ) : isLoading || roleLoading || !form ? (
         <div className="flex flex-col gap-5 max-w-3xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <Skeleton height={42} />
