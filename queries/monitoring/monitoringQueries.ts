@@ -94,6 +94,8 @@ export type DataQualityDevice = {
   detections_missing_genus: number;
   detections_p_mosq_out_of_range: number;
   excluded_detections: number;
+  /** Field values received that were impossible (stored as blank) or a missing/unreadable trap status or time (stored as OFF / server time), from the ingest error log */
+  invalid_values_received: number;
 };
 
 export type DataQualityReport = {
@@ -101,6 +103,8 @@ export type DataQualityReport = {
   window_start: string;
   window_end: string;
   offline_threshold_min: number;
+  /** Days the ingest error log is kept (bounds invalid_values_received) */
+  error_retention_days: number;
   temp_min: number;
   temp_max: number;
   humidity_min: number;

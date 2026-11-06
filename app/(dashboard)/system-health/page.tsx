@@ -37,6 +37,10 @@ const ERROR_META: Record<string, { label: string; explain: string }> = {
     label: 'Broker connection lost',
     explain: 'The server lost its connection to the message broker. Data sent during the gap may be missing.',
   },
+  invalid_value: {
+    label: 'Invalid or missing value',
+    explain: 'A device sent a value that cannot be right (e.g. battery % above 100, confidence above 1, text instead of a number, or a name too long to store); that field was stored as blank. A missing or unreadable trap status is stored as OFF, and a missing or unreadable time as the server\'s time, because those fields cannot be empty. The rest of the reading was saved. The raw value is attached.',
+  },
   empty_reading: {
     label: 'Unreadable sensor fields',
     explain: 'A message arrived but none of its sensor fields could be read — the device firmware is likely sending data under different field names. The raw message is attached.',

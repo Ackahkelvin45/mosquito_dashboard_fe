@@ -130,6 +130,7 @@ export default function DataQualityPage() {
                   <th className={th}>No confidence</th>
                   <th className={th}>No genus</th>
                   <th className={th}>Confidence invalid</th>
+                  <th className={th}>Invalid values received</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -171,6 +172,7 @@ export default function DataQualityPage() {
                     <td className={td}>{d.detections ? <Count value={d.detections_missing_p_mosq} /> : '—'}</td>
                     <td className={td}>{d.detections ? <Count value={d.detections_missing_genus} /> : '—'}</td>
                     <td className={td}>{d.detections ? <Count value={d.detections_p_mosq_out_of_range} /> : '—'}</td>
+                    <td className={td}><Count value={d.invalid_values_received} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -204,6 +206,16 @@ export default function DataQualityPage() {
             </li>
             <li>
               <strong>Confidence</strong> is the model&apos;s mosquito confidence (p_mosq); valid values are 0–1.
+            </li>
+            <li>
+              <strong>Invalid values received</strong>: values the device sent that were impossible or could
+              not be stored: battery % outside 0–100 or fractional, confidence outside 0–1, a reading that is
+              not a number, or text too long for its field. They were stored as blank, never corrected or
+              shortened. A missing or unreadable trap status or time is also counted: those fields can&apos;t be
+              blank, so they were stored as OFF or as the server&apos;s time. The raw value is listed on System Health.
+              &ldquo;Battery % invalid&rdquo; and &ldquo;Confidence invalid&rdquo; count older readings
+              stored before this check. Counted by when they arrived, test mode included; the error log
+              keeps {data.error_retention_days} days, so longer periods only count the most recent days.
             </li>
           </ul>
         </>
