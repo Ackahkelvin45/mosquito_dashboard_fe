@@ -13,14 +13,18 @@ export const EXPORT_COLUMNS: Record<ImportKind, string[]> = {
     "id", "timestamp", "device_uuid", "device_name", "region", "community", "cluster_id",
     "external_temperature", "internal_temperature", "external_humidity", "internal_humidity",
     "external_pressure", "internal_pressure", "external_light", "battery_voltage", "trap_status",
+    "battery_pct",
   ],
   "mosquito-events": [
     "id", "timestamp", "device_uuid", "device_name", "region", "community", "cluster_id",
     "count", "detection_timestamp", "species", "genus", "age_group", "sex",
+    "p_mosq",
   ],
 }
 // Present in the export, ignored on import.
 export const IGNORED_COLUMNS = ["id", "device_name", "region", "community", "cluster_id"]
+// Added to the export later; optional on import (absent or empty → stored empty).
+export const OPTIONAL_COLUMNS = ["battery_pct", "p_mosq"]
 
 export type ImportReport = {
   kind: ImportKind

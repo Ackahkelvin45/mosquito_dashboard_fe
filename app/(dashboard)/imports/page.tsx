@@ -5,7 +5,7 @@ import { FileUp } from 'lucide-react'
 import Skeleton from 'react-loading-skeleton'
 import { formatTimestamp } from '@/lib/date'
 import {
-  EXPORT_COLUMNS, IGNORED_COLUMNS, useDeleteImport, useImports, useUploadImport,
+  EXPORT_COLUMNS, IGNORED_COLUMNS, OPTIONAL_COLUMNS, useDeleteImport, useImports, useUploadImport,
   type ImportKind, type ImportReport,
 } from '@/hooks/imports'
 
@@ -123,7 +123,16 @@ function UploadForm() {
           not in the future; mosquito <code className="font-mono">count</code> is always 1; empty cells are
           stored as empty, never 0. <code className="font-mono">{IGNORED_COLUMNS.join(', ')}</code> are
           optional and ignored — the device is matched by <code className="font-mono">device_uuid</code> and
-          must be in your cluster. Rows identical to existing data are skipped.
+          must be in your cluster.{' '}
+          <code className="font-mono">{OPTIONAL_COLUMNS.filter((c) => EXPORT_COLUMNS[kind].includes(c)).join(', ')}</code>{' '}
+          is optional so older exports still import. Rows identical to existing data are skipped; a blank
+          optional cell is not compared, but a filled one that differs from the stored value makes the row a
+          conflict (imported and flagged).
+        </p>
+        <p className="mt-1">
+          Out-of-range values (battery % outside 0–100, confidence outside 0–1) get the whole file rejected; the{' '}
+          <Link href="/data-quality" className="text-primary hover:underline">Data Quality</Link> page lists such
+          values already stored.
         </p>
         <p className="mt-1 font-mono break-words">{EXPORT_COLUMNS[kind].join(',')}</p>
       </div>
