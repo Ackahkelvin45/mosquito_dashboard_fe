@@ -42,6 +42,32 @@ function MissingFields({ d }: { d: DataQualityDevice }) {
   )
 }
 
+function secs(s: number) {
+  const a = Math.abs(s)
+  const one = (v: number) => Math.round(v * 10) / 10
+  if (a < 120) return `${s} s`
+  if (a < 2 * 3600) return `${one(s / 60)} min`
+  if (a < 2 * 86400) return `${one(s / 3600)} h`
+  return `${one(s / 86400)} d`
+}
+
+function Delay({ d, threshold }: { d: DataQualityDevice; threshold: number }) {
+  if (d.delay_measured === 0 || d.avg_delay_s === null || d.max_delay_s === null || d.min_delay_s === null) {
+    return <span className="text-gray-400">Not measured</span>
+  }
+  return (
+    <div className="space-y-0.5">
+      <div>avg {secs(d.avg_delay_s)}</div>
+      <div>max {secs(d.max_delay_s)}</div>
+      {d.min_delay_s < 0 && <div className="text-xs text-amber-700">min {secs(d.min_delay_s)} (device clock ahead)</div>}
+      {d.delayed_over_threshold > 0 && (
+        <div className="text-xs text-red-600">{d.delayed_over_threshold} over {threshold} min</div>
+      )}
+      <div className="text-xs text-gray-400">{d.delay_measured.toLocaleString()} measured</div>
+    </div>
+  )
+}
+
 export default function DataQualityPage() {
   const [days, setDays] = useState(7)
   const { data, isLoading, error } = useDataQuality(days)
@@ -99,6 +125,7 @@ export default function DataQualityPage() {
                   <th className={th}>Battery % invalid</th>
                   <th className={th}>Longest silence</th>
                   <th className={th}>Silences &gt; {data.offline_threshold_min} min</th>
+                  <th className={th}>Delay</th>
                   <th className={th}>Detections</th>
                   <th className={th}>No confidence</th>
                   <th className={th}>No genus</th>
@@ -131,6 +158,7 @@ export default function DataQualityPage() {
                     <td className={td}>
                       {d.silences_over_threshold === null ? '—' : <Count value={d.silences_over_threshold} />}
                     </td>
+                    <td className={`${td} whitespace-nowrap`}><Delay d={d} threshold={data.offline_threshold_min} /></td>
                     <td className={td}>{d.detections.toLocaleString()}</td>
                     <td className={td}>{d.detections ? <Count value={d.detections_missing_p_mosq} /> : '—'}</td>
                     <td className={td}>{d.detections ? <Count value={d.detections_missing_genus} /> : '—'}</td>
@@ -156,6 +184,15 @@ export default function DataQualityPage() {
               <strong>Silences</strong>: time between two consecutive readings, measured by the device&apos;s
               own clock. Counted when longer than the {data.offline_threshold_min}-minute offline threshold.
               A silence that is still going on (no reading since then) is included.
+            </li>
+            <li>
+              <strong>Delay</strong>: how long after its own timestamp a reading reached the server
+              (server receive time minus the device&apos;s clock), average and longest. A device clock that
+              is wrong skews this; a negative value means the device clock is ahead of the server.
+              &ldquo;Over {data.offline_threshold_min} min&rdquo; counts readings that arrived later than the
+              offline threshold. Only readings sent live by the device are measured: readings stored before this
+              was recorded, CSV-imported readings, manually posted (HTTP) readings and readings without a device
+              timestamp have no receive time, so a device with only those shows &ldquo;Not measured&rdquo;.
             </li>
             <li>
               <strong>Confidence</strong> is the model&apos;s mosquito confidence (p_mosq); valid values are 0–1.

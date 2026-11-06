@@ -80,6 +80,13 @@ export type DataQualityDevice = {
   /** null with fewer than 2 readings */
   longest_silence_min: number | null;
   silences_over_threshold: number | null;
+  /** Live readings with a server receive time; 0 = delay not measured */
+  delay_measured: number;
+  /** received_at - timestamp in seconds (server clock - device clock); null when not measured. Negative = device clock ahead. */
+  avg_delay_s: number | null;
+  min_delay_s: number | null;
+  max_delay_s: number | null;
+  delayed_over_threshold: number;
   detections: number;
   detections_missing_p_mosq: number;
   detections_missing_genus: number;
