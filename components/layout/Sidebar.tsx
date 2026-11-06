@@ -8,7 +8,7 @@ import profile from '../../public/images/profile.png'
 import {
   Activity, ClipboardCheck, House, Map, ChartNoAxesCombined, Satellite, CirclePile,
   UserRoundPlus, ShieldUser, ChevronDown, ChevronRight,
-  EllipsisVertical, FileUp, FlaskConical, Gauge, KeyRound, LogIn, LogOut, Settings, Thermometer, User, X
+  EllipsisVertical, FileBarChart, FileUp, FlaskConical, Gauge, KeyRound, LogIn, LogOut, Settings, Thermometer, User, X
 } from 'lucide-react'
 import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/authentication'
@@ -70,6 +70,12 @@ const navItems: NavItem[] = [
     label: 'Model Performance',
     icon: <Gauge size={19} />,
     href: '/model-performance',
+  },
+  {
+    // Weekly/monthly surveillance report. Every signed-in role; guests never see it.
+    label: 'Reports',
+    icon: <FileBarChart size={19} />,
+    href: '/reports',
   },
   {
     label: 'Device Clusters',

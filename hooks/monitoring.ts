@@ -5,6 +5,8 @@ import {
   getMqttErrors,
   getMqttStatus,
   getMqttTraffic,
+  getSurveillanceReport,
+  type ReportPeriod,
 } from "@/queries/monitoring/monitoringQueries"
 
 // System Health is a live operations view — poll faster than the data pages.
@@ -54,6 +56,15 @@ export const useModelPerformance = (days: number) => {
     queryKey: ["model-performance", days],
     queryFn: () => getModelPerformance(days),
     // Heavy aggregate (up to 365 days); React Query refetches on focus by default.
+    refetchOnWindowFocus: false,
+  })
+}
+
+export const useSurveillanceReport = (period: ReportPeriod, end: string, region?: string) => {
+  return useQuery({
+    queryKey: ["reports", "surveillance", period, end, region ?? null],
+    queryFn: () => getSurveillanceReport(period, end, region),
+    enabled: Boolean(end),
     refetchOnWindowFocus: false,
   })
 }

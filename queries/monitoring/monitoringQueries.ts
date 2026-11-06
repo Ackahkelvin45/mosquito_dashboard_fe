@@ -169,3 +169,89 @@ export type ModelPerformanceReport = {
 export async function getModelPerformance(days: number): Promise<ModelPerformanceReport> {
   return apiFetch(`/model-performance?days=${days}`);
 }
+
+// Surveillance report (/reports/surveillance) — measured figures only; null /
+// empty = nothing was measured, never 0-filled. Times are naive UTC.
+export type ReportPeriod = "weekly" | "monthly";
+type Named = { name: string; count: number };
+type Measure = { readings: number; mean: number | null; min: number | null; max: number | null };
+type DeviceIssue = {
+  device_id: number;
+  name: string;
+  region: string | null;
+  longest_silence_min: number | null;
+  silences_over_threshold: number | null;
+};
+
+export type SurveillanceReport = {
+  generated_at: string;
+  period: ReportPeriod;
+  period_start: string;
+  /** exclusive */
+  period_end: string;
+  period_complete: boolean;
+  previous_start: string;
+  previous_end: string;
+  scope: string;
+  /** scope of the alerts + data-quality sections (own cluster; super admin all) */
+  management_scope: string;
+  cluster_id: number | null;
+  region: string | null;
+  summary: {
+    detections: number;
+    detection_events: number;
+    /** true = no device sent anything, so detections=0 is not a measurement */
+    no_device_reported: boolean;
+    previous_detections: number;
+    previous_devices_reporting: number;
+    /** null while the period is still running */
+    change: number | null;
+    /** null while the period is running or when the previous period had 0 */
+    change_pct: number | null;
+    top_species: string | null;
+    devices_reporting: number;
+    devices_total: number;
+    regions_covered: string[];
+  };
+  detections: {
+    by_genus: Named[];
+    by_sex: Named[];
+    by_species: Named[];
+    by_region: { region: string; count: number; communities: { community: string; count: number }[] }[];
+    /** count null = no device reported that day */
+    daily: { date: string; devices_reporting: number; count: number | null }[];
+    unclassified: number;
+  };
+  environment: { readings: number; temperature: Measure; humidity: Measure };
+  alerts: {
+    total: number;
+    handled: number;
+    by_type: { type: string; count: number; handled: number }[];
+    ungrouped_rows: number;
+    note: string;
+  };
+  data_quality: {
+    offline_threshold_min: number;
+    devices_checked: number;
+    no_readings: DeviceIssue[];
+    long_silences: DeviceIssue[];
+  };
+  manual_vs_ai: {
+    collections: number;
+    collections_compared: number;
+    collections_not_reporting: number;
+    manual_total: number;
+    ai_total: number;
+    abs_difference: number;
+    rule: string;
+    message: string | null;
+  };
+};
+
+export async function getSurveillanceReport(
+  period: ReportPeriod, end: string, region?: string,
+): Promise<SurveillanceReport> {
+  const params = new URLSearchParams({ period, end });
+  if (region) params.set("region", region);
+  return apiFetch(`/reports/surveillance?${params}`);
+}

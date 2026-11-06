@@ -25,6 +25,7 @@ const ROUTE_ROLES: { prefix: string; allow: Role[] }[] = [
   { prefix: "/approval", allow: ["SUPER_ADMIN"] },
   { prefix: "/system-health", allow: ["SUPER_ADMIN"] },
   { prefix: "/audit-logs", allow: ["SUPER_ADMIN"] },
+  { prefix: "/reports", allow: ["SUPER_ADMIN", "ADMIN", "USER"] },
 ]
 
 // Guests may only browse the public read-only pages: Dashboard, Devices
@@ -77,10 +78,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <div style={{ display: "flex", minHeight: "100vh" }}>
       {/* Guests have no session to expire — the timeout would bounce them to login. */}
       {!isGuest && <InactivityTimeout />}
-      <Sidebar />
-      <Navbar />
+      {/* Hidden when printing (Reports page → Print / Save as PDF). */}
+      <div className="contents print:hidden">
+        <Sidebar />
+        <Navbar />
+      </div>
       <main
-        className="flex-1 p-4 pt-20 lg:pl-[260px] bg-[#F5F5F5] min-h-screen w-full overflow-x-hidden"
+        className="flex-1 p-4 pt-20 lg:pl-[260px] bg-[#F5F5F5] min-h-screen w-full overflow-x-hidden print:p-0 print:bg-white print:min-h-0"
       >
         {isGuest && <GuestBanner />}
         {children}
