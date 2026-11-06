@@ -22,6 +22,7 @@ import {
     markAllNotificationsRead,
     markNotificationRead,
     markNotificationUnread,
+    setNotificationHandled,
     unarchiveNotification,
     updateAlertSettings,
     updateNotificationPreferences,
@@ -218,6 +219,22 @@ export const useUnarchive = () => {
         onMutate: (id) => {
             patchNotificationLists(queryClient, (items) =>
                 items.map((n) => (n.id === id ? { ...n, archived_at: null } : n))
+            )
+        },
+        onSettled: () => invalidateNotifications(queryClient),
+    })
+}
+
+/** Handled is shared across recipients and the handler's name comes from the
+ *  server, so patch with the response instead of guessing optimistically. */
+export const useSetHandled = () => {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ id, handled }: { id: number; handled: boolean }) =>
+            setNotificationHandled(id, handled),
+        onSuccess: (updated) => {
+            patchNotificationLists(queryClient, (items) =>
+                items.map((n) => (n.id === updated.id ? updated : n))
             )
         },
         onSettled: () => invalidateNotifications(queryClient),

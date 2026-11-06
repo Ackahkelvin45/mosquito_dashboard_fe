@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Archive, ArchiveRestore, CheckCheck, Loader2, Mail, MailOpen, Search, Trash2, X } from 'lucide-react'
+import { Archive, ArchiveRestore, CheckCheck, CircleCheck, Loader2, Mail, MailOpen, Search, Trash2, Undo2, X } from 'lucide-react'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import NotificationItem from '@/components/notifications/NotificationItem'
@@ -15,6 +15,7 @@ import {
   useMarkRead,
   useMarkUnread,
   useNotificationsInfinite,
+  useSetHandled,
   useUnarchive,
   useUnreadCount,
 } from '@/hooks/notification'
@@ -52,6 +53,7 @@ function NotificationsPage() {
   const [tab, setTab] = useState<Tab>('all')
   const [category, setCategory] = useState<NotificationCategory | ''>('')
   const [severity, setSeverity] = useState<NotificationSeverity | ''>('')
+  const [handled, setHandled] = useState<'' | 'handled' | 'unhandled'>('')
   const [searchValue, setSearchValue] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Notification | null>(null)
@@ -69,7 +71,8 @@ function NotificationsPage() {
     severity: severity || undefined,
     search: debouncedSearch || undefined,
     sort: 'newest',
-  }), [tab, category, severity, debouncedSearch])
+    handled: handled ? handled === 'handled' : undefined,
+  }), [tab, category, severity, debouncedSearch, handled])
 
   // When the filters change the infinite query restarts from page 1 on its own
   // (new query key); the transient UI state tied to the old list is reset here
@@ -101,6 +104,7 @@ function NotificationsPage() {
   const archive = useArchive()
   const unarchive = useUnarchive()
   const deleteNotification = useDeleteNotification()
+  const setHandledMutation = useSetHandled()
 
   // Infinite scroll: fetch the next page when the sentinel scrolls into view.
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -132,13 +136,17 @@ function NotificationsPage() {
     if (severity) {
       chips.push({ key: 'severity', label: `Severity: ${enumLabel(severity)}`, clear: () => setSeverity('') })
     }
+    if (handled) {
+      chips.push({ key: 'handled', label: `Status: ${enumLabel(handled)}`, clear: () => setHandled('') })
+    }
     return chips
-  }, [searchValue, category, severity])
+  }, [searchValue, category, severity, handled])
 
   const clearAll = () => {
     setSearchValue('')
     setCategory('')
     setSeverity('')
+    setHandled('')
   }
 
   const handleRowClick = (notification: Notification) => {
@@ -253,6 +261,17 @@ function NotificationsPage() {
               <option key={s} value={s}>{enumLabel(s)}</option>
             ))}
           </select>
+
+          <select
+            value={handled}
+            onChange={(e) => setHandled(e.target.value as '' | 'handled' | 'unhandled')}
+            aria-label='Filter by alert status'
+            className='border border-gray bg-white text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-primary'
+          >
+            <option value=''>Any alert status</option>
+            <option value='unhandled'>Unhandled alerts</option>
+            <option value='handled'>Handled alerts</option>
+          </select>
         </div>
 
         <div className='flex flex-row gap-2 items-center mt-3'>
@@ -315,6 +334,29 @@ function NotificationsPage() {
                       onKeyDown={(e) => e.stopPropagation()}
                       className='flex items-center gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity'
                     >
+                      {notification.handleable && (notification.handled_at ? (
+                        <button
+                          type='button'
+                          aria-label='Mark as not handled'
+                          title='Mark as not handled'
+                          disabled={setHandledMutation.isPending}
+                          onClick={() => setHandledMutation.mutate({ id: notification.id, handled: false })}
+                          className='hover:bg-gray-100 p-2 rounded-md transition-colors disabled:opacity-50'
+                        >
+                          <Undo2 size={16} className='text-gray-500' />
+                        </button>
+                      ) : (
+                        <button
+                          type='button'
+                          aria-label='Mark as handled'
+                          title='Mark as handled'
+                          disabled={setHandledMutation.isPending}
+                          onClick={() => setHandledMutation.mutate({ id: notification.id, handled: true })}
+                          className='hover:bg-green-500/10 p-2 rounded-md transition-colors disabled:opacity-50'
+                        >
+                          <CircleCheck size={16} className='text-green-600' />
+                        </button>
+                      ))}
                       {notification.read_at ? (
                         <button
                           type='button'

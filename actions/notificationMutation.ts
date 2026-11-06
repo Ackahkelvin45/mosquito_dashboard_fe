@@ -64,6 +64,18 @@ export async function archiveNotification(id: number): Promise<Notification> {
     }
 }
 
+export async function setNotificationHandled(id: number, handled: boolean): Promise<Notification> {
+    try {
+        const res = await apiFetch(`/notifications/${id}/${handled ? "handled" : "unhandled"}`, {
+            method: "PATCH",
+        });
+        return res;
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
+}
+
 export async function unarchiveNotification(id: number): Promise<Notification> {
     try {
         const res = await apiFetch(`/notifications/${id}/unarchive`, {

@@ -31,6 +31,10 @@ export type Notification = {
     delivered_at: string | null;
     created_at: string;
     expires_at: string | null;
+    /** Real-world alert that can be marked handled (shared by all recipients). */
+    handleable: boolean;
+    handled_at: string | null;
+    handled_by_name: string | null;
 };
 
 export type NotificationPreferences = {
@@ -62,6 +66,8 @@ export type GetNotificationsFilters = {
     archived?: boolean;
     search?: string;
     sort?: "newest" | "oldest";
+    /** true = handled alerts, false = alerts awaiting action. */
+    handled?: boolean;
 };
 
 export type PushSubscriptionRecord = {
@@ -87,6 +93,7 @@ export async function getNotifications(
     if (typeof filters?.archived === "boolean") params.set("archived", String(filters.archived));
     if (filters?.search) params.set("search", filters.search);
     if (filters?.sort) params.set("sort", filters.sort);
+    if (typeof filters?.handled === "boolean") params.set("handled", String(filters.handled));
     appendPagination(params, pagination);
 
     const query = params.toString();

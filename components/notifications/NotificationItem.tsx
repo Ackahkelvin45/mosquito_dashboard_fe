@@ -7,6 +7,7 @@ import {
   BatteryLow,
   Boxes,
   Bug,
+  CircleCheck,
   Cpu,
   Droplets,
   FlaskConical,
@@ -142,6 +143,14 @@ export default function NotificationItem({
             {timeAgo(notification.created_at)}
           </span>
           {unread && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" aria-hidden />}
+          {notification.handled_at && (
+            <span className="flex items-center gap-1 text-[11px] font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full min-w-0">
+              <CircleCheck size={12} className="shrink-0" />
+              <span className="truncate">
+                Handled by {notification.handled_by_name ?? "unknown"} · {timeAgo(notification.handled_at)}
+              </span>
+            </span>
+          )}
           {!compact && notification.archived_at && (
             <span className="text-[11px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
               Archived
