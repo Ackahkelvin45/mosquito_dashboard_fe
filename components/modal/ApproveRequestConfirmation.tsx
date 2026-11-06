@@ -7,6 +7,7 @@ interface ApproveRequestConfirmationProps {
   isOpen: boolean;
   action: "approved" | "declined";
   researcherName: string;
+  wasApproved?: boolean;
   isPending: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -16,6 +17,7 @@ export default function ApproveRequestConfirmation({
   isOpen,
   action,
   researcherName,
+  wasApproved = false,
   isPending,
   onConfirm,
   onCancel,
@@ -85,6 +87,8 @@ export default function ApproveRequestConfirmation({
                   {researcherName}
                 </span>
                 ? This action cannot be undone.
+                {wasApproved &&
+                  " This request was already approved, so they will also lose their access to the request's cluster (if it is still their cluster)."}
               </>
             )}
           </p>

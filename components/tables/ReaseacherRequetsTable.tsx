@@ -64,19 +64,22 @@ export default function ReaseacherRequetsTable({
     action: "approved" | "declined";
     requestId: number;
     researcherName: string;
+    wasApproved: boolean;
   }>({
     isOpen: false,
     action: "approved",
     requestId: 0,
     researcherName: "",
+    wasApproved: false,
   });
 
   const openModal = (
     action: "approved" | "declined",
     requestId: number,
-    researcherName: string
+    researcherName: string,
+    wasApproved = false
   ) => {
-    setModal({ isOpen: true, action, requestId, researcherName });
+    setModal({ isOpen: true, action, requestId, researcherName, wasApproved });
   };
 
   const closeModal = () => {
@@ -96,6 +99,7 @@ export default function ReaseacherRequetsTable({
         isOpen={modal.isOpen}
         action={modal.action}
         researcherName={modal.researcherName}
+        wasApproved={modal.wasApproved}
         isPending={isPending}
         onConfirm={handleConfirm}
         onCancel={closeModal}
@@ -203,9 +207,14 @@ export default function ReaseacherRequetsTable({
                             <Check size={18} strokeWidth={2.5} />
                           </button>
                           <button
-                            disabled={!isPending}
+                            disabled={!isPending && row.status !== "approved"}
                             onClick={() =>
-                              openModal("declined", row.id, researcherName)
+                              openModal(
+                                "declined",
+                                row.id,
+                                researcherName,
+                                row.status === "approved"
+                              )
                             }
                             className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             title="Decline"
