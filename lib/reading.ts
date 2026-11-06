@@ -38,3 +38,21 @@ export const filterHumidity = (r: AnyReading) =>
 /** Display helper: value with unit, or an em dash for "no reading". */
 export const fmtReading = (value: number | null, unit: string) =>
   value === null ? "—" : `${value}${unit}`;
+
+const pct = (v: unknown) =>
+  typeof v === "number" && Number.isFinite(v) ? `${Number((v * 100).toFixed(1))}%` : "—";
+
+/** Model confidence for one detection, as display strings ("—" when missing).
+ * taxon_probs/sex_probs carry the real value only under the reported label's
+ * key (others are 0, not a softmax), so we read exactly that key. */
+export function detectionConfidence(r: Record<string, unknown> | null | undefined) {
+  const forLabel = (probs: unknown, label: unknown) =>
+    probs && typeof probs === "object" && typeof label === "string"
+      ? ((probs as Record<string, unknown>)[label] ?? (probs as Record<string, unknown>)[label.toLowerCase()])
+      : undefined;
+  return {
+    mosqConf: pct(r?.p_mosq),
+    genusConf: pct(forLabel(r?.taxon_probs, r?.genus)),
+    sexConf: pct(forLabel(r?.sex_probs, r?.sex)),
+  };
+}

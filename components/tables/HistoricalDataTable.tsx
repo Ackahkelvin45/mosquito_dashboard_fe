@@ -10,6 +10,7 @@ import ColumnVisibilityDropdown, { useColumnVisibility } from "./ColumnVisibilit
 import Pagination from "@/components/Pagination";
 import { resolvePage, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useRole } from "@/hooks/useRole";
+import { detectionConfidence } from "@/lib/reading";
 
 export type HistoricalDataRow = {
   device: string;
@@ -18,6 +19,9 @@ export type HistoricalDataRow = {
   ageGroup: string;
   genus: string;
   species: string;
+  mosqConf: string;
+  genusConf: string;
+  sexConf: string;
 };
 
 // A single column definition drives both the table cell and the CSV export,
@@ -72,6 +76,9 @@ const HISTORICAL_COLUMNS: HistoricalColumn[] = [
     cell: (r) => r.ageGroup,
     csv: (r) => r.ageGroup,
   },
+  { header: "Mosquito confidence", thClass: "text-center", tdClass: "px-5 py-5 whitespace-nowrap font-raleway text-center", cell: (r) => r.mosqConf, csv: (r) => r.mosqConf },
+  { header: "Genus confidence", thClass: "text-center", tdClass: "px-5 py-5 whitespace-nowrap font-raleway text-center", cell: (r) => r.genusConf, csv: (r) => r.genusConf },
+  { header: "Sex confidence", thClass: "text-center", tdClass: "px-5 py-5 whitespace-nowrap font-raleway text-center", cell: (r) => r.sexConf, csv: (r) => r.sexConf },
 ];
 
 function formatDate(iso: string | undefined): string {
@@ -131,6 +138,7 @@ export default function HistoricalDataTable({
         ageGroup: reading?.age_group ?? "—",
         genus: reading?.genus ?? "—",
         species: reading?.species ?? "—",
+        ...detectionConfidence(reading),
       };
     });
   }, [data, eventsPage]);

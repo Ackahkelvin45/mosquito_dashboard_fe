@@ -35,6 +35,7 @@ import { useMosquitoEventsByDeviceUuidWithFilters } from "@/hooks/mosquito";
 import { extractItems, toPaginated, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import Pagination from "@/components/Pagination";
 import { locationLabel } from "@/lib/location";
+import { detectionConfidence } from "@/lib/reading";
 import type { MosquitoEvent, MosquitoRange } from "@/queries/mosquito_data/mosquitoDeviceQueries";
 import type { ChartGroupBy } from "@/queries/device/deviceChartsQueries";
 import DownloadCsvButton from "@/components/tables/DownloadCsvButton";
@@ -64,7 +65,7 @@ function formatTimestamp(iso: string | undefined): string {
   });
 }
 
-type MosquitoTableRow = { species: string; genus: string; ageGroup: string; sex: string; iso: string };
+type MosquitoTableRow = { species: string; genus: string; ageGroup: string; sex: string; iso: string; mosqConf: string; genusConf: string; sexConf: string };
 
 // A single column definition drives both the table cell and the CSV export,
 // so hiding a column hides it in both places.
@@ -104,6 +105,9 @@ const MOSQUITO_COLUMNS: MosquitoColumn[] = [
     cell: (r) => r.sex,
     csv: (r) => r.sex,
   },
+  { header: "Mosquito confidence", thClass: "text-center", tdClass: "px-5 py-4 text-gray-600 text-center", cell: (r) => r.mosqConf, csv: (r) => r.mosqConf },
+  { header: "Genus confidence", thClass: "text-center", tdClass: "px-5 py-4 text-gray-600 text-center", cell: (r) => r.genusConf, csv: (r) => r.genusConf },
+  { header: "Sex confidence", thClass: "text-center", tdClass: "px-5 py-4 text-gray-600 text-center", cell: (r) => r.sexConf, csv: (r) => r.sexConf },
   {
     header: "Timestamp",
     thClass: "text-right",
@@ -166,7 +170,7 @@ export default function SensorDetailPage() {
 
   const mosquitoTableRows = useMemo(() => {
     const events = extractItems<MosquitoEvent>(mosquitoEventsPage);
-    const rows: { species: string; genus: string; ageGroup: string; sex: string; iso: string }[] = [];
+    const rows: MosquitoTableRow[] = [];
 
     for (const event of events) {
       const batchIso = typeof event.timestamp === "string" ? event.timestamp : "";
@@ -189,6 +193,7 @@ export default function SensorDetailPage() {
           ageGroup,
           sex,
           iso: iso || "",
+          ...detectionConfidence(single),
         });
         continue;
       }
@@ -201,6 +206,7 @@ export default function SensorDetailPage() {
             ageGroup: "—",
             sex: "—",
             iso: batchIso,
+            ...detectionConfidence(null),
           });
         }
         continue;
@@ -218,6 +224,7 @@ export default function SensorDetailPage() {
           ageGroup,
           sex,
           iso: iso || "",
+          ...detectionConfidence(reading),
         });
       }
     }
