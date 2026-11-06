@@ -8,7 +8,7 @@ import profile from '../../public/images/profile.png'
 import {
   Activity, ClipboardCheck, House, Map, ChartNoAxesCombined, Satellite, CirclePile,
   UserRoundPlus, ShieldUser, ChevronDown, ChevronRight,
-  EllipsisVertical, KeyRound, LogIn, LogOut, Settings, Thermometer, User, X
+  EllipsisVertical, FlaskConical, KeyRound, LogIn, LogOut, Settings, Thermometer, User, X
 } from 'lucide-react'
 import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/authentication'
@@ -57,6 +57,12 @@ const navItems: NavItem[] = [
     icon: <Satellite size={19} />,
     href: '/devices',
     guest: true,
+  },
+  {
+    // Manual trap counts vs AI. Every signed-in role; guests never see it.
+    label: 'Trap Counts',
+    icon: <FlaskConical size={19} />,
+    href: '/trap-counts',
   },
   {
     label: 'Device Clusters',
