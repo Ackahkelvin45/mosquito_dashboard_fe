@@ -101,3 +101,71 @@ export type DataQualityReport = {
 export async function getDataQuality(days: number): Promise<DataQualityReport> {
   return apiFetch(`/monitoring/data-quality?days=${days}`);
 }
+
+// Model performance (every signed-in non-guest role, scoped server-side).
+// Confidence = the model's own certainty, NOT accuracy. Agreement = manual vs
+// AI COUNTS per genus×sex group per collection, NOT per-detection accuracy.
+export type PMosqStats = {
+  measured: number;
+  /** absent or outside 0–1 — excluded from the mean, never treated as 0 */
+  missing: number;
+  mean: number | null;
+  below_low: number;
+  below_low_share: number | null;
+  buckets: { label: string; count: number }[];
+};
+
+/** Probability at the reported genus/sex key. */
+export type KeyConfidence = {
+  measured: number;
+  missing: number;
+  zero_at_reported_key: number;
+  mean: number | null;
+};
+
+export type ModelPerformanceReport = {
+  days: number;
+  window_start: string;
+  window_end: string;
+  low_confidence_threshold: number;
+  confidence: {
+    detections: number;
+    p_mosq: PMosqStats;
+    genus_confidence: KeyConfidence;
+    sex_confidence: KeyConfidence;
+    binary_decision_true: number;
+    binary_decision_false: number;
+    binary_decision_missing: number;
+    inference_ms: { measured: number; missing: number; mean_ms: number | null; max_ms: number | null };
+    age_group_reported: number;
+    by_genus: { genus: string; detections: number; genus_confidence: KeyConfidence }[];
+  };
+  agreement: {
+    collection_rule: string;
+    collections: {
+      device_id: number;
+      device_name: string;
+      period_start: string;
+      period_end: string;
+      device_reporting: boolean;
+      manual_total: number;
+      ai_total: number;
+      abs_difference: number;
+    }[];
+    collections_compared: number;
+    collections_not_reporting: number;
+    groups_compared: number;
+    groups_exact_match: number;
+    exact_match_share: number | null;
+    manual_total: number;
+    ai_total: number;
+    /** Σ |ai − manual| per counted genus×sex group — errors never cancel */
+    abs_difference: number;
+    by_genus: { genus: string; groups: number; manual: number; ai: number; abs_difference: number }[];
+  };
+  targets: { name: string; target_pct: number; status: "not_measurable_yet"; reason: string }[];
+};
+
+export async function getModelPerformance(days: number): Promise<ModelPerformanceReport> {
+  return apiFetch(`/model-performance?days=${days}`);
+}

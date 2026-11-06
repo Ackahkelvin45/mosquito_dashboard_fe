@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import {
   getDataQuality,
+  getModelPerformance,
   getMqttErrors,
   getMqttStatus,
   getMqttTraffic,
@@ -45,5 +46,14 @@ export const useDataQuality = (days: number) => {
     queryKey: ["monitoring", "data-quality", days],
     queryFn: () => getDataQuality(days),
     refetchOnWindowFocus: true,
+  })
+}
+
+export const useModelPerformance = (days: number) => {
+  return useQuery({
+    queryKey: ["model-performance", days],
+    queryFn: () => getModelPerformance(days),
+    // Heavy aggregate (up to 365 days); React Query refetches on focus by default.
+    refetchOnWindowFocus: false,
   })
 }

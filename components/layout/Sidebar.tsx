@@ -8,7 +8,7 @@ import profile from '../../public/images/profile.png'
 import {
   Activity, ClipboardCheck, House, Map, ChartNoAxesCombined, Satellite, CirclePile,
   UserRoundPlus, ShieldUser, ChevronDown, ChevronRight,
-  EllipsisVertical, FlaskConical, KeyRound, LogIn, LogOut, Settings, Thermometer, User, X
+  EllipsisVertical, FlaskConical, Gauge, KeyRound, LogIn, LogOut, Settings, Thermometer, User, X
 } from 'lucide-react'
 import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/authentication'
@@ -63,6 +63,13 @@ const navItems: NavItem[] = [
     label: 'Trap Counts',
     icon: <FlaskConical size={19} />,
     href: '/trap-counts',
+  },
+  {
+    // Measured confidence + manual-count agreement. No roles array: every
+    // signed-in role (USER/ADMIN/SUPER_ADMIN); guests never see it.
+    label: 'Model Performance',
+    icon: <Gauge size={19} />,
+    href: '/model-performance',
   },
   {
     label: 'Device Clusters',
