@@ -31,12 +31,13 @@ const MapWithNoSSR = dynamic(
 );
 
 import { useDevice, useDeviceCharts } from "@/hooks/device";
+import DetectorWarning from "@/components/devices/DetectorWarning";
 import { useMosquitoEventsByDeviceUuidWithFilters } from "@/hooks/mosquito";
-import { extractItems, toPaginated, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { extractItems, toPaginated, fetchAllPages, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import Pagination from "@/components/Pagination";
 import { locationLabel } from "@/lib/location";
 import { detectionConfidence } from "@/lib/reading";
-import type { MosquitoEvent, MosquitoRange } from "@/queries/mosquito_data/mosquitoDeviceQueries";
+import { getMosquitoEventsByDeviceUuid, type MosquitoEvent, type MosquitoRange } from "@/queries/mosquito_data/mosquitoDeviceQueries";
 import type { ChartGroupBy } from "@/queries/device/deviceChartsQueries";
 import DownloadCsvButton from "@/components/tables/DownloadCsvButton";
 import ColumnVisibilityDropdown, { useColumnVisibility } from "@/components/tables/ColumnVisibilityDropdown";
@@ -140,6 +141,78 @@ function normalizeCoordinate(value: unknown, maxAbs: number): number | null {
   return null;
 }
 
+// Flattens events into table rows (newest first). `||` so "" shows as "—".
+function eventsToRows(events: MosquitoEvent[]): MosquitoTableRow[] {
+  const rows: MosquitoTableRow[] = [];
+
+  for (const event of events) {
+    const batchIso = typeof event.timestamp === "string" ? event.timestamp : "";
+    const individuals = Array.isArray(event.individual_readings) ? event.individual_readings : [];
+    const single = event.mosquito_reading;
+
+    const batchCount = typeof event.count === "number" ? event.count : 0;
+
+    // Newer API shape: one mosquito_reading per event.
+    if (single && typeof single === "object") {
+      const genus = single?.genus || "—";
+      const species = single?.species || "—";
+      const ageGroup = single?.age_group || "—";
+      const sex = single?.sex || "—";
+      // Show event.timestamp primarily (user asked for timestamp)
+      const iso = batchIso || (typeof single?.detection_timestamp === "string" ? single.detection_timestamp : "");
+      rows.push({
+        ...exclusionOf(event),
+        species,
+        genus,
+        ageGroup,
+        sex,
+        iso: iso || "",
+        ...detectionConfidence(single),
+      });
+      continue;
+    }
+
+    if (individuals.length === 0) {
+      if (batchCount > 0 || batchIso) {
+        rows.push({
+          ...exclusionOf(event),
+          species: "—",
+          genus: "—",
+          ageGroup: "—",
+          sex: "—",
+          iso: batchIso,
+          ...detectionConfidence(null),
+        });
+      }
+      continue;
+    }
+
+    for (const reading of individuals) {
+      const genus = reading?.genus || "—";
+      const species = reading?.species || "—";
+      const ageGroup = reading?.age_group || "—";
+      const sex = reading?.sex || "—";
+      const iso = batchIso || (typeof reading?.detection_timestamp === "string" ? reading.detection_timestamp : "");
+      rows.push({
+        ...exclusionOf(event),
+        species,
+        genus,
+        ageGroup,
+        sex,
+        iso: iso || "",
+        ...detectionConfidence(reading),
+      });
+    }
+  }
+
+  rows.sort((a, b) => {
+    const aTime = a.iso ? parseApiDate(a.iso).getTime() : 0;
+    const bTime = b.iso ? parseApiDate(b.iso).getTime() : 0;
+    return bTime - aTime;
+  });
+  return rows;
+}
+
 export default function SensorDetailPage() {
   const params = useParams();
   const id = params?.id as string | undefined;
@@ -179,77 +252,10 @@ export default function SensorDetailPage() {
   // Server envelope: total counts ALL events in range, not just this page.
   const eventsPage = useMemo(() => toPaginated<MosquitoEvent>(mosquitoEventsPage), [mosquitoEventsPage]);
 
-  const mosquitoTableRows = useMemo(() => {
-    const events = extractItems<MosquitoEvent>(mosquitoEventsPage);
-    const rows: MosquitoTableRow[] = [];
-
-    for (const event of events) {
-      const batchIso = typeof event.timestamp === "string" ? event.timestamp : "";
-      const individuals = Array.isArray(event.individual_readings) ? event.individual_readings : [];
-      const single = event.mosquito_reading;
-
-      const batchCount = typeof event.count === "number" ? event.count : 0;
-
-      // Newer API shape: one mosquito_reading per event.
-      if (single && typeof single === "object") {
-        const genus = single?.genus ?? "—";
-        const species = single?.species ?? "—";
-        const ageGroup = single?.age_group ?? "—";
-        const sex = single?.sex ?? "—";
-        // Show event.timestamp primarily (user asked for timestamp)
-        const iso = batchIso || (typeof single?.detection_timestamp === "string" ? single.detection_timestamp : "");
-        rows.push({
-          ...exclusionOf(event),
-          species,
-          genus,
-          ageGroup,
-          sex,
-          iso: iso || "",
-          ...detectionConfidence(single),
-        });
-        continue;
-      }
-
-      if (individuals.length === 0) {
-        if (batchCount > 0 || batchIso) {
-          rows.push({
-            ...exclusionOf(event),
-            species: "—",
-            genus: "—",
-            ageGroup: "—",
-            sex: "—",
-            iso: batchIso,
-            ...detectionConfidence(null),
-          });
-        }
-        continue;
-      }
-
-      for (const reading of individuals) {
-        const genus = reading?.genus ?? "—";
-        const species = reading?.species ?? "—";
-        const ageGroup = reading?.age_group ?? "—";
-        const sex = reading?.sex ?? "—";
-        const iso = batchIso || (typeof reading?.detection_timestamp === "string" ? reading.detection_timestamp : "");
-        rows.push({
-          ...exclusionOf(event),
-          species,
-          genus,
-          ageGroup,
-          sex,
-          iso: iso || "",
-          ...detectionConfidence(reading),
-        });
-      }
-    }
-
-    rows.sort((a, b) => {
-      const aTime = a.iso ? parseApiDate(a.iso).getTime() : 0;
-      const bTime = b.iso ? parseApiDate(b.iso).getTime() : 0;
-      return bTime - aTime;
-    });
-    return rows;
-  }, [mosquitoEventsPage]);
+  const mosquitoTableRows = useMemo(
+    () => eventsToRows(extractItems<MosquitoEvent>(mosquitoEventsPage)),
+    [mosquitoEventsPage]
+  );
 
   const { selected, setSelected, visibleColumns } = useColumnVisibility(MOSQUITO_COLUMNS);
   const mosquitoCsvColumns = visibleColumns.map((c) => ({ header: c.header, accessor: c.csv }));
@@ -326,6 +332,8 @@ export default function SensorDetailPage() {
                     : "OFF"}
                 </span>
               </span>
+
+              <DetectorWarning device={device} />
             </>
           )}
         </div>
@@ -429,6 +437,12 @@ export default function SensorDetailPage() {
                     columns={mosquitoCsvColumns}
                     rows={mosquitoTableRows}
                     disabled={isEventsLoading}
+                    fetchAllRows={(onProgress) =>
+                      fetchAllPages<MosquitoEvent>(
+                        (p) => getMosquitoEventsByDeviceUuid(deviceUuid, { range: range === "all" ? undefined : range }, p),
+                        onProgress
+                      ).then(eventsToRows)
+                    }
                   />
                   <select
                     value={range}

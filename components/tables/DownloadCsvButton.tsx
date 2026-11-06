@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Download, ChevronDown, FileText, FileSpreadsheet } from "lucide-react";
 import { downloadCsv, type CsvColumn } from "@/lib/csv";
-import { downloadPdf } from "@/lib/pdf";
+import { downloadPdf, PDF_MAX_ROWS } from "@/lib/pdf";
 
 interface DownloadButtonProps<T> {
   filename: string;
@@ -14,6 +14,9 @@ interface DownloadButtonProps<T> {
   /** Heading printed at the top of the PDF; defaults to the label. */
   title?: string;
   className?: string;
+  /** Paged tables: loads the WHOLE filtered result on download (CSV and PDF),
+   * so the export isn't just the page on screen. Omit when `rows` is already complete. */
+  fetchAllRows?: (onProgress: (loaded: number, total: number) => void) => Promise<T[]>;
 }
 
 // A single "Download" button with a dropdown offering CSV and PDF exports.
@@ -26,10 +29,15 @@ export default function DownloadCsvButton<T>({
   label = "Download",
   title,
   className = "",
+  fetchAllRows,
 }: DownloadButtonProps<T>) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const isDisabled = disabled || rows.length === 0;
+  // Non-null while fetching every page for an export.
+  const [progress, setProgress] = useState<{ loaded: number; total: number } | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const isDisabled = disabled || rows.length === 0 || progress !== null;
 
   // Close the dropdown when clicking outside.
   useEffect(() => {
@@ -43,10 +51,20 @@ export default function DownloadCsvButton<T>({
     return () => document.removeEventListener("pointerdown", onClick);
   }, [open]);
 
-  const run = (fn: () => void) => {
+  const run = async (fn: (rows: T[]) => void) => {
     if (columns.length === 0) return;
-    fn();
     setOpen(false);
+    if (!fetchAllRows) return fn(rows);
+    setFailed(false);
+    setNotice(null);
+    setProgress({ loaded: 0, total: 0 });
+    try {
+      fn(await fetchAllRows((loaded, total) => setProgress({ loaded, total })));
+    } catch {
+      setFailed(true);
+    } finally {
+      setProgress(null);
+    }
   };
 
   return (
@@ -56,10 +74,15 @@ export default function DownloadCsvButton<T>({
         onClick={() => setOpen((o) => !o)}
         disabled={isDisabled}
         title={rows.length === 0 ? "No data to export" : label}
+        aria-busy={progress !== null}
         className="flex items-center gap-2 px-4 py-2 rounded-lg border border-secondary/20 bg-white text-sm font-raleway font-semibold text-primary transition-colors hover:bg-primary/5 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <Download size={16} />
-        {label}
+        {progress
+          ? `Exporting ${progress.loaded.toLocaleString()}${progress.total ? ` of ${progress.total.toLocaleString()}` : ""}…`
+          : failed
+          ? "Export failed — retry"
+          : label}
         <ChevronDown
           size={14}
           className={`transition-transform ${open ? "rotate-180" : ""}`}
@@ -70,7 +93,7 @@ export default function DownloadCsvButton<T>({
         <div className="absolute right-0 z-20 mt-2 w-44 rounded-xl border border-secondary/15 bg-white p-1.5 shadow-lg font-raleway">
           <button
             type="button"
-            onClick={() => run(() => downloadCsv(filename, columns, rows))}
+            onClick={() => run((all) => downloadCsv(filename, columns, all))}
             className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50"
           >
             <FileSpreadsheet size={15} className="text-green-600" />
@@ -78,7 +101,13 @@ export default function DownloadCsvButton<T>({
           </button>
           <button
             type="button"
-            onClick={() => run(() => downloadPdf(filename, columns, rows, { title: title ?? label }))}
+            onClick={() =>
+              run((all) => {
+                downloadPdf(filename, columns, all, { title: title ?? label });
+                if (all.length > PDF_MAX_ROWS)
+                  setNotice(`PDF holds the first ${PDF_MAX_ROWS.toLocaleString()} of ${all.length.toLocaleString()} rows — use CSV for all.`);
+              })
+            }
             className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50"
           >
             <FileText size={15} className="text-red-500" />
@@ -86,6 +115,7 @@ export default function DownloadCsvButton<T>({
           </button>
         </div>
       )}
+      {notice && <p className="mt-1 max-w-xs text-xs text-amber-700">{notice}</p>}
     </div>
   );
 }

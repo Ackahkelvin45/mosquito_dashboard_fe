@@ -86,3 +86,31 @@ export function resolvePage<T = unknown>(res: unknown, page: number, pageSize: n
     total_pages,
   };
 }
+
+/**
+ * Fetch EVERY page of a paged list, one request at a time at the API's max
+ * page size — for exports, which must cover the whole filtered result, not
+ * the page on screen. Rows are de-duplicated by `id`: a live row arriving
+ * mid-export shifts later pages down by one.
+ * ponytail: a row deleted mid-export can shift one row out of view; a cursor/keyset endpoint fixes that if it matters.
+ */
+export async function fetchAllPages<T>(
+  fetchPage: (pagination: PaginationParams) => Promise<unknown>,
+  onProgress?: (loaded: number, total: number) => void
+): Promise<T[]> {
+  const all: T[] = [];
+  const seen = new Set<unknown>();
+  for (let page = 1; ; page++) {
+    const res = toPaginated<T>(await fetchPage({ page, page_size: MAX_PAGE_SIZE }));
+    for (const item of res.items) {
+      const id = (item as { id?: unknown })?.id;
+      if (id !== undefined && id !== null) {
+        if (seen.has(id)) continue;
+        seen.add(id);
+      }
+      all.push(item);
+    }
+    onProgress?.(all.length, Math.max(res.total, all.length));
+    if (res.items.length === 0 || page >= res.total_pages) return all;
+  }
+}

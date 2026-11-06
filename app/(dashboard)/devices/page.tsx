@@ -9,7 +9,8 @@ import MultiSelectDropdown from '@/components/filters/MultiSelectDropdown'
 import { useClusters, useDevices } from '@/hooks/device'
 import { useRole } from '@/hooks/useRole'
 import Pagination from '@/components/Pagination'
-import { extractItems, resolvePage, MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE } from '@/lib/pagination'
+import { extractItems, resolvePage, fetchAllPages, MAX_PAGE_SIZE, DEFAULT_PAGE_SIZE } from '@/lib/pagination'
+import { getDevices } from '@/queries/device/deviceQueries'
 
 type Cluster = {
   id: number
@@ -329,7 +330,11 @@ function DevicesPage() {
         )}
 
         <div>
-            <DeviceTable data={devicesPage.items} isLoading={isLoading} />
+            <DeviceTable
+              data={devicesPage.items}
+              isLoading={isLoading}
+              fetchAllRows={(onProgress) => fetchAllPages<DeviceRow>((p) => getDevices(filters, p), onProgress)}
+            />
             <Pagination
               page={devicesPage.page}
               totalPages={devicesPage.total_pages}

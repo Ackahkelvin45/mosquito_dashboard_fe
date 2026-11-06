@@ -2,13 +2,13 @@
 
 import React, { useMemo, useState } from "react";
 import { useAllSensorReadings } from "@/hooks/device";
-import type { GetAllSensorReadingsFilters, SensorReadingRow } from "@/queries/device/deviceQueries";
+import { getAllSensorReadings, type GetAllSensorReadingsFilters, type SensorReadingRow } from "@/queries/device/deviceQueries";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import DownloadCsvButton from "./DownloadCsvButton";
 import ColumnVisibilityDropdown, { useColumnVisibility } from "./ColumnVisibilityDropdown";
 import Pagination from "@/components/Pagination";
-import { resolvePage, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { resolvePage, fetchAllPages, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useRole } from "@/hooks/useRole";
 import ExclusionControl, { ExcludedBadge, exclusionCsv, exclusionTitle, excludedCellClass, useCanManageCluster } from "./ExclusionControl";
 
@@ -124,6 +124,7 @@ export default function SensorDataTable({ title = "Sensor Data", filters }: Sens
               columns={csvColumns}
               rows={rows}
               disabled={isLoading}
+              fetchAllRows={(onProgress) => fetchAllPages<SensorReadingRow>((p) => getAllSensorReadings(filters, p), onProgress)}
             />
           )}
         </div>

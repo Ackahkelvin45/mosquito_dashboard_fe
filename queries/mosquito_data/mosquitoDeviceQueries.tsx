@@ -65,6 +65,10 @@ export type GetAllMosquitoEventsFilters = {
 	genus?: string[];
 	/** Pass multiple species values to match any of them. */
 	species?: string[];
+	/** Pass multiple sex values to match any of them (exact, case-insensitive). */
+	sex?: string[];
+	/** 0-1: only detections with p_mosq >= this. Unknown (null) confidence is excluded. */
+	min_confidence?: number;
 	/** Super admin only — the backend intersects this with your own scope regardless. */
 	cluster_id?: number[];
 };
@@ -93,6 +97,10 @@ export async function getAllMosquitoEvents(
 	filters?.species?.forEach((s) => {
 		if (s) params.append("species", s);
 	});
+	filters?.sex?.forEach((s) => {
+		if (s) params.append("sex", s);
+	});
+	if (filters?.min_confidence !== undefined) params.set("min_confidence", String(filters.min_confidence));
 	// device_uuid is repeatable: ?device_uuid=a&device_uuid=b
 	filters?.device_uuid?.forEach((uuid) => {
 		if (uuid) params.append("device_uuid", uuid);
@@ -112,6 +120,7 @@ export type MosquitoFilterOptions = {
 	regions: string[];
 	genus: string[];
 	species: string[];
+	sex: string[];
 };
 
 export async function getMosquitoFilterOptions(): Promise<MosquitoFilterOptions> {

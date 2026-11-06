@@ -40,6 +40,8 @@ function formatDate(iso: string): string {
 interface ReaseacherRequetsTableProps {
   data?: ResearcherRequest[];
   isLoading?: boolean;
+  /** Paged parents: loads every page for the export (see DownloadCsvButton). */
+  fetchAllRows?: (onProgress: (loaded: number, total: number) => void) => Promise<ResearcherRequest[]>;
 }
 
 const SKELETON_ROWS = 6;
@@ -56,6 +58,7 @@ const CSV_COLUMNS: CsvColumn<ResearcherRequest>[] = [
 export default function ReaseacherRequetsTable({
   data = [],
   isLoading = false,
+  fetchAllRows,
 }: ReaseacherRequetsTableProps) {
   const { mutate: updateStatus, isPending } = useUpdateResearcherStatus();
 
@@ -112,6 +115,7 @@ export default function ReaseacherRequetsTable({
             title="Researcher Requests"
             columns={CSV_COLUMNS}
             rows={data}
+            fetchAllRows={fetchAllRows}
             disabled={isLoading}
           />
         </div>

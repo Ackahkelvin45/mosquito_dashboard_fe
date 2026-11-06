@@ -37,6 +37,8 @@ function formatDate(iso: string): string {
 interface UsersTableProps {
   data?: UserRow[];
   isLoading?: boolean;
+  /** Paged parents: loads every page for the export (see DownloadCsvButton). */
+  fetchAllRows?: (onProgress: (loaded: number, total: number) => void) => Promise<UserRow[]>;
 }
 
 const SKELETON_ROWS = 6;
@@ -53,6 +55,7 @@ const CSV_COLUMNS: CsvColumn<UserRow>[] = [
 export default function UsersTable({
   data = [],
   isLoading = false,
+  fetchAllRows,
 }: UsersTableProps) {
   const { isSuperAdmin } = useRole();
   return (
@@ -63,6 +66,7 @@ export default function UsersTable({
           title="Users"
           columns={CSV_COLUMNS}
           rows={data}
+          fetchAllRows={fetchAllRows}
           disabled={isLoading}
         />
       </div>

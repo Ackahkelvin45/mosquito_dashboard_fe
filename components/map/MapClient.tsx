@@ -7,6 +7,7 @@ import { useEffect, useMemo } from "react";
 import { MapPin,Tag } from "lucide-react";
 import type { Device } from "@/types/api";
 import type { GeoLocation } from "@/components/map/LocationSearch";
+import DetectorWarning from "@/components/devices/DetectorWarning";
 
 type LatLng = [number, number];
 
@@ -198,6 +199,9 @@ export default function MapClient({ position, zoom, devices = [], selectedDevice
               </div>
               <div className="flex flex-row items-center gap-1" style={{ fontSize: "13px", color: "#6b7280" }}>
                 <Tag size={13} /> {device.name}
+              </div>
+              <div className="mt-1">
+                <DetectorWarning device={device} compact />
               </div>
 	              <button
 	                onClick={() => {

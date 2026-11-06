@@ -2,13 +2,13 @@
 
 import React, { useMemo, useState } from "react";
 import { useMosquitoEvents } from "@/hooks/mosquito";
-import type { GetAllMosquitoEventsFilters, MosquitoEvent } from "@/queries/mosquito_data/mosquitoDeviceQueries";
+import { getAllMosquitoEvents, type GetAllMosquitoEventsFilters, type MosquitoEvent } from "@/queries/mosquito_data/mosquitoDeviceQueries";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import DownloadCsvButton from "./DownloadCsvButton";
 import ColumnVisibilityDropdown, { useColumnVisibility } from "./ColumnVisibilityDropdown";
 import Pagination from "@/components/Pagination";
-import { resolvePage, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
+import { resolvePage, fetchAllPages, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useRole } from "@/hooks/useRole";
 import { detectionConfidence } from "@/lib/reading";
 import type { Exclusion } from "@/types/api";
@@ -101,6 +101,26 @@ function formatDate(iso: string | undefined): string {
   });
 }
 
+// `||` not `??`: an empty string (MQTT sends sex "") shows as "—" too.
+function toRow(event: MosquitoEvent): HistoricalDataRow {
+  const reading = event.mosquito_reading;
+  return {
+    id: event.id,
+    deviceUuid: event.device_uuid,
+    clusterId: event.cluster_id,
+    excluded_at: event.excluded_at ?? null,
+    exclusion_reason: event.exclusion_reason ?? null,
+    excluded_by_name: event.excluded_by_name ?? null,
+    device: (typeof reading?.device_uuid === "string" ? reading.device_uuid : undefined) ?? String(event.device_id ?? "—"),
+    date: formatDate(event.timestamp ?? reading?.detection_timestamp),
+    sex: reading?.sex || "—",
+    ageGroup: reading?.age_group || "—",
+    genus: reading?.genus || "—",
+    species: reading?.species || "—",
+    ...detectionConfidence(reading),
+  };
+}
+
 interface HistoricalDataTableProps {
   data?: HistoricalDataRow[];
   title?: string;
@@ -135,25 +155,7 @@ export default function HistoricalDataTable({
   const rows: HistoricalDataRow[] = useMemo(() => {
     if (data) return data;
 
-    const list = eventsPage.items;
-    return list.map((event) => {
-      const reading = event.mosquito_reading;
-      return {
-        id: event.id,
-        deviceUuid: event.device_uuid,
-        clusterId: event.cluster_id,
-        excluded_at: event.excluded_at ?? null,
-        exclusion_reason: event.exclusion_reason ?? null,
-        excluded_by_name: event.excluded_by_name ?? null,
-        device: (typeof reading?.device_uuid === "string" ? reading.device_uuid : undefined) ?? String(event.device_id ?? "—"),
-        date: formatDate(event.timestamp ?? reading?.detection_timestamp),
-        sex: reading?.sex ?? "—",
-        ageGroup: reading?.age_group ?? "—",
-        genus: reading?.genus ?? "—",
-        species: reading?.species ?? "—",
-        ...detectionConfidence(reading),
-      };
-    });
+    return eventsPage.items.map(toRow);
   }, [data, eventsPage]);
 
   const { selected, setSelected, visibleColumns } = useColumnVisibility(HISTORICAL_COLUMNS);
@@ -184,6 +186,9 @@ export default function HistoricalDataTable({
               columns={csvColumns}
               rows={rows}
               disabled={isLoading}
+              fetchAllRows={shouldFetch
+                ? (onProgress) => fetchAllPages<MosquitoEvent>((p) => getAllMosquitoEvents(filters, p), onProgress).then((all) => all.map(toRow))
+                : undefined}
             />
           )}
         </div>

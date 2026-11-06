@@ -14,6 +14,9 @@ const SEARCH_DEBOUNCE_MS = 1000
 const DATE_DEBOUNCE_MS = 1000
 
 import type { DeviceLike } from "@/types/api"
+
+// Minimum mosquito confidence (p_mosq) presets, sent to the API as 0-1.
+const MIN_CONFIDENCE_OPTIONS = [0.5, 0.7, 0.8, 0.9, 0.95]
 type Cluster = { id: number; name: string }
 
 function toIsoStartOfDay(dateOnly: string): string {
@@ -36,6 +39,8 @@ function HistoricalDataPage() {
   const [regions, setRegions] = useState<string[]>([])
   const [genusValues, setGenusValues] = useState<string[]>([])
   const [speciesValues, setSpeciesValues] = useState<string[]>([])
+  const [sexValues, setSexValues] = useState<string[]>([])
+  const [minConfidence, setMinConfidence] = useState<number | undefined>(undefined)
   const [deviceUuids, setDeviceUuids] = useState<string[]>([])
   const [clusterIds, setClusterIds] = useState<string[]>([])
   const [showMoreFilters, setShowMoreFilters] = useState(false)
@@ -61,6 +66,7 @@ function HistoricalDataPage() {
   const regionOptions = filterOptions?.regions ?? []
   const genusOptions = filterOptions?.genus ?? []
   const speciesOptions = filterOptions?.species ?? []
+  const sexOptions = filterOptions?.sex ?? []
 
   useEffect(() => {
     const timer = setTimeout(() => setAppliedSearch(search), SEARCH_DEBOUNCE_MS)
@@ -111,16 +117,20 @@ function HistoricalDataPage() {
       region: regions.length > 0 ? regions : undefined,
       genus: genusValues.length > 0 ? genusValues : undefined,
       species: speciesValues.length > 0 ? speciesValues : undefined,
+      sex: sexValues.length > 0 ? sexValues : undefined,
+      min_confidence: minConfidence,
       device_uuid: deviceUuids.length > 0 ? deviceUuids : undefined,
       cluster_id: clusterIds.length > 0 ? clusterIds.map(Number) : undefined,
     }
-  }, [appliedSearch, appliedStartDate, appliedEndDate, regions, genusValues, speciesValues, deviceUuids, clusterIds])
+  }, [appliedSearch, appliedStartDate, appliedEndDate, regions, genusValues, speciesValues, sexValues, minConfidence, deviceUuids, clusterIds])
 
   // Filters that live behind the "More Filters" toggle.
   const extraFilterCount =
     (regions.length > 0 ? 1 : 0) +
     (genusValues.length > 0 ? 1 : 0) +
     (speciesValues.length > 0 ? 1 : 0) +
+    (sexValues.length > 0 ? 1 : 0) +
+    (minConfidence !== undefined ? 1 : 0) +
     (deviceUuids.length > 0 ? 1 : 0) +
     (clusterIds.length > 0 ? 1 : 0)
 
@@ -133,6 +143,8 @@ function HistoricalDataPage() {
     setRegions([])
     setGenusValues([])
     setSpeciesValues([])
+    setSexValues([])
+    setMinConfidence(undefined)
     setDeviceUuids([])
     setClusterIds([])
   }
@@ -255,6 +267,35 @@ function HistoricalDataPage() {
                           />
                         </div>
                         <div className='flex flex-col gap-1'>
+                          <label className='text-[11px] text-gray-500 px-1'>Sex</label>
+                          <MultiSelectDropdown
+                            label='All sexes'
+                            options={sexOptions.map((s) => ({ value: s, label: s }))}
+                            selected={sexValues}
+                            onChange={setSexValues}
+                            emptyText='No sex values'
+                            className='w-full'
+                          />
+                        </div>
+                        <div className='flex flex-col gap-1'>
+                          <label htmlFor='min-confidence' className='text-[11px] text-gray-500 px-1'>Minimum mosquito confidence</label>
+                          <select
+                            id='min-confidence'
+                            value={minConfidence ?? ''}
+                            onChange={(e) => setMinConfidence(e.target.value === '' ? undefined : Number(e.target.value))}
+                            aria-describedby='min-confidence-help'
+                            className='w-full py-2 px-2 border border-gray rounded-lg text-sm bg-white focus:border-primary focus:outline-none'
+                          >
+                            <option value=''>Any confidence</option>
+                            {MIN_CONFIDENCE_OPTIONS.map((v) => (
+                              <option key={v} value={v}>{`≥ ${Math.round(v * 100)}%`}</option>
+                            ))}
+                          </select>
+                          <p id='min-confidence-help' className='text-[11px] text-gray-400 px-1'>
+                            Detections with unknown confidence are excluded when a minimum is set.
+                          </p>
+                        </div>
+                        <div className='flex flex-col gap-1'>
                           <label className='text-[11px] text-gray-500 px-1'>Devices</label>
                           <MultiSelectDropdown
                             label='Devices'
@@ -350,6 +391,24 @@ function HistoricalDataPage() {
                   <div className='flex flex-row gap-2 items-center bg-[#3C2178]/5 px-2 rounded-lg py-1'>
                       <span className='text-sm font-medium text-secondary'>Species: {filters.species.join(", ")}</span>
                       <button type="button" onClick={() => setSpeciesValues([])} className="p-1.5 -m-1.5" aria-label="Clear species filter">
+                        <X size={16} strokeWidth={1.5} className='text-gray-500' />
+                      </button>
+                  </div>
+                )}
+
+                {filters.sex && (
+                  <div className='flex flex-row gap-2 items-center bg-[#3C2178]/5 px-2 rounded-lg py-1'>
+                      <span className='text-sm font-medium text-secondary'>Sex: {filters.sex.join(", ")}</span>
+                      <button type="button" onClick={() => setSexValues([])} className="p-1.5 -m-1.5" aria-label="Clear sex filter">
+                        <X size={16} strokeWidth={1.5} className='text-gray-500' />
+                      </button>
+                  </div>
+                )}
+
+                {filters.min_confidence !== undefined && (
+                  <div className='flex flex-row gap-2 items-center bg-[#3C2178]/5 px-2 rounded-lg py-1'>
+                      <span className='text-sm font-medium text-secondary'>Confidence: ≥ {Math.round(filters.min_confidence * 100)}%</span>
+                      <button type="button" onClick={() => setMinConfidence(undefined)} className="p-1.5 -m-1.5" aria-label="Clear minimum confidence filter">
                         <X size={16} strokeWidth={1.5} className='text-gray-500' />
                       </button>
                   </div>

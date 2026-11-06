@@ -6,7 +6,8 @@ import Link from 'next/link'
 import UsersTable, { type UserRow } from '@/components/tables/UsersTable'
 import { useUsers } from '@/hooks/user'
 import Pagination from '@/components/Pagination'
-import { resolvePage, DEFAULT_PAGE_SIZE } from '@/lib/pagination'
+import { resolvePage, fetchAllPages, DEFAULT_PAGE_SIZE } from '@/lib/pagination'
+import { getUsers } from '@/queries/user/userQueries'
 
 function UsersPage() {
   const [page, setPage] = useState(1)
@@ -59,7 +60,11 @@ function UsersPage() {
         </div> */}
 
         <div>
-            <UsersTable data={usersPage.items} isLoading={isLoading} />
+            <UsersTable
+              data={usersPage.items}
+              isLoading={isLoading}
+              fetchAllRows={(onProgress) => fetchAllPages<UserRow>(getUsers, onProgress)}
+            />
             <Pagination
               page={usersPage.page}
               totalPages={usersPage.total_pages}

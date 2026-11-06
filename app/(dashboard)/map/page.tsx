@@ -13,6 +13,7 @@ import { extractItems, MAX_PAGE_SIZE } from "@/lib/pagination";
 import { locationLabel, locationSearchText } from "@/lib/location";
 import type React from "react";
 import type { Device } from "@/types/api";
+import DetectorWarning from "@/components/devices/DetectorWarning";
 import type { MapClientProps } from "@/components/map/MapClient";
 
 // ------- Helpers -------
@@ -143,6 +144,7 @@ function DeviceStatusTab({ device }: { device: Device | null }) {
           </span>
         )}
       </Row>
+      <DetectorWarning device={device} />
     </div>
   );
 }
@@ -419,6 +421,7 @@ export default function MapPage() {
                       <div>
                         <p className="text-sm font-medium text-gray-900">{d.name}</p>
                         <p className="text-xs text-gray-400">{locationLabel(d)}</p>
+                        <DetectorWarning device={d} compact />
                       </div>
                     </button>
                   ))}

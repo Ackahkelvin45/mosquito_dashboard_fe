@@ -3,9 +3,9 @@
 import React, { useMemo, useState } from 'react'
 import { Grid3X3, Search, X } from 'lucide-react'
 import ReaseacherRequetsTable, { type ResearcherRequest } from '@/components/tables/ReaseacherRequetsTable'
-import { useResearcherRequests } from '@/hooks/researcher'
+import { useResearcherRequests, getResearcherRequests } from '@/hooks/researcher'
 import Pagination from '@/components/Pagination'
-import { resolvePage, DEFAULT_PAGE_SIZE } from '@/lib/pagination'
+import { resolvePage, fetchAllPages, DEFAULT_PAGE_SIZE } from '@/lib/pagination'
 
 function ResearcherRequestsPage() {
   const [page, setPage] = useState(1)
@@ -49,7 +49,11 @@ function ResearcherRequestsPage() {
         </div>
 
         <div className='mt-6'>
-            <ReaseacherRequetsTable data={requestsPage.items} isLoading={isLoading} />
+            <ReaseacherRequetsTable
+              data={requestsPage.items}
+              isLoading={isLoading}
+              fetchAllRows={(onProgress) => fetchAllPages<ResearcherRequest>(getResearcherRequests, onProgress)}
+            />
             <Pagination
               page={requestsPage.page}
               totalPages={requestsPage.total_pages}

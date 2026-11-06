@@ -5,6 +5,11 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { timestampedFilename, type CsvColumn } from "./csv";
 
+// jsPDF builds the whole document synchronously on the main thread; tens of
+// thousands of rows freeze the tab. Past this, the PDF says plainly that it
+// is partial and points to CSV, which has no limit.
+export const PDF_MAX_ROWS = 5000;
+
 function formatCell(value: string | number | boolean | null | undefined): string {
   if (value === null || value === undefined) return "";
   return String(value);
@@ -32,9 +37,22 @@ export function downloadPdf<T>(
     startY += 18;
   }
 
+  const shown = rows.length > PDF_MAX_ROWS ? rows.slice(0, PDF_MAX_ROWS) : rows;
+  if (shown.length < rows.length) {
+    doc.setFontSize(10);
+    doc.setTextColor(180, 0, 0);
+    doc.text(
+      `Partial export: first ${shown.length.toLocaleString()} of ${rows.length.toLocaleString()} rows. Download CSV for all rows.`,
+      marginX,
+      startY
+    );
+    doc.setTextColor(0, 0, 0);
+    startY += 16;
+  }
+
   autoTable(doc, {
     head: [columns.map((c) => c.header)],
-    body: rows.map((row) => columns.map((c) => formatCell(c.accessor(row)))),
+    body: shown.map((row) => columns.map((c) => formatCell(c.accessor(row)))),
     startY,
     margin: { left: marginX, right: marginX },
     styles: { fontSize: 9, cellPadding: 6, overflow: "linebreak" },

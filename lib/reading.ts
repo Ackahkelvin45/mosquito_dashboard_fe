@@ -39,6 +39,15 @@ export const filterHumidity = (r: AnyReading) =>
 export const fmtReading = (value: number | null, unit: string) =>
   value === null ? "—" : `${value}${unit}`;
 
+/** Online device whose latest reading says the detector board link is down —
+ * a quiet period then means "can't detect", not "no mosquitoes". NULL
+ * (firmware doesn't report it) is unknown and never warns. */
+export const detectorDisconnected = (
+  d: { is_active?: boolean; latest_reading?: { esp1_link_alive?: boolean | null } | null } | null | undefined
+) => Boolean(d?.is_active) && d?.latest_reading?.esp1_link_alive === false;
+
+export const DETECTOR_DISCONNECTED_MSG = "Detector disconnected — no detections can be recorded";
+
 const pct = (v: unknown) =>
   typeof v === "number" && Number.isFinite(v) ? `${Number((v * 100).toFixed(1))}%` : "—";
 

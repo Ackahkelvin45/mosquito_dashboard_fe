@@ -12,6 +12,8 @@ import DownloadCsvButton from "./DownloadCsvButton";
 import ColumnVisibilityDropdown, { useColumnVisibility } from "./ColumnVisibilityDropdown";
 
 import type { Device } from "@/types/api";
+import DetectorWarning from "@/components/devices/DetectorWarning";
+import { detectorDisconnected } from "@/lib/reading";
 
 // The table renders devices exactly as the API sends them — one shared model.
 export type DeviceRow = Device;
@@ -90,16 +92,19 @@ const DEVICE_COLUMNS: DeviceColumn[] = [
     thClass: "text-center",
     tdClass: "px-5 py-5 font-raleway text-center",
     cell: (r) => (
-      <span
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-          r.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-        }`}
-      >
-        <span className={`w-1.5 h-1.5 rounded-full ${r.is_active ? "bg-green-500" : "bg-gray-400"}`} />
-        {r.is_active ? "Online" : "Offline"}
-      </span>
+      <div className="inline-flex flex-col items-center gap-1">
+        <span
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+            r.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+          }`}
+        >
+          <span className={`w-1.5 h-1.5 rounded-full ${r.is_active ? "bg-green-500" : "bg-gray-400"}`} />
+          {r.is_active ? "Online" : "Offline"}
+        </span>
+        <DetectorWarning device={r} compact />
+      </div>
     ),
-    csv: (r) => (r.is_active ? "Online" : "Offline"),
+    csv: (r) => (r.is_active ? (detectorDisconnected(r) ? "Online (detector disconnected)" : "Online") : "Offline"),
   },
   {
     header: "Mosquito Count",
@@ -113,6 +118,8 @@ const DEVICE_COLUMNS: DeviceColumn[] = [
 interface DeviceTableProps {
   data?: DeviceRow[];
   isLoading?: boolean;
+  /** Paged parents: loads every page for the export (see DownloadCsvButton). */
+  fetchAllRows?: (onProgress: (loaded: number, total: number) => void) => Promise<DeviceRow[]>;
 }
 
 const SKELETON_ROWS = 6;
@@ -120,6 +127,7 @@ const SKELETON_ROWS = 6;
 export default function DeviceTable({
   data = [],
   isLoading = false,
+  fetchAllRows,
 }: DeviceTableProps) {
   const [deviceToDelete, setDeviceToDelete] = useState<DeviceRow | null>(null);
   const deleteDeviceMutation = useDeleteDevice();
@@ -156,6 +164,7 @@ export default function DeviceTable({
             title="Devices"
             columns={csvColumns}
             rows={data}
+            fetchAllRows={fetchAllRows}
             disabled={isLoading}
           />
         )}

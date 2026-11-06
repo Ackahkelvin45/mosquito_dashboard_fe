@@ -18,6 +18,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useMemo, use } from "react";
 import Link from "next/link";
 import { useDevice } from "@/hooks/device";
+import DetectorWarning from "@/components/devices/DetectorWarning";
 import SensorMetricCard from "@/components/cards/SensorMetricCard";
 import humidityIcon from "@/public/images/humidity.png";
 import temperatureIcon from "@/public/images/temperature.png";
@@ -113,6 +114,7 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
                <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase">Off</span>
             )}
           </div>
+          <DetectorWarning device={device} />
 
           <Link
             href={`/map/sensor/${id}`}
