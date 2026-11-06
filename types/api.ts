@@ -30,6 +30,15 @@ export type SensorReading = {
   trap_status: boolean | null;
   /** Gateway↔Listener link. false = "no detections" cannot be trusted. */
   esp1_link_alive: boolean | null;
+} & Exclusion;
+
+/** Admin exclusion flag on a reading/event. The row is still listed (greyed
+ * out) but left out of every chart, total and report. Null = included. */
+export type Exclusion = {
+  excluded_at: string | null;
+  exclusion_reason: string | null;
+  /** Only sent to viewers who manage the device's cluster; null otherwise. */
+  excluded_by_name: string | null;
 };
 
 /** Fleet-wide reading rows (SensorReadingWithDeviceResponse). */
@@ -37,6 +46,7 @@ export type SensorReadingWithDevice = SensorReading & {
   device_uuid: string | null;
   device_name: string | null;
   region: string | null;
+  cluster_id: number | null;
 };
 
 /** A device (DeviceResponse) as every device endpoint returns it. */

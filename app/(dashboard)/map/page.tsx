@@ -120,7 +120,7 @@ function DeviceStatusTab({ device }: { device: Device | null }) {
         </div>
       </Row>
 
-      <Row label="Last Reading" icon={<Clock size={14} />}>
+      <Row label="Latest included reading" icon={<Clock size={14} />}>
         <span className="text-sm font-semibold text-gray-700">{formatTimestamp(r?.timestamp)}</span>
       </Row>
 
@@ -151,7 +151,7 @@ function EnvDataTab({ device }: { device: Device | null }) {
   if (!device || !device.latest_reading) {
     return (
       <div className="bg-white rounded-2xl shadow-sm p-5 mx-4 mb-4 text-center text-sm text-gray-400">
-        {device ? "No sensor readings available yet." : "Select a device on the map to view data."}
+        {device ? "No included sensor readings yet." : "Select a device on the map to view data."}
       </div>
     );
   }
@@ -162,7 +162,7 @@ function EnvDataTab({ device }: { device: Device | null }) {
     <div className="bg-white rounded-2xl shadow-sm p-5 mx-4 mb-4">
       <div className="flex items-center justify-between mb-1">
         <h2 className="text-sm font-semibold text-gray-900">{device.name}</h2>
-        <span className="text-xs text-gray-400">{formatTimestamp(r.timestamp)}</span>
+        <span className="text-xs text-gray-400" title="Most recent included reading">{formatTimestamp(r.timestamp)}</span>
       </div>
       <hr className="border-gray-100 mb-2" />
 

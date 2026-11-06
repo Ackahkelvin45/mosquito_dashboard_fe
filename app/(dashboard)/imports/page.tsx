@@ -123,7 +123,8 @@ function UploadForm() {
           not in the future; mosquito <code className="font-mono">count</code> is always 1; empty cells are
           stored as empty, never 0. <code className="font-mono">{IGNORED_COLUMNS.join(', ')}</code> are
           optional and ignored — the device is matched by <code className="font-mono">device_uuid</code> and
-          must be in your cluster.{' '}
+          must be in your cluster. Exclusions are not imported: every imported row is included in analysis,
+          and an admin can exclude it afterwards.{' '}
           <code className="font-mono">{OPTIONAL_COLUMNS.filter((c) => EXPORT_COLUMNS[kind].includes(c)).join(', ')}</code>{' '}
           is optional so older exports still import. Rows identical to existing data are skipped; a blank
           optional cell is not compared, but a filled one that differs from the stored value makes the row a

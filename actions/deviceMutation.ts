@@ -100,3 +100,14 @@ export async function dismissUnregisteredSighting(deviceUuid: string) {
         method: "DELETE",
     });
 }
+
+export type ExclusionKind = "sensor-readings" | "mosquito-events";
+
+/** Exclude a reading/event from analysis (reason required) or, with
+ * reason null, include it again. Flag only — the row's values never change. */
+export async function setRowExclusion(kind: ExclusionKind, deviceUuid: string, rowId: number, reason: string | null) {
+    const base = `/devices/uuid/${encodeURIComponent(deviceUuid)}/${kind}/${rowId}`;
+    return reason === null
+        ? apiFetch(`${base}/include`, { method: "PATCH" })
+        : apiFetch(`${base}/exclude`, { method: "PATCH", body: JSON.stringify({ reason }) });
+}

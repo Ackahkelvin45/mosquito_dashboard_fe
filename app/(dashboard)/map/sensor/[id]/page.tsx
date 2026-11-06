@@ -41,6 +41,8 @@ import type { ChartGroupBy } from "@/queries/device/deviceChartsQueries";
 import DownloadCsvButton from "@/components/tables/DownloadCsvButton";
 import ColumnVisibilityDropdown, { useColumnVisibility } from "@/components/tables/ColumnVisibilityDropdown";
 import SensorDataTable from "@/components/tables/SensorDataTable";
+import ExclusionControl, { ExcludedBadge, exclusionCsv, exclusionTitle, excludedCellClass, useCanManageCluster } from "@/components/tables/ExclusionControl";
+import type { Exclusion } from "@/types/api";
 
 // A missing reading is unknown, not zero — `|| 0` would render "0 °C" / "0 V"
 // for a device that has never reported, which reads as a real measurement.
@@ -65,7 +67,15 @@ function formatTimestamp(iso: string | undefined): string {
   });
 }
 
-type MosquitoTableRow = { species: string; genus: string; ageGroup: string; sex: string; iso: string; mosqConf: string; genusConf: string; sexConf: string };
+type MosquitoTableRow = Partial<Exclusion> & { eventId: number; species: string; genus: string; ageGroup: string; sex: string; iso: string; mosqConf: string; genusConf: string; sexConf: string };
+
+// The event's exclusion flag, carried onto each of its table rows.
+const exclusionOf = (event: MosquitoEvent) => ({
+  eventId: event.id,
+  excluded_at: event.excluded_at ?? null,
+  exclusion_reason: event.exclusion_reason ?? null,
+  excluded_by_name: event.excluded_by_name ?? null,
+});
 
 // A single column definition drives both the table cell and the CSV export,
 // so hiding a column hides it in both places.
@@ -115,6 +125,7 @@ const MOSQUITO_COLUMNS: MosquitoColumn[] = [
     cell: (r) => formatTimestamp(r.iso),
     csv: (r) => formatTimestamp(r.iso),
   },
+  { header: "Excluded", thClass: "text-center", tdClass: "px-5 py-4 text-center", cell: (r) => <ExcludedBadge row={r} />, csv: exclusionCsv },
 ];
 
 function normalizeCoordinate(value: unknown, maxAbs: number): number | null {
@@ -188,6 +199,7 @@ export default function SensorDetailPage() {
         // Show event.timestamp primarily (user asked for timestamp)
         const iso = batchIso || (typeof single?.detection_timestamp === "string" ? single.detection_timestamp : "");
         rows.push({
+          ...exclusionOf(event),
           species,
           genus,
           ageGroup,
@@ -201,6 +213,7 @@ export default function SensorDetailPage() {
       if (individuals.length === 0) {
         if (batchCount > 0 || batchIso) {
           rows.push({
+            ...exclusionOf(event),
             species: "—",
             genus: "—",
             ageGroup: "—",
@@ -219,6 +232,7 @@ export default function SensorDetailPage() {
         const sex = reading?.sex ?? "—";
         const iso = batchIso || (typeof reading?.detection_timestamp === "string" ? reading.detection_timestamp : "");
         rows.push({
+          ...exclusionOf(event),
           species,
           genus,
           ageGroup,
@@ -239,6 +253,7 @@ export default function SensorDetailPage() {
 
   const { selected, setSelected, visibleColumns } = useColumnVisibility(MOSQUITO_COLUMNS);
   const mosquitoCsvColumns = visibleColumns.map((c) => ({ header: c.header, accessor: c.csv }));
+  const canExclude = useCanManageCluster().manages(device?.cluster_id) && !!device;
 
   const mapCenter: [number, number] = useMemo(
     () => {
@@ -300,7 +315,9 @@ export default function SensorDetailPage() {
                       ? "text-green-600"
                       : "text-red-500"
                   }`}
-                  title="Physical on/off state from the most recent reading"
+                  title={device?.latest_reading
+                    ? `Physical on/off state from the most recent included reading (${formatTimestamp(device.latest_reading.timestamp)})`
+                    : "No included sensor reading yet"}
                 >
                   {!device?.latest_reading
                     ? "No data"
@@ -384,14 +401,17 @@ export default function SensorDetailPage() {
                     <Skeleton width={150} height={20} />
                   ) : (
                     <>
-                      <span className="text-xs font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary">
-                        {eventsPage.total} in range
+                      <span
+                        className="text-xs font-semibold px-2 py-1 rounded-full bg-primary/10 text-primary"
+                        title="Events listed for the selected range, including any excluded from analysis"
+                      >
+                        {eventsPage.total} in range (incl. excluded)
                       </span>
                       <span
                         className="text-xs font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-500"
-                        title="Total ever recorded by this device, ignoring the range filter"
+                        title="Total ever recorded by this device, ignoring the range filter (excluded detections not counted)"
                       >
-                        {device?.total_mosquito_count ?? 0} all-time
+                        {device?.total_mosquito_count ?? 0} all-time (excl. excluded)
                       </span>
                     </>
                   )}
@@ -432,6 +452,7 @@ export default function SensorDetailPage() {
                           {c.header}
                         </th>
                       ))}
+                      {canExclude && <th className="px-5 py-4 font-semibold text-right">Actions</th>}
                     </tr>
                   </thead>
                   <tbody className="bg-white">
@@ -446,23 +467,30 @@ export default function SensorDetailPage() {
                                 <Skeleton width={100} height={14} />
                               </td>
                             ))}
+                            {canExclude && <td />}
                           </tr>
                         ))
                       : mosquitoTableRows.map((row, index) => (
                           <tr
-                            key={`${row.species}-${row.genus}-${row.iso}-${index}`}
+                            key={`${row.eventId}-${index}`}
+                            title={exclusionTitle(row)}
                             className="border-t  border-secondary/15  text-sm even:bg-[#F2F5FA]/30"
                           >
                             {visibleColumns.map((c) => (
-                              <td key={c.header} className={c.tdClass ?? "px-5 py-4"}>
+                              <td key={c.header} className={`${c.tdClass ?? "px-5 py-4"} ${excludedCellClass(row)}`}>
                                 {c.cell(row)}
                               </td>
                             ))}
+                            {canExclude && (
+                              <td className="px-5 py-3 text-right">
+                                <ExclusionControl kind="mosquito-events" deviceUuid={deviceUuid} rowId={row.eventId} excluded={!!row.excluded_at} />
+                              </td>
+                            )}
                           </tr>
                         ))}
                     {!isEventsLoading && mosquitoTableRows.length === 0 && (
                       <tr className="border-t border-secondary/15 text-sm">
-                        <td className="px-5 py-6 text-gray-500 text-center" colSpan={visibleColumns.length}>
+                        <td className="px-5 py-6 text-gray-500 text-center" colSpan={visibleColumns.length + (canExclude ? 1 : 0)}>
                           {(device?.total_mosquito_count ?? 0) > 0
                             ? "No mosquito events in the selected range — try a wider range or All time."
                             : "No mosquito events for this device yet."}
@@ -482,7 +510,13 @@ export default function SensorDetailPage() {
               />
             </div>
 
-            {/* Environmental sensor cards */}
+            {/* Environmental sensor cards — the newest INCLUDED reading
+                (excluded readings are never shown as current values). */}
+            <p className="text-xs text-gray-500 -mb-3">
+              {device?.latest_reading
+                ? `Most recent included reading: ${formatTimestamp(device.latest_reading.timestamp)}`
+                : "No included sensor readings yet."}
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <SensorMetricCard
                 title="Temperature"

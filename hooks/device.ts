@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query"
-import { createDevice, type CreateDevicePayload, createDeviceCluster, type CreateDeviceClusterPayload, deleteDevice, dismissUnregisteredSighting, updateDevice, type UpdateDevicePayload, updateDeviceCluster, type UpdateDeviceClusterPayload } from "@/actions/deviceMutation"
+import { setRowExclusion, type ExclusionKind, createDevice, type CreateDevicePayload, createDeviceCluster, type CreateDeviceClusterPayload, deleteDevice, dismissUnregisteredSighting, updateDevice, type UpdateDevicePayload, updateDeviceCluster, type UpdateDeviceClusterPayload } from "@/actions/deviceMutation"
 import { getDevices, type GetDevicesFilters, getClusters, getClusterById, getDeviceById, getAllSensorReadings, getUnregisteredSightings, type GetAllSensorReadingsFilters } from "@/queries/device/deviceQueries"
 import { getDeviceCharts, type ChartGroupBy } from "@/queries/device/deviceChartsQueries"
 import type { PaginationParams } from "@/lib/pagination"
@@ -166,6 +166,24 @@ export const useDismissSighting = () => {
         mutationFn: (deviceUuid: string) => dismissUnregisteredSighting(deviceUuid),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["devices", "unregistered"] })
+        },
+    })
+}
+
+// Excluding/including a row changes every analysis figure, not just the table.
+const EXCLUSION_AFFECTED_KEYS = [
+    "sensor-readings", "mosquito-events", "devices", "device", "device-charts",
+    "dashboard", "reports", "model-performance", "trap-counts", "monitoring",
+]
+
+export const useSetRowExclusion = () => {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ kind, deviceUuid, rowId, reason }: {
+            kind: ExclusionKind, deviceUuid: string, rowId: number, reason: string | null
+        }) => setRowExclusion(kind, deviceUuid, rowId, reason),
+        onSuccess: () => {
+            for (const key of EXCLUSION_AFFECTED_KEYS) queryClient.invalidateQueries({ queryKey: [key] })
         },
     })
 }

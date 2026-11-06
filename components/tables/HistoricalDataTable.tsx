@@ -11,8 +11,14 @@ import Pagination from "@/components/Pagination";
 import { resolvePage, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useRole } from "@/hooks/useRole";
 import { detectionConfidence } from "@/lib/reading";
+import type { Exclusion } from "@/types/api";
+import ExclusionControl, { ExcludedBadge, exclusionCsv, exclusionTitle, excludedCellClass, useCanManageCluster } from "./ExclusionControl";
 
-export type HistoricalDataRow = {
+export type HistoricalDataRow = Partial<Exclusion> & {
+  /** Event id + device uuid/cluster: present on fetched rows, needed for the exclude action. */
+  id?: number;
+  deviceUuid?: string | null;
+  clusterId?: number | null;
   device: string;
   date: string;
   sex: string;
@@ -79,6 +85,7 @@ const HISTORICAL_COLUMNS: HistoricalColumn[] = [
   { header: "Mosquito confidence", thClass: "text-center", tdClass: "px-5 py-5 whitespace-nowrap font-raleway text-center", cell: (r) => r.mosqConf, csv: (r) => r.mosqConf },
   { header: "Genus confidence", thClass: "text-center", tdClass: "px-5 py-5 whitespace-nowrap font-raleway text-center", cell: (r) => r.genusConf, csv: (r) => r.genusConf },
   { header: "Sex confidence", thClass: "text-center", tdClass: "px-5 py-5 whitespace-nowrap font-raleway text-center", cell: (r) => r.sexConf, csv: (r) => r.sexConf },
+  { header: "Excluded", thClass: "text-center", tdClass: "px-5 py-5 whitespace-nowrap font-raleway text-center", cell: (r) => <ExcludedBadge row={r} />, csv: exclusionCsv },
 ];
 
 function formatDate(iso: string | undefined): string {
@@ -132,6 +139,12 @@ export default function HistoricalDataTable({
     return list.map((event) => {
       const reading = event.mosquito_reading;
       return {
+        id: event.id,
+        deviceUuid: event.device_uuid,
+        clusterId: event.cluster_id,
+        excluded_at: event.excluded_at ?? null,
+        exclusion_reason: event.exclusion_reason ?? null,
+        excluded_by_name: event.excluded_by_name ?? null,
         device: (typeof reading?.device_uuid === "string" ? reading.device_uuid : undefined) ?? String(event.device_id ?? "—"),
         date: formatDate(event.timestamp ?? reading?.detection_timestamp),
         sex: reading?.sex ?? "—",
@@ -147,6 +160,9 @@ export default function HistoricalDataTable({
   const csvColumns = visibleColumns.map((c) => ({ header: c.header, accessor: c.csv }));
   // Guests are read-only: no data export.
   const { isGuest } = useRole();
+  const { anyManaged, manages } = useCanManageCluster();
+  // Only fetched rows carry the ids the action needs.
+  const showActions = anyManaged && shouldFetch;
 
   return (
     <div className="bg-white">
@@ -182,6 +198,7 @@ export default function HistoricalDataTable({
                   {c.header}
                 </th>
               ))}
+              {showActions && <th className="px-6 py-5 font-bold text-right">Actions</th>}
             </tr>
           </thead>
           <tbody className="bg-white">
@@ -196,23 +213,32 @@ export default function HistoricalDataTable({
                         <Skeleton width={100} height={14} />
                       </td>
                     ))}
+                    {showActions && <td />}
                   </tr>
                 ))
               : rows.map((row, index) => (
                   <tr
-                    key={index}
+                    key={row.id ?? index}
+                    title={exclusionTitle(row)}
                     className="border-t border-secondary/15 text-sm even:bg-[#F2F5FA]/30"
                   >
                     {visibleColumns.map((c) => (
-                      <td key={c.header} className={c.tdClass ?? "px-5 py-5"}>
+                      <td key={c.header} className={`${c.tdClass ?? "px-5 py-5"} ${excludedCellClass(row)}`}>
                         {c.cell(row)}
                       </td>
                     ))}
+                    {showActions && (
+                      <td className="px-5 py-3 text-right">
+                        {row.id !== undefined && manages(row.clusterId) && (
+                          <ExclusionControl kind="mosquito-events" deviceUuid={row.deviceUuid} rowId={row.id} excluded={!!row.excluded_at} />
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
             {!isLoading && rows.length === 0 && (
               <tr className="border-t border-secondary/15 text-sm">
-                <td className="px-6 py-8 text-center text-gray-500" colSpan={visibleColumns.length}>
+                <td className="px-6 py-8 text-center text-gray-500" colSpan={visibleColumns.length + (showActions ? 1 : 0)}>
                   No mosquito events found.
                 </td>
               </tr>

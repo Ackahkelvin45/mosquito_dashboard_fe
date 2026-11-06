@@ -1,11 +1,13 @@
 import { apiFetch } from "@/api/base";
+import type { Exclusion } from "@/types/api";
 import { appendPagination, DEFAULT_PAGE_SIZE, type PaginationParams, type Paginated } from "@/lib/pagination";
 
-export type MosquitoEvent = {
+export type MosquitoEvent = Partial<Exclusion> & {
 	id: number;
 	timestamp: string;
 	device_id?: number;
 	device_uuid?: string;
+	cluster_id?: number | null;
 	count?: number;
 	individual_readings?: MosquitoIndividualReading[];
 	mosquito_reading?: MosquitoIndividualReading;

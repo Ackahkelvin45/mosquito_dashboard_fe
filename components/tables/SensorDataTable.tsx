@@ -10,6 +10,7 @@ import ColumnVisibilityDropdown, { useColumnVisibility } from "./ColumnVisibilit
 import Pagination from "@/components/Pagination";
 import { resolvePage, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useRole } from "@/hooks/useRole";
+import ExclusionControl, { ExcludedBadge, exclusionCsv, exclusionTitle, excludedCellClass, useCanManageCluster } from "./ExclusionControl";
 
 type SensorColumn = {
   header: string;
@@ -69,6 +70,7 @@ const SENSOR_COLUMNS: SensorColumn[] = [
     ),
     csv: (r) => (r.trap_status ? "On" : "Off"),
   },
+  { header: "Excluded", thClass: "text-center", tdClass: centered, cell: (r) => <ExcludedBadge row={r} />, csv: exclusionCsv },
 ];
 
 interface SensorDataTableProps {
@@ -100,6 +102,7 @@ export default function SensorDataTable({ title = "Sensor Data", filters }: Sens
   const csvColumns = visibleColumns.map((c) => ({ header: c.header, accessor: c.csv }));
   // Guests are read-only: no data export.
   const { isGuest } = useRole();
+  const { anyManaged, manages } = useCanManageCluster();
 
   return (
     <div className="bg-white">
@@ -135,6 +138,7 @@ export default function SensorDataTable({ title = "Sensor Data", filters }: Sens
                   {c.header}
                 </th>
               ))}
+              {anyManaged && <th className="px-6 py-5 font-bold text-right">Actions</th>}
             </tr>
           </thead>
           <tbody className="bg-white">
@@ -146,20 +150,28 @@ export default function SensorDataTable({ title = "Sensor Data", filters }: Sens
                         <Skeleton width={80} height={14} />
                       </td>
                     ))}
+                    {anyManaged && <td />}
                   </tr>
                 ))
               : rows.map((row, index) => (
-                  <tr key={row.id ?? index} className="border-t border-secondary/15 text-sm even:bg-[#F2F5FA]/30">
+                  <tr key={row.id ?? index} title={exclusionTitle(row)} className="border-t border-secondary/15 text-sm even:bg-[#F2F5FA]/30">
                     {visibleColumns.map((c) => (
-                      <td key={c.header} className={c.tdClass ?? "px-5 py-5"}>
+                      <td key={c.header} className={`${c.tdClass ?? "px-5 py-5"} ${excludedCellClass(row)}`}>
                         {c.cell(row)}
                       </td>
                     ))}
+                    {anyManaged && (
+                      <td className="px-5 py-3 text-right">
+                        {manages(row.cluster_id) && (
+                          <ExclusionControl kind="sensor-readings" deviceUuid={row.device_uuid} rowId={row.id} excluded={!!row.excluded_at} />
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
             {!isLoading && rows.length === 0 && (
               <tr className="border-t border-secondary/15 text-sm">
-                <td className="px-6 py-8 text-center text-gray-500" colSpan={visibleColumns.length}>
+                <td className="px-6 py-8 text-center text-gray-500" colSpan={visibleColumns.length + (anyManaged ? 1 : 0)}>
                   No sensor readings found.
                 </td>
               </tr>

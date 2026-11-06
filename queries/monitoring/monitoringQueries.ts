@@ -71,6 +71,8 @@ export type DataQualityDevice = {
   region: string | null;
   total_readings: number;
   test_readings: number;
+  /** Admin-excluded from analysis; still counted in these figures. */
+  excluded_readings: number;
   last_reading_at: string | null;
   /** % of live readings where the field was null; null when there were no readings */
   null_pct: Record<string, number | null>;
@@ -91,6 +93,7 @@ export type DataQualityDevice = {
   detections_missing_p_mosq: number;
   detections_missing_genus: number;
   detections_p_mosq_out_of_range: number;
+  excluded_detections: number;
 };
 
 export type DataQualityReport = {

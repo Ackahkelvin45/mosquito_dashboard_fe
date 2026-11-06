@@ -146,6 +146,9 @@ export default function DataQualityPage() {
                       {d.test_readings > 0 && (
                         <div className="text-xs text-gray-400">+{d.test_readings} test</div>
                       )}
+                      {d.excluded_readings > 0 && (
+                        <div className="text-xs text-gray-400" title="Excluded from analysis by an admin; still counted here">incl. {d.excluded_readings} excluded</div>
+                      )}
                     </td>
                     <td className={`${td} whitespace-nowrap`}>{formatTimestamp(d.last_reading_at)}</td>
                     <td className={`${td} whitespace-nowrap`}><MissingFields d={d} /></td>
@@ -159,7 +162,12 @@ export default function DataQualityPage() {
                       {d.silences_over_threshold === null ? '—' : <Count value={d.silences_over_threshold} />}
                     </td>
                     <td className={`${td} whitespace-nowrap`}><Delay d={d} threshold={data.offline_threshold_min} /></td>
-                    <td className={td}>{d.detections.toLocaleString()}</td>
+                    <td className={td}>
+                      {d.detections.toLocaleString()}
+                      {d.excluded_detections > 0 && (
+                        <div className="text-xs text-gray-400" title="Excluded from analysis by an admin; still counted here">incl. {d.excluded_detections} excluded</div>
+                      )}
+                    </td>
                     <td className={td}>{d.detections ? <Count value={d.detections_missing_p_mosq} /> : '—'}</td>
                     <td className={td}>{d.detections ? <Count value={d.detections_missing_genus} /> : '—'}</td>
                     <td className={td}>{d.detections ? <Count value={d.detections_p_mosq_out_of_range} /> : '—'}</td>
