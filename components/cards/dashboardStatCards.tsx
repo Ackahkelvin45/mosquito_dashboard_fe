@@ -36,9 +36,9 @@ export function buildStatCards(
       title: 'Reporting Devices',
       value: isLoading ? <Skeleton width={60} height={24} /> : String(totals?.active_devices ?? 0),
       valueSuffix: isLoading ? undefined : `/${totals?.total_devices ?? 0}`,
-      // This counts devices that SENT data in the window (liveness), which is
-      // not the same as traps switched ON — that's the sensor status chart.
-      description: 'devices reporting vs total',
+      // Devices that sent LIVE (non-test) data in the window. Not the same as
+      // Online (any message, test included) or traps switched ON.
+      description: 'devices with live data vs total',
       icon: <svg width="28" height="26" viewBox="0 0 28 26" fill="none" xmlns="http://www.w3.org/2000/svg">
       <g clipPath="url(#clip0_103_563)">
       <path fillRule="evenodd" clipRule="evenodd" d="M15.9276 22.586C15.5823 22.6455 15.2312 22.6894 14.875 22.7167V21.125H13.125V22.7167C8.00158 22.3241 3.92117 18.5161 3.53062 13.7502H5.25V12.1252H3.54168C3.99247 7.41772 8.04629 3.67244 13.125 3.28338V4.875H14.875V3.28338C19.9761 3.67414 24.0432 7.45079 24.4641 12.1875H22.75V13.8125H24.4641C24.4347 14.1433 24.3875 14.4693 24.3234 14.7899C24.9092 14.9148 25.4667 15.1079 25.9861 15.3598C26.159 14.5985 26.25 13.8091 26.25 13C26.25 6.71777 20.7655 1.625 14 1.625C7.23452 1.625 1.75 6.71777 1.75 13C1.75 19.2822 7.23452 24.375 14 24.375C14.8713 24.375 15.7214 24.2905 16.5413 24.1299C16.2701 23.6476 16.0621 23.1299 15.9276 22.586ZM17.3315 17.0097L12.2345 14.6392L8.69167 8.07064L15.7655 11.3604L18.3183 16.0933C17.9575 16.3677 17.6269 16.6746 17.3315 17.0097ZM16.512 15.3324L14.8413 12.2186L11.488 10.6673L13.1587 13.781L16.512 15.3324Z" fill="#3AC35C"/>
