@@ -1,15 +1,44 @@
 "use client"
 
-import React, { useMemo, useState } from 'react'
-import { Grid3X3, Search, X } from 'lucide-react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Grid3X3, Search } from 'lucide-react'
 import ReaseacherRequetsTable, { type ResearcherRequest } from '@/components/tables/ReaseacherRequetsTable'
 import { useResearcherRequests, getResearcherRequests } from '@/hooks/researcher'
 import Pagination from '@/components/Pagination'
 import { resolvePage, fetchAllPages, DEFAULT_PAGE_SIZE } from '@/lib/pagination'
 
+const STATUS_OPTIONS = [
+  { value: '', label: 'All' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'rejected', label: 'Rejected' },
+]
+
 function ResearcherRequestsPage() {
   const [page, setPage] = useState(1)
-  const { data, isLoading } = useResearcherRequests({ page, page_size: DEFAULT_PAGE_SIZE })
+  const [searchValue, setSearchValue] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [status, setStatus] = useState('')
+
+  // The search hits the API, so debounce keystrokes (same as the devices page).
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchValue.trim()), 350)
+    return () => clearTimeout(timer)
+  }, [searchValue])
+
+  const filters = useMemo(
+    () => ({ search: debouncedSearch || undefined, status: status || undefined }),
+    [debouncedSearch, status]
+  )
+
+  // Back to page 1 whenever the filters change (render-phase reset).
+  const [prevFilters, setPrevFilters] = useState(filters)
+  if (filters !== prevFilters) {
+    setPrevFilters(filters)
+    setPage(1)
+  }
+
+  const { data, isLoading } = useResearcherRequests({ page, page_size: DEFAULT_PAGE_SIZE }, filters)
   const requestsPage = useMemo(() => resolvePage<ResearcherRequest>(data, page, DEFAULT_PAGE_SIZE), [data, page])
 
   return (
@@ -29,7 +58,9 @@ function ResearcherRequestsPage() {
                   <Search strokeWidth={1.5} size={20} className='absolute left-1 top-1/2 -translate-y-1/2 text-gray-500' />
                   <input
                       type='search'
-                      placeholder='Search Researcher...'
+                      value={searchValue}
+                      onChange={(e) => setSearchValue(e.target.value)}
+                      placeholder='Search by name or email...'
                       className='w-full py-2.5 pr-3 pl-8 border border-gray bg-[#D0CECE]/20 focus:ring-0 placeholder:text-sm text-sm focus:border-primary focus:outline-none rounded-lg'
                   />
               </div>
@@ -40,10 +71,21 @@ function ResearcherRequestsPage() {
             <div className='flex flex-row flex-wrap gap-2 items-center'>
                 <span className='text-sm font-medium'>Filter Status:</span>
                 <div className='flex flex-wrap gap-2 ml-2'>
-                    <span className='px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold cursor-pointer border border-primary/20'>All</span>
-                    <span className='px-3 py-1 hover:bg-gray-100 text-gray-500 rounded-full text-xs font-semibold cursor-pointer border border-gray-200'>Pending</span>
-                    <span className='px-3 py-1 hover:bg-gray-100 text-gray-500 rounded-full text-xs font-semibold cursor-pointer border border-gray-200'>Approved</span>
-                    <span className='px-3 py-1 hover:bg-gray-100 text-gray-500 rounded-full text-xs font-semibold cursor-pointer border border-gray-200'>Rejected</span>
+                    {STATUS_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value || 'all'}
+                        type='button'
+                        onClick={() => setStatus(opt.value)}
+                        aria-pressed={status === opt.value}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                          status === opt.value
+                            ? 'bg-primary/10 text-primary border-primary/20'
+                            : 'hover:bg-gray-100 text-gray-500 border-gray-200'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
                 </div>
             </div>
         </div>
@@ -52,7 +94,7 @@ function ResearcherRequestsPage() {
             <ReaseacherRequetsTable
               data={requestsPage.items}
               isLoading={isLoading}
-              fetchAllRows={(onProgress) => fetchAllPages<ResearcherRequest>(getResearcherRequests, onProgress)}
+              fetchAllRows={(onProgress) => fetchAllPages<ResearcherRequest>((p) => getResearcherRequests(p, filters), onProgress)}
             />
             <Pagination
               page={requestsPage.page}

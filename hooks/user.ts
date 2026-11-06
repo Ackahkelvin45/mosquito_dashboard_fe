@@ -1,12 +1,12 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query"
-import { getUsers, getUserById } from "@/queries/user/userQueries"
+import { getUsers, getUserById, type GetUsersFilters } from "@/queries/user/userQueries"
 import { createUser, type CreateUserPayload, updateUser, type UpdateUserPayload } from "@/actions/userMutation"
 import type { PaginationParams } from "@/lib/pagination"
 
-export const useUsers = (pagination?: PaginationParams) => {
+export const useUsers = (pagination?: PaginationParams, filters?: GetUsersFilters) => {
     return useQuery({
-        queryKey: ["users", pagination ?? null],
-        queryFn: () => getUsers(pagination),
+        queryKey: ["users", pagination ?? null, filters ?? null],
+        queryFn: () => getUsers(pagination, filters),
         placeholderData: keepPreviousData,
     })
 }
