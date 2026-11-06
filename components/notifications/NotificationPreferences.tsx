@@ -27,7 +27,7 @@ const ALERT_ROWS: { key: ToggleKey; label: string; description: string }[] = [
 const CHANNEL_ROWS: { key: ToggleKey; label: string; description: string }[] = [
   { key: "in_app_enabled", label: "In-app", description: "Show notifications inside the dashboard." },
   { key: "push_enabled", label: "Push", description: "Browser push notifications on this device." },
-  { key: "email_enabled", label: "Email", description: "Send notifications to your email address." },
+  { key: "email_enabled", label: "Email", description: "Email species and surge alerts, critical alerts, and daily/weekly summaries." },
 ];
 
 function Toggle({
