@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import {
+  getDataQuality,
   getMqttErrors,
   getMqttStatus,
   getMqttTraffic,
@@ -34,6 +35,15 @@ export const useMqttErrors = (page: number, errorType?: string) => {
     queryKey: ["monitoring", "mqtt-errors", page, errorType ?? null],
     queryFn: () => getMqttErrors(page, 20, errorType),
     refetchInterval: FEED_REFETCH_MS,
+    refetchOnWindowFocus: true,
+  })
+}
+
+// Aggregates over days of readings — no polling, just refetch on focus.
+export const useDataQuality = (days: number) => {
+  return useQuery({
+    queryKey: ["monitoring", "data-quality", days],
+    queryFn: () => getDataQuality(days),
     refetchOnWindowFocus: true,
   })
 }

@@ -6,7 +6,7 @@ import name from '../../public/images/name.png'
 import Image from 'next/image'
 import profile from '../../public/images/profile.png'
 import {
-  Activity, House, Map, ChartNoAxesCombined, Satellite, CirclePile,
+  Activity, ClipboardCheck, House, Map, ChartNoAxesCombined, Satellite, CirclePile,
   UserRoundPlus, ShieldUser, ChevronDown, ChevronRight,
   EllipsisVertical, KeyRound, LogIn, LogOut, Settings, Thermometer, User, X
 } from 'lucide-react'
@@ -63,6 +63,13 @@ const navItems: NavItem[] = [
     icon: <CirclePile size={19} />,
     href: '/device-clusters',
     roles: ['SUPER_ADMIN'],
+  },
+  {
+    // Cluster admins see their own cluster's devices; super admins see all.
+    label: 'Data Quality',
+    icon: <ClipboardCheck size={19} />,
+    href: '/data-quality',
+    roles: ['SUPER_ADMIN', 'ADMIN'],
   },
   {
     label: 'Users',
