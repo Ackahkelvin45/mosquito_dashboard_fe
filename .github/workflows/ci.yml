@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Placeholder only: NEXT_PUBLIC_* values are inlined at build time; CI never calls the API.
+    env:
+      NEXT_PUBLIC_BACKEND_API_URL: http://localhost:8000
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20" # same as the Dockerfile (node:20-alpine)
+          cache: npm
+      - run: npm ci
+      # next-env.d.ts is gitignored; typegen creates it (and route types) so tsc can resolve image imports.
+      - run: npx next typegen
+      - run: npx tsc --noEmit
+      - run: npm run build
