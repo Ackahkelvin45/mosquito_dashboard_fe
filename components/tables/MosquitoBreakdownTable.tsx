@@ -6,6 +6,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 import DownloadCsvButton from "./DownloadCsvButton";
 import type { CsvColumn } from "@/lib/csv";
 import { useRole } from "@/hooks/useRole";
+import type { DashboardGroupBy } from "@/queries/dashboard/dashboardQueries";
 
 type BreakdownItem = {
   name: string;
@@ -24,7 +25,7 @@ type Category = "sex" | "genus" | "species" | "age_group";
 interface MosquitoBreakdownProps {
   data?: BreakdownData;
   groupBy?: string;
-  onGroupByChange?: (value: any) => void;
+  onGroupByChange?: (value: DashboardGroupBy) => void;
   isLoading?: boolean;
   hideFilter?: boolean;
 }
@@ -87,7 +88,7 @@ export default function MosquitoBreakdown({
           {!hideFilter && (
             <select
               value={groupBy}
-              onChange={(e) => onGroupByChange?.(e.target.value)}
+              onChange={(e) => onGroupByChange?.(e.target.value as DashboardGroupBy) /* the <option>s are exactly DashboardGroupBy */}
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary/20 focus:outline-none bg-white focus:border-primary transition-all cursor-pointer"
             >
               <option value="year">Last Year</option>

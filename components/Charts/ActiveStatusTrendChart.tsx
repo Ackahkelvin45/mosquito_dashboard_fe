@@ -20,13 +20,15 @@ interface Props {
   isLoading?: boolean;
 }
 
-function CustomTooltip({ active, payload, label }: any) {
+type TooltipEntry = { dataKey?: string | number; value?: number | null };
+
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipEntry[]; label?: string }) {
   if (!active || !payload?.length) return null;
 
   // Values are 0/1 states for a single device — report the state itself rather
   // than a count. Both 0 means the device had not reported yet.
-  const on = payload.find((p: any) => p.dataKey === "on_count")?.value ?? 0;
-  const off = payload.find((p: any) => p.dataKey === "off_count")?.value ?? 0;
+  const on = payload.find((p) => p.dataKey === "on_count")?.value ?? 0;
+  const off = payload.find((p) => p.dataKey === "off_count")?.value ?? 0;
   const state = on ? "ON" : off ? "OFF" : "No data";
   const color = on ? "#16a34a" : off ? "#dc2626" : "#9ca3af";
 

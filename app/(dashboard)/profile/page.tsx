@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { KeyRound, Mail, MapPin, Shield, UserRound } from "lucide-react";
 import Skeleton from "react-loading-skeleton";
@@ -49,12 +49,15 @@ export default function ProfilePage() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
   // Seed the form once the user loads (and re-seed after an external refresh).
-  useEffect(() => {
+  // Adjusted during render, per https://react.dev/learn/you-might-not-need-an-effect.
+  const [syncedUser, setSyncedUser] = useState<typeof user>(undefined);
+  if (user !== syncedUser) {
+    setSyncedUser(user);
     if (user) {
       setFirstName(user.first_name ?? "");
       setLastName(user.last_name ?? "");
     }
-  }, [user]);
+  }
 
   const initials = `${(user?.first_name ?? "?")[0] ?? ""}${(user?.last_name ?? "")[0] ?? ""}`.toUpperCase();
   const namesDirty =

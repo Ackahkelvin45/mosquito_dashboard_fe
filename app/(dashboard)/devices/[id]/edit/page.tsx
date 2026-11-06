@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
@@ -29,7 +29,11 @@ export default function EditDevicePage() {
     cluster_id: "",
   })
 
-  useEffect(() => {
+  // Re-prefill whenever a new device object arrives (adjusted during render,
+  // per https://react.dev/learn/you-might-not-need-an-effect).
+  const [syncedDevice, setSyncedDevice] = useState<typeof device>(undefined)
+  if (device !== syncedDevice) {
+    setSyncedDevice(device)
     if (device) {
       setForm({
         name: device.name || "",
@@ -42,7 +46,7 @@ export default function EditDevicePage() {
         cluster_id: device.cluster_id?.toString() || "",
       })
     }
-  }, [device])
+  }
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>

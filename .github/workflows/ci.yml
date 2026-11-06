@@ -21,4 +21,5 @@ jobs:
       # next-env.d.ts is gitignored; typegen creates it (and route types) so tsc can resolve image imports.
       - run: npx next typegen
       - run: npx tsc --noEmit
+      - run: npm run lint
       - run: npm run build

@@ -1,10 +1,6 @@
 "use client";
 
 import {
-  Thermometer,
-  Droplets,
-  Gauge,
-  Battery,
   ChevronLeft,
   Activity,
   Info,
@@ -14,7 +10,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useMemo, use } from "react";
 import Link from "next/link";
 import { useDevice } from "@/hooks/device";

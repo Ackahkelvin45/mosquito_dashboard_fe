@@ -12,7 +12,7 @@ import {
 // System Health is a live operations view — poll faster than the data pages.
 // Status cards refresh every 10s; charts/feeds every 30s (matches the
 // LIVE_REFETCH_MS convention in hooks/dashboard.ts).
-const STATUS_REFETCH_MS = 10_000
+export const STATUS_REFETCH_MS = 10_000
 const FEED_REFETCH_MS = 30_000
 
 export const useMqttStatus = () => {

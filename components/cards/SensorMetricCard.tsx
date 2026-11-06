@@ -3,7 +3,6 @@ function SensorMetricCard({
     title,
     icon: Icon,
     lines,
-    iconBg,
   }: {
     title: string;
     icon: string;

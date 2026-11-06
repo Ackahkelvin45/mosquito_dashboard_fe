@@ -24,12 +24,14 @@ function formatYAxis(value: number): string {
   return `${value}`;
 }
 
-function CustomTooltip({ active, payload, label }: any) {
+type TooltipEntry = { dataKey?: string | number; name?: string; value: number; color?: string };
+
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipEntry[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-[#1a2332] text-white rounded-xl px-4 py-3 text-sm shadow-lg">
       <div className="font-bold mb-1.5">{label}</div>
-      {payload.map((p: any) => (
+      {payload.map((p) => (
         <div key={p.dataKey} className="flex items-center gap-2 mb-1">
           <span className="w-2 h-2 rounded-full inline-block" style={{ background: p.color }} />
           <span className="opacity-75">{p.name}:</span>

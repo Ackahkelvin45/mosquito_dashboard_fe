@@ -1,6 +1,6 @@
 "use client"
 
-import React, { use, useEffect, useState } from "react"
+import React, { use, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
@@ -39,9 +39,9 @@ export default function EditDeviceClusterPage({ params }: { params: Promise<{ id
 
   // Prefill once when the cluster arrives — never clobber in-progress edits
   // on a background refetch.
+  // Done during render (not in an effect), per https://react.dev/learn/you-might-not-need-an-effect.
   const [hydrated, setHydrated] = useState(false)
-  useEffect(() => {
-    if (hydrated || !cluster) return
+  if (!hydrated && cluster) {
     setForm({
       name: cluster.name ?? "",
       description: cluster.description ?? "",
@@ -50,7 +50,7 @@ export default function EditDeviceClusterPage({ params }: { params: Promise<{ id
     setMemberIds(((cluster.users ?? []) as ClusterMember[]).map((u) => u.id))
     setAdminIds(((cluster.admins ?? []) as ClusterMember[]).map((u) => u.id))
     setHydrated(true)
-  }, [cluster, hydrated])
+  }
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

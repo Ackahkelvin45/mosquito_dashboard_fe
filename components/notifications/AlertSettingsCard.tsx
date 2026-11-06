@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { SlidersHorizontal } from 'lucide-react'
 import { useAlertSettings, useUpdateAlertSettings } from '@/hooks/notification'
 import { useRole } from '@/hooks/useRole'
@@ -28,12 +28,16 @@ export default function AlertSettingsCard() {
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
-  useEffect(() => {
+  // Reset the draft whenever a new settings object arrives (adjusted during
+  // render, per https://react.dev/learn/you-might-not-need-an-effect).
+  const [syncedData, setSyncedData] = useState<typeof data>(undefined)
+  if (data !== syncedData) {
+    setSyncedData(data)
     if (data?.values) {
       setDraft(Object.fromEntries(
         Object.entries(data.values).map(([k, v]) => [k, String(v)])))
     }
-  }, [data])
+  }
 
   if (!canManageSystem) return null
 

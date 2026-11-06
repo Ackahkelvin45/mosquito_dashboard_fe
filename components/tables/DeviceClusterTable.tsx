@@ -7,6 +7,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 import Link from "next/link";
 import DownloadCsvButton from "./DownloadCsvButton";
 import type { CsvColumn } from "@/lib/csv";
+import type { Device } from "@/types/api";
 
 export type DeviceCluster = {
   id: number;
@@ -16,8 +17,9 @@ export type DeviceCluster = {
   public: boolean;
   created_at: string;
   updated_at: string;
-  devices: any[];
-  admins: any[];
+  devices: Device[];
+  // Only the count is shown; there is no admin type in types/api.ts.
+  admins: unknown[];
 };
 
 function formatDate(iso: string): string {

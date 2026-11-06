@@ -12,12 +12,15 @@ export function useColumnVisibility<C extends ColumnLike>(columns: C[]) {
     Object.fromEntries(columns.map((c) => [c.header, true]))
   );
 
-  // Keep selection in sync if the column set changes.
-  useEffect(() => {
+  // Keep selection in sync if the column set changes (adjusted during render,
+  // per https://react.dev/learn/you-might-not-need-an-effect).
+  const [prevColumns, setPrevColumns] = useState(columns);
+  if (columns !== prevColumns) {
+    setPrevColumns(columns);
     setSelected((prev) =>
       Object.fromEntries(columns.map((c) => [c.header, prev[c.header] ?? true]))
     );
-  }, [columns]);
+  }
 
   const visibleColumns = useMemo(
     () => columns.filter((c) => selected[c.header]),

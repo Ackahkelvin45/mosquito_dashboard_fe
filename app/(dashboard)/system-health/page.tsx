@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Activity, AlertTriangle, ChevronLeft, ChevronRight,
   Radio, Satellite, Wifi, WifiOff,
@@ -9,7 +9,7 @@ import {
   Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer,
   Tooltip, XAxis, YAxis,
 } from 'recharts'
-import { useMqttErrors, useMqttStatus, useMqttTraffic } from '@/hooks/monitoring'
+import { STATUS_REFETCH_MS, useMqttErrors, useMqttStatus, useMqttTraffic } from '@/hooks/monitoring'
 import { useDevices } from '@/hooks/device'
 import { formatTimestamp, parseApiDate, timeAgo } from '@/lib/date'
 import type { MqttError } from '@/queries/monitoring/monitoringQueries'
@@ -83,9 +83,17 @@ export default function SystemHealthPage() {
   const { data: errors, isLoading: errorsLoading } = useMqttErrors(errorPage, errorType)
   const { data: devicesPage } = useDevices(undefined, { page: 1, page_size: 100 })
 
+  // Wall clock for the freshness check, ticking at the status refetch cadence
+  // (Date.now() can't be called during render).
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), STATUS_REFETCH_MS)
+    return () => clearInterval(t)
+  }, [])
+
   // "Fresh" = a message arrived within the offline threshold.
   const lastMsgMs = status?.last_message_at
-    ? Date.now() - parseApiDate(status.last_message_at).getTime()
+    ? now - parseApiDate(status.last_message_at).getTime()
     : null
   const pipelineFresh = lastMsgMs !== null && status
     ? lastMsgMs < status.offline_threshold_min * 60_000
