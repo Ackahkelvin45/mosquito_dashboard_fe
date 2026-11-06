@@ -21,6 +21,7 @@ const ROUTE_ROLES: { prefix: string; allow: Role[] }[] = [
   { prefix: "/devices/add", allow: ["SUPER_ADMIN"] },
   { prefix: "/users", allow: ["SUPER_ADMIN", "ADMIN"] },
   { prefix: "/data-quality", allow: ["SUPER_ADMIN", "ADMIN"] },
+  { prefix: "/imports", allow: ["SUPER_ADMIN", "ADMIN"] },
   { prefix: "/approval", allow: ["SUPER_ADMIN"] },
   { prefix: "/system-health", allow: ["SUPER_ADMIN"] },
   { prefix: "/audit-logs", allow: ["SUPER_ADMIN"] },

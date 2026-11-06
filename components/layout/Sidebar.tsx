@@ -8,7 +8,7 @@ import profile from '../../public/images/profile.png'
 import {
   Activity, ClipboardCheck, House, Map, ChartNoAxesCombined, Satellite, CirclePile,
   UserRoundPlus, ShieldUser, ChevronDown, ChevronRight,
-  EllipsisVertical, FlaskConical, Gauge, KeyRound, LogIn, LogOut, Settings, Thermometer, User, X
+  EllipsisVertical, FileUp, FlaskConical, Gauge, KeyRound, LogIn, LogOut, Settings, Thermometer, User, X
 } from 'lucide-react'
 import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/authentication'
@@ -82,6 +82,13 @@ const navItems: NavItem[] = [
     label: 'Data Quality',
     icon: <ClipboardCheck size={19} />,
     href: '/data-quality',
+    roles: ['SUPER_ADMIN', 'ADMIN'],
+  },
+  {
+    // CSV batch import (same columns as the API export). Admins: own cluster.
+    label: 'Import Data',
+    icon: <FileUp size={19} />,
+    href: '/imports',
     roles: ['SUPER_ADMIN', 'ADMIN'],
   },
   {

@@ -107,7 +107,10 @@ export async function apiFetch(
 
   if (!res.ok) {
     const json = await res.json().catch(() => null)
-    throw new Error(json?.detail || `API error: ${res.status}`)
+    // detail is usually a string; some endpoints (e.g. /imports) send {message, ...}.
+    const detail = typeof json?.detail === "string" ? json.detail : json?.detail?.message
+    // The raw detail rides along for callers that render structured errors.
+    throw Object.assign(new Error(detail || `API error: ${res.status}`), { detail: json?.detail })
   }
 
   const text = await res.text()
