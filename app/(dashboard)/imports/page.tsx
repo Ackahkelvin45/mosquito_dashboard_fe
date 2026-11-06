@@ -99,9 +99,9 @@ function UploadForm() {
             {(Object.keys(KIND_LABELS) as ImportKind[]).map((k) => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
+        <label className="flex flex-col gap-1 text-xs text-gray-600 max-w-full">
           CSV file (max 5 MB, 50,000 rows)
-          <input type="file" accept=".csv,text/csv" className={input}
+          <input type="file" accept=".csv,text/csv" className={`${input} max-w-full`}
             onChange={(e) => { setFile(e.target.files?.[0] ?? null); reset() }} />
         </label>
         <button type="button" disabled={!file || upload.isPending} onClick={() => run(true)}

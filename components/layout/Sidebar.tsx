@@ -226,7 +226,7 @@ function Sidebar() {
             <button
               onClick={closeSidebar}
               aria-label="Close menu"
-              className='ml-auto p-2 rounded-md text-white/80 hover:bg-white/10 lg:hidden'
+              className='ml-auto p-2.5 rounded-md text-white/80 hover:bg-white/10 lg:hidden'
             >
               <X size={20} />
             </button>

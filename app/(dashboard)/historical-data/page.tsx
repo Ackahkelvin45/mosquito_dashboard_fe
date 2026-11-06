@@ -207,7 +207,7 @@ function HistoricalDataPage() {
 
                   {/* Compact dropdown anchored to the button */}
                   {showMoreFilters && (
-                    <div className='absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-[300px] bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-20'>
+                    <div className='absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-[300px] max-w-[calc(100vw-3rem)] bg-white border border-gray-200 rounded-xl shadow-lg p-4 z-20'>
                       <div className='flex items-center justify-between mb-3'>
                         <p className='text-xs font-semibold text-gray-500 uppercase tracking-wide'>Extra Filters</p>
                         {extraFilterCount > 0 && (

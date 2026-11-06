@@ -120,7 +120,7 @@ export default function MosquitoBreakdown({
 
       {/* Table Container */}
       <div className="flex-1 overflow-x-auto w-full ">
-        <table className="w-full min-w-[600px] text-left border-collapse">
+        <table className="w-full sm:min-w-[600px] text-left border-collapse">
           {/* Header */}
           <thead className="bg-gray-50/50 border-b border-gray-100">
             <tr className="text-gray-500 text-xs  uppercase tracking-wider font-bold">

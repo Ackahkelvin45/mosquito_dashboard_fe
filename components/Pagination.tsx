@@ -47,7 +47,7 @@ export default function Pagination({
   };
 
   const navBtn =
-    "flex items-center gap-1 h-9 px-3 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 bg-white transition-colors hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:text-gray-600";
+    "flex items-center gap-1 h-10 lg:h-9 px-3 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 bg-white transition-colors hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:text-gray-600";
 
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-5 font-raleway">
@@ -78,7 +78,7 @@ export default function Pagination({
               onClick={() => go(p)}
               disabled={isLoading}
               aria-current={p === page ? "page" : undefined}
-              className={`h-9 min-w-9 px-3 rounded-lg text-sm font-medium transition-colors ${
+              className={`h-10 min-w-10 lg:h-9 lg:min-w-9 px-3 rounded-lg text-sm font-medium transition-colors ${
                 p === page
                   ? "bg-primary text-white shadow-sm"
                   : "border border-gray-200 text-gray-600 bg-white hover:border-primary hover:text-primary"

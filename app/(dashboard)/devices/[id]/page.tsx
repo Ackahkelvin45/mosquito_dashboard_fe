@@ -74,7 +74,7 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
         <div className="flex flex-row items-center gap-3">
           <Link
             href="/devices"
-            className="border border-gray-300 rounded-lg p-1.5 hover:bg-gray-50 transition-colors"
+            className="border border-gray-300 rounded-lg p-2.5 lg:p-1.5 hover:bg-gray-50 transition-colors"
           >
             <ChevronLeft strokeWidth={1.5} size={18} className="text-gray-600" />
           </Link>
@@ -193,7 +193,7 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
       </div>
 
       {/* Environmental Readings Card - Simplified */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
             <Activity size={18} className="text-primary"/>
             Current Readings

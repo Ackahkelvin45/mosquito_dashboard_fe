@@ -18,7 +18,7 @@ function Navbar() {
             <button
               onClick={openSidebar}
               aria-label="Open menu"
-              className='p-2 rounded-md text-gray-600 hover:bg-gray-100 lg:hidden shrink-0'
+              className='p-2.5 rounded-md text-gray-600 hover:bg-gray-100 lg:hidden shrink-0'
             >
               <Menu size={22} />
             </button>

@@ -333,11 +333,11 @@ export default function SensorDetailPage() {
       {/* Content */}
       <div className="bg-white rounded-b-2xl rounded-t-xl border border-t-0 border-gray-200 shadow-sm p-4 sm:p-6">
         {/* Tabs */}
-      <div className="flex flex-wrap gap-y-2 px-1 pt-2">
+      <div className="flex overflow-x-auto px-1 pt-2">
         <button
           type="button"
           onClick={() => setActiveTab("readings")}
-          className={`px-5 py-3 font-raleway text-sm font-semibold rounded-l-lg  transition ${
+          className={`px-5 py-3 font-raleway text-sm font-semibold shrink-0 whitespace-nowrap rounded-l-lg  transition ${
             activeTab === "readings"
               ? "bg-linear-to-r from-secondary to-primary text-white shadow-sm"
               : "text-gray-500 bg-gray hover:text-gray-700 hover:bg-gray-50"
@@ -348,7 +348,7 @@ export default function SensorDetailPage() {
         <button
           type="button"
           onClick={() => setActiveTab("sensor-history")}
-          className={`px-5 py-3 font-raleway text-sm font-semibold transition ${
+          className={`px-5 py-3 font-raleway text-sm font-semibold shrink-0 whitespace-nowrap transition ${
             activeTab === "sensor-history"
               ? "bg-linear-to-r from-secondary to-primary text-white shadow-sm"
               : "text-gray-500 bg-gray hover:text-gray-700 hover:bg-gray-50"
@@ -359,7 +359,7 @@ export default function SensorDetailPage() {
         <button
           type="button"
           onClick={() => setActiveTab("graphs")}
-          className={`px-5 py-3 font-raleway text-sm font-semibold rounded-r-lg  transition ${
+          className={`px-5 py-3 font-raleway text-sm font-semibold shrink-0 whitespace-nowrap rounded-r-lg  transition ${
             activeTab === "graphs"
               ? "bg-linear-to-r from-secondary to-primary text-white shadow-sm"
               : "text-gray-500 bg-gray  hover:text-gray-700 hover:bg-gray-50"
