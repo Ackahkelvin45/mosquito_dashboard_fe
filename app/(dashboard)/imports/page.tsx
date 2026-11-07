@@ -119,8 +119,8 @@ function UploadForm() {
           Use the same columns as the {KIND_LABELS[kind].toLowerCase()} CSV from the data export (
           <code className="font-mono">GET /api/v1/export?dataset={kind}&amp;format=csv</code>, see{' '}
           <Link href="/apis" className="text-primary hover:underline">API Access</Link>). Timestamps are
-          ISO 8601 with a time and Z or an offset (e.g. <code className="font-mono">2026-05-01T12:00:00Z</code>),
-          not in the future; mosquito <code className="font-mono">count</code> is always 1; empty cells are
+          ISO 8601 with a time and Z or an offset (e.g. <code className="font-mono">2026-05-01T12:00:00Z</code>);
+          mosquito <code className="font-mono">count</code> is always 1; empty cells are
           stored as empty, never 0. <code className="font-mono">{IGNORED_COLUMNS.join(', ')}</code> are
           optional and ignored — the device is matched by <code className="font-mono">device_uuid</code> and
           must be in your cluster. Exclusions are not imported: every imported row is included in analysis,

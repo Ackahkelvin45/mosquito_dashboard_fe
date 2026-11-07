@@ -92,6 +92,8 @@ export type DataQualityDevice = {
   min_delay_s: number | null;
   max_delay_s: number | null;
   delayed_over_threshold: number;
+  /** Live readings received in the window whose device timestamp is > 5 min after server receive time (device clock ahead). Optional: absent on older backends. */
+  clock_ahead_count?: number;
   detections: number;
   detections_missing_p_mosq: number;
   detections_missing_genus: number;

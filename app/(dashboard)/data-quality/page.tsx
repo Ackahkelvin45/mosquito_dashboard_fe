@@ -52,8 +52,23 @@ function secs(s: number) {
 }
 
 function Delay({ d, threshold }: { d: DataQualityDevice; threshold: number }) {
+  // Counted by receive time, so it can be > 0 even when no delay was measured
+  // (readings stamped past the window end, e.g. a clock years ahead).
+  const clockAhead = (
+    <div
+      className={`text-xs ${d.clock_ahead_count ? 'text-amber-700 font-semibold' : 'text-gray-400'}`}
+      title="Readings dated more than 5 min after they arrived — the device clock is running ahead. Stored with the device's time."
+    >
+      clock ahead: {d.clock_ahead_count ?? '—'}
+    </div>
+  )
   if (d.delay_measured === 0 || d.avg_delay_s === null || d.max_delay_s === null || d.min_delay_s === null) {
-    return <span className="text-gray-400">Not measured</span>
+    return (
+      <div className="space-y-0.5">
+        <span className="text-gray-400">Not measured</span>
+        {!!d.clock_ahead_count && clockAhead}
+      </div>
+    )
   }
   return (
     <div className="space-y-0.5">
@@ -63,6 +78,7 @@ function Delay({ d, threshold }: { d: DataQualityDevice; threshold: number }) {
       {d.delayed_over_threshold > 0 && (
         <div className="text-xs text-red-600">{d.delayed_over_threshold} over {threshold} min</div>
       )}
+      {clockAhead}
       <div className="text-xs text-gray-400">{d.delay_measured.toLocaleString()} measured</div>
     </div>
   )
@@ -200,7 +216,8 @@ export default function DataQualityPage() {
               (server receive time minus the device&apos;s clock), average and longest. A device clock that
               is wrong skews this; a negative value means the device clock is ahead of the server.
               &ldquo;Over {data.offline_threshold_min} min&rdquo; counts readings that arrived later than the
-              offline threshold. Only readings sent live by the device are measured: readings stored before this
+              offline threshold. &ldquo;Clock ahead&rdquo; counts readings dated more than 5 min after they
+              arrived (the device clock is running ahead); they are stored with the device&apos;s time. Only readings sent live by the device are measured: readings stored before this
               was recorded, CSV-imported readings, manually posted (HTTP) readings and readings without a device
               timestamp have no receive time, so a device with only those shows &ldquo;Not measured&rdquo;.
             </li>
