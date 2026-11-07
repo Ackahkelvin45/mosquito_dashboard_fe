@@ -149,7 +149,9 @@ export default function SystemHealthPage() {
           tone={status && status.errors_24h > 0 ? 'red' : 'green'}
           icon={<AlertTriangle size={20} />}
           value={statusLoading ? <Skeleton width={50} /> : String(status?.errors_24h ?? 0)}
-          sub="every failure counts — see the feed below"
+          sub={status?.invalid_values_24h
+            ? `plus ${status.invalid_values_24h.toLocaleString()} invalid value(s) — see the feed below`
+            : 'failed messages — see the feed below'}
         />
       </div>
 
@@ -235,7 +237,7 @@ export default function SystemHealthPage() {
               <AlertTriangle size={16} /> Problem feed
             </h2>
             <p className="text-xs text-gray-500">
-              Every ingest failure from the last 7 days, newest first
+              Every ingest problem from the last 7 days (including invalid values), newest first
             </p>
           </div>
           <select
@@ -262,7 +264,7 @@ export default function SystemHealthPage() {
               const meta = ERROR_META[e.error_type] ?? { label: e.error_type, explain: '' }
               return (
                 <li key={e.id} className="py-2.5 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
-                  <span className="shrink-0 text-xs font-semibold text-red-600 bg-red-50 rounded px-2 py-0.5">
+                  <span className={`shrink-0 text-xs font-semibold rounded px-2 py-0.5 ${e.error_type === 'invalid_value' ? 'text-amber-700 bg-amber-50' : 'text-red-600 bg-red-50'}`}>
                     {meta.label}
                   </span>
                   <span className="text-sm text-gray-700 min-w-0">

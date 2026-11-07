@@ -77,7 +77,8 @@ export default function EditUserPage() {
         data: {
           first_name: form.first_name.trim(),
           last_name: form.last_name.trim(),
-          email: form.email.trim(),
+          // Only a super admin may change an email (backend 403s otherwise).
+          ...(isSuperAdmin ? { email: form.email.trim() } : {}),
           is_active: form.is_active,
           // Role/cluster changes are super-admin decisions; a cluster admin's
           // form doesn't offer them, so don't send them at all.
@@ -184,7 +185,9 @@ export default function EditUserPage() {
               Email <span className="text-red-500">*</span>
             </label>
             <input id="email" name="email" type="email"
-              value={form.email} onChange={handleChange} required className={inputClass} />
+              value={form.email} onChange={handleChange} required disabled={!isSuperAdmin}
+              className={`${inputClass} disabled:bg-gray-50 disabled:text-gray-400`} />
+            {!isSuperAdmin && <p className="mt-1.5 text-xs text-gray-500">Only a super admin can change email.</p>}
           </div>
 
           {/* Row 3 — role & cluster. Only a super admin may change these. */}

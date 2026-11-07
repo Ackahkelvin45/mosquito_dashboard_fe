@@ -11,8 +11,11 @@ export type MqttStatus = {
   /** Last MQTT message from ANY device */
   last_message_at: string | null;
   messages_24h: number;
-  /** Every ingest failure counts here — unlike notifications, never deduped */
+  /** Every ingest failure counts here — unlike notifications, never deduped.
+   *  Excludes invalid_value rows (message saved, bad field blanked). */
   errors_24h: number;
+  /** invalid_value rows in the last 24h; absent on older backends */
+  invalid_values_24h?: number;
   devices_total: number;
   devices_reporting: number;
   silent_devices: { id: number; name: string; last_sensor_data_at: string | null }[];
