@@ -265,7 +265,8 @@ export default function SensorDetailPage() {
     () => {
         const lat = normalizeCoordinate(device?.latitude, 90);
         const lng = normalizeCoordinate(device?.longitude, 180);
-        if (lat !== null && lng !== null) return [lat, lng];
+        // Within 1° of 0,0 = a GPS with no fix (open sea); same rule as the backend.
+        if (lat !== null && lng !== null && !(Math.abs(lat) < 1 && Math.abs(lng) < 1)) return [lat, lng];
         return [5.6037, -0.187]; // Ghana fallback
     },
     [device]

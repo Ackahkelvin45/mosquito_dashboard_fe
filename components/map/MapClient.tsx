@@ -39,6 +39,8 @@ function getDeviceLatLng(device: Device | null | undefined): LatLng | null {
   const lat = normalizeCoordinate(device?.latitude, 90);
   const lng = normalizeCoordinate(device?.longitude, 180);
   if (lat === null || lng === null) return null;
+  // Within 1° of 0,0 = a GPS with no fix (open sea); same rule as the backend.
+  if (Math.abs(lat) < 1 && Math.abs(lng) < 1) return null;
   return [lat, lng];
 }
 
