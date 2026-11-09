@@ -2,12 +2,9 @@
 // instead of declaring its own copy.
 //
 // Ground truth: mosquito_dashboard_be/app/device/schema.py (DeviceResponse /
-// SensorDataResponse), verified by executing the serializers. The wire emits
-// Pydantic FIELD names — `temp_external`, `humidity_internal`, `battery` —
-// NEVER the aliases (`external_temperature`, `battery_voltage`) that several
-// pages used to assume; those reads silently produced undefined and blanked
-// the panels. If the backend schema changes, change it here and let the
-// compiler find every consumer.
+// SensorDataResponse). CAUTION: FastAPI serialises responses BY ALIAS, so the
+// wire carries the ALIASES (`external_temperature`, `battery_voltage`, …),
+// typed below as sent. Prefer the accessors in lib/reading.ts.
 
 /** One sensor reading (SensorDataResponse). Null = "no valid reading" —
  * deliberate (see MQTT_Schema_Reference.pdf), never coerce to 0. */
@@ -15,16 +12,15 @@ export type SensorReading = {
   id: number;
   device_id: number;
   timestamp: string;
-  temp_external: number | null;
-  temp_internal: number | null;
-  humidity_external: number | null;
-  humidity_internal: number | null;
-  pressure_internal: number | null;
-  /** Note the wire's mixed convention: this one really is external_pressure. */
+  external_temperature: number | null;
+  internal_temperature: number | null;
+  external_humidity: number | null;
+  internal_humidity: number | null;
+  internal_pressure: number | null;
   external_pressure: number | null;
   external_light: number | null;
   /** Battery VOLTAGE (profile-dependent range) — not a percentage. */
-  battery: number | null;
+  battery_voltage: number | null;
   /** 0-100, already normalised for the device's configured battery profile. */
   battery_pct: number | null;
   trap_status: boolean | null;

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useClusters, useDevices } from "@/hooks/device";
 import { useRole } from "@/hooks/useRole";
-import { filterHumidity, filterTemp, fmtReading, internalHumidity, internalPressure, internalTemp, externalHumidity, externalPressure, externalTemp } from "@/lib/reading";
+import { batteryVoltage, filterHumidity, filterTemp, fmtReading, internalHumidity, internalPressure, internalTemp, externalHumidity, externalPressure, externalTemp } from "@/lib/reading";
 import LocationSearch, { type GeoLocation } from "@/components/map/LocationSearch";
 import MultiSelectDropdown from "@/components/filters/MultiSelectDropdown";
 import { extractItems, MAX_PAGE_SIZE } from "@/lib/pagination";
@@ -108,7 +108,7 @@ function DeviceStatusTab({ device }: { device: Device | null }) {
 
       <Row label="Battery Voltage" icon={<BatteryCharging size={14} />}>
         <span className="text-sm font-semibold">
-          {r ? `${r.battery ?? "—"}V` : "—"}
+          {fmtReading(batteryVoltage(r), "V")}
         </span>
       </Row>
 
@@ -195,7 +195,7 @@ function EnvDataTab({ device }: { device: Device | null }) {
           <span className="text-sm font-semibold">{fmtReading(externalPressure(r), " hPa")}</span>
         </Row>
         <Row label="Light" icon={<span className="text-xs">☀️</span>}>
-          <span className="text-sm font-semibold">{r.external_light} lux</span>
+          <span className="text-sm font-semibold">{fmtReading(r.external_light ?? null, " lux")}</span>
         </Row>
       </div>
     </div>

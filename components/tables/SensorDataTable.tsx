@@ -10,6 +10,7 @@ import ColumnVisibilityDropdown, { useColumnVisibility } from "./ColumnVisibilit
 import Pagination from "@/components/Pagination";
 import { resolvePage, fetchAllPages, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { useRole } from "@/hooks/useRole";
+import { batteryVoltage, externalHumidity, externalTemp, internalHumidity, internalPressure, internalTemp } from "@/lib/reading";
 import ExclusionControl, { ExcludedBadge, exclusionCsv, exclusionTitle, excludedCellClass, useCanManageCluster } from "./ExclusionControl";
 
 type SensorColumn = {
@@ -52,13 +53,13 @@ const SENSOR_COLUMNS: SensorColumn[] = [
     cell: (r) => formatDate(r.timestamp),
     csv: (r) => r.timestamp ?? "",
   },
-  { header: "Int Temp (°C)", thClass: "text-center", tdClass: centered, cell: (r) => num(r.temp_internal), csv: (r) => num(r.temp_internal) },
-  { header: "Ext Temp (°C)", thClass: "text-center", tdClass: centered, cell: (r) => num(r.temp_external), csv: (r) => num(r.temp_external) },
-  { header: "Int Humidity (%)", thClass: "text-center", tdClass: centered, cell: (r) => num(r.humidity_internal), csv: (r) => num(r.humidity_internal) },
-  { header: "Ext Humidity (%)", thClass: "text-center", tdClass: centered, cell: (r) => num(r.humidity_external), csv: (r) => num(r.humidity_external) },
-  { header: "Pressure (hPa)", thClass: "text-center", tdClass: centered, cell: (r) => num(r.pressure_internal), csv: (r) => num(r.pressure_internal) },
+  { header: "Int Temp (°C)", thClass: "text-center", tdClass: centered, cell: (r) => num(internalTemp(r)), csv: (r) => num(internalTemp(r)) },
+  { header: "Ext Temp (°C)", thClass: "text-center", tdClass: centered, cell: (r) => num(externalTemp(r)), csv: (r) => num(externalTemp(r)) },
+  { header: "Int Humidity (%)", thClass: "text-center", tdClass: centered, cell: (r) => num(internalHumidity(r)), csv: (r) => num(internalHumidity(r)) },
+  { header: "Ext Humidity (%)", thClass: "text-center", tdClass: centered, cell: (r) => num(externalHumidity(r)), csv: (r) => num(externalHumidity(r)) },
+  { header: "Pressure (hPa)", thClass: "text-center", tdClass: centered, cell: (r) => num(internalPressure(r)), csv: (r) => num(internalPressure(r)) },
   { header: "Light", thClass: "text-center", tdClass: centered, cell: (r) => num(r.external_light), csv: (r) => num(r.external_light) },
-  { header: "Battery (V)", thClass: "text-center", tdClass: centered, cell: (r) => num(r.battery), csv: (r) => num(r.battery) },
+  { header: "Battery (V)", thClass: "text-center", tdClass: centered, cell: (r) => num(batteryVoltage(r)), csv: (r) => num(batteryVoltage(r)) },
   {
     header: "Trap",
     thClass: "text-right",

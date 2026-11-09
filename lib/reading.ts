@@ -1,10 +1,10 @@
 // Sensor-reading field access that tolerates BOTH naming conventions.
 //
 // The backend's SensorDataResponse declares fields like `temp_external` with
-// alias `external_temperature` (populate_by_name) — the wire emits the FIELD
-// names (temp_external, humidity_internal, …), but parts of this codebase
-// were typed against the aliases. Read through these accessors instead of
-// touching the raw keys, so a payload in either spelling just works.
+// alias `external_temperature`; FastAPI serialises by alias, so the wire
+// carries `external_temperature`, `battery_voltage`, … while types/api.ts
+// names the fields. Read through these accessors instead of touching the raw
+// keys, so a payload in either spelling just works.
 
 import type { SensorReading } from "@/types/api";
 

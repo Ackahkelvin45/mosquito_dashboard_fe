@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, use } from "react";
 import Link from "next/link";
 import { useDevice } from "@/hooks/device";
+import { batteryVoltage, externalHumidity, externalPressure, externalTemp, fmtReading, internalHumidity, internalPressure, internalTemp } from "@/lib/reading";
 import DetectorWarning from "@/components/devices/DetectorWarning";
 import SensorMetricCard from "@/components/cards/SensorMetricCard";
 import humidityIcon from "@/public/images/humidity.png";
@@ -203,8 +204,8 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
             icon={temperatureIcon.src}
             iconBg="rgba(21, 101, 192, 0.15)"
             lines={[
-              { label: "External", value: `${device.latest_reading?.temp_external || 0} °C` },
-              { label: "Internal", value: `${device.latest_reading?.temp_internal || 0} °C` },
+              { label: "External", value: fmtReading(externalTemp(device.latest_reading), " °C") },
+              { label: "Internal", value: fmtReading(internalTemp(device.latest_reading), " °C") },
             ]}
           />
           <SensorMetricCard
@@ -212,8 +213,8 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
             icon={humidityIcon.src}
             iconBg="rgba(21, 101, 192, 0.15)"
             lines={[
-              { label: "External", value: `${device.latest_reading?.humidity_external || 0} %` },
-              { label: "Internal", value: `${device.latest_reading?.humidity_internal || 0} %` },
+              { label: "External", value: fmtReading(externalHumidity(device.latest_reading), " %") },
+              { label: "Internal", value: fmtReading(internalHumidity(device.latest_reading), " %") },
             ]}
           />
           <SensorMetricCard
@@ -221,16 +222,16 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
             icon={pressureIcon.src}
             iconBg="rgba(21, 101, 192, 0.15)"
             lines={[
-              { label: "Internal", value: `${device.latest_reading?.pressure_internal || 0} hPa` },
+              { label: "Internal", value: fmtReading(internalPressure(device.latest_reading), " hPa") },
 
-              { label: "External", value: `${device.latest_reading?.external_pressure || 0} hPa` },
+              { label: "External", value: fmtReading(externalPressure(device.latest_reading), " hPa") },
             ]}
           />
           <SensorMetricCard
             title="Battery"
             icon={batteryIcon.src}
             iconBg="rgba(251, 191, 36, 0.2)"
-            lines={[{ label: "Reading", value: `${device.latest_reading?.battery || 0} V` }]}
+            lines={[{ label: "Reading", value: fmtReading(batteryVoltage(device.latest_reading), " V") }]}
           />
         </div>
       </div>

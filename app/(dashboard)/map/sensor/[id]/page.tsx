@@ -36,7 +36,7 @@ import { useMosquitoEventsByDeviceUuidWithFilters } from "@/hooks/mosquito";
 import { extractItems, toPaginated, fetchAllPages, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import Pagination from "@/components/Pagination";
 import { locationLabel } from "@/lib/location";
-import { detectionConfidence } from "@/lib/reading";
+import { batteryVoltage, detectionConfidence, externalHumidity, externalPressure, externalTemp, internalHumidity, internalPressure, internalTemp } from "@/lib/reading";
 import { getMosquitoEventsByDeviceUuid, type MosquitoEvent, type MosquitoRange } from "@/queries/mosquito_data/mosquitoDeviceQueries";
 import type { ChartGroupBy } from "@/queries/device/deviceChartsQueries";
 import DownloadCsvButton from "@/components/tables/DownloadCsvButton";
@@ -538,8 +538,8 @@ export default function SensorDetailPage() {
                 icon={temperatureIcon.src}
                 iconBg="rgba(21, 101, 192, 0.15)"
                 lines={[
-                  { label: "external", value: formatReading(device?.latest_reading?.temp_external, "°C") },
-                  { label: "Internal", value: formatReading(device?.latest_reading?.temp_internal, "°C") },
+                  { label: "external", value: formatReading(externalTemp(device?.latest_reading), "°C") },
+                  { label: "Internal", value: formatReading(internalTemp(device?.latest_reading), "°C") },
                 ]}
               />
               <SensorMetricCard
@@ -547,8 +547,8 @@ export default function SensorDetailPage() {
                 icon={humidityIcon.src}
                 iconBg="rgba(21, 101, 192, 0.15)"
                 lines={[
-                  { label: "external", value: formatReading(device?.latest_reading?.humidity_external, "%") },
-                  { label: "Internal", value: formatReading(device?.latest_reading?.humidity_internal, "%") },
+                  { label: "external", value: formatReading(externalHumidity(device?.latest_reading), "%") },
+                  { label: "Internal", value: formatReading(internalHumidity(device?.latest_reading), "%") },
                 ]}
               />
               <SensorMetricCard
@@ -556,15 +556,15 @@ export default function SensorDetailPage() {
                 icon={pressureIcon.src}
                 iconBg="rgba(21, 101, 192, 0.15)"
                 lines={[
-                  { label: "external", value: formatReading(device?.latest_reading?.external_pressure, "hPa") },
-                  { label: "Internal", value: formatReading(device?.latest_reading?.pressure_internal, "hPa") },
+                  { label: "external", value: formatReading(externalPressure(device?.latest_reading), "hPa") },
+                  { label: "Internal", value: formatReading(internalPressure(device?.latest_reading), "hPa") },
                 ]}
               />
               <SensorMetricCard
                 title="Battery"
                 icon={batteryIcon.src}
                 iconBg="rgba(251, 191, 36, 0.2)"
-                lines={[{ label: "Reading", value: formatReading(device?.latest_reading?.battery, "V") }]}
+                lines={[{ label: "Reading", value: formatReading(batteryVoltage(device?.latest_reading), "V") }]}
               />
             </div>
 
