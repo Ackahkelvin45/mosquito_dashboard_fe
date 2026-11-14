@@ -9,6 +9,8 @@ export type MosquitoEvent = Partial<Exclusion> & {
 	device_uuid?: string;
 	cluster_id?: number | null;
 	count?: number;
+	received_at?: string | null;
+	import_batch_id?: number | null;
 	individual_readings?: MosquitoIndividualReading[];
 	mosquito_reading?: MosquitoIndividualReading;
 	[key: string]: unknown;

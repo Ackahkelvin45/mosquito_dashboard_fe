@@ -26,6 +26,10 @@ export type SensorReading = {
   trap_status: boolean | null;
   /** Gateway↔Listener link. false = "no detections" cannot be trusted. */
   esp1_link_alive: boolean | null;
+  /** When the server received the reading (null for older data). */
+  received_at: string | null;
+  /** CSV import batch id (null = device-sent, not imported). */
+  import_batch_id: number | null;
 } & Exclusion;
 
 /** Admin exclusion flag on a reading/event. The row is still listed (greyed

@@ -53,6 +53,22 @@ const SENSOR_COLUMNS: SensorColumn[] = [
     cell: (r) => formatDate(r.timestamp),
     csv: (r) => r.timestamp ?? "",
   },
+  {
+    header: "Received",
+    thClass: "text-center",
+    tdClass: centered,
+    cell: (r) => formatDate(r.received_at ?? undefined),
+    csv: (r) => r.received_at ?? "",
+  },
+  {
+    header: "Source",
+    thClass: "text-center",
+    tdClass: centered,
+    cell: (r) => r.import_batch_id != null
+      ? <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">Imported</span>
+      : <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Live</span>,
+    csv: (r) => r.import_batch_id != null ? "Imported" : "Live",
+  },
   { header: "Int Temp (°C)", thClass: "text-center", tdClass: centered, cell: (r) => num(internalTemp(r)), csv: (r) => num(internalTemp(r)) },
   { header: "Ext Temp (°C)", thClass: "text-center", tdClass: centered, cell: (r) => num(externalTemp(r)), csv: (r) => num(externalTemp(r)) },
   { header: "Int Humidity (%)", thClass: "text-center", tdClass: centered, cell: (r) => num(internalHumidity(r)), csv: (r) => num(internalHumidity(r)) },
