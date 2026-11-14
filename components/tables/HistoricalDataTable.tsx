@@ -21,6 +21,8 @@ export type HistoricalDataRow = Partial<Exclusion> & {
   clusterId?: number | null;
   device: string;
   date: string;
+  receivedAt: string;
+  isImported: boolean;
   sex: string;
   ageGroup: string;
   genus: string;
@@ -53,6 +55,22 @@ const HISTORICAL_COLUMNS: HistoricalColumn[] = [
     tdClass: "px-5 whitespace-nowrap py-5 font-raleway text-center",
     cell: (r) => r.date,
     csv: (r) => r.date,
+  },
+  {
+    header: "Received",
+    thClass: "text-center",
+    tdClass: "px-5 whitespace-nowrap py-5 font-raleway text-center",
+    cell: (r) => r.receivedAt,
+    csv: (r) => r.receivedAt,
+  },
+  {
+    header: "Source",
+    thClass: "text-center",
+    tdClass: "px-5 whitespace-nowrap py-5 font-raleway text-center",
+    cell: (r) => r.isImported
+      ? <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">Imported</span>
+      : <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Live</span>,
+    csv: (r) => r.isImported ? "Imported" : "Live",
   },
   {
     header: "Genus",
@@ -113,6 +131,8 @@ function toRow(event: MosquitoEvent): HistoricalDataRow {
     excluded_by_name: event.excluded_by_name ?? null,
     device: (typeof reading?.device_uuid === "string" ? reading.device_uuid : undefined) ?? String(event.device_id ?? "—"),
     date: formatDate(event.timestamp ?? reading?.detection_timestamp),
+    receivedAt: formatDate(event.received_at ?? undefined),
+    isImported: event.import_batch_id != null,
     sex: reading?.sex || "—",
     ageGroup: reading?.age_group || "—",
     genus: reading?.genus || "—",
