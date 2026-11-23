@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useDevice } from "@/hooks/device";
 import { batteryVoltage, externalHumidity, externalPressure, externalTemp, fmtReading, internalHumidity, internalPressure, internalTemp } from "@/lib/reading";
 import DetectorWarning from "@/components/devices/DetectorWarning";
+import { DeviceHealthPanel } from "@/components/devices/DeviceHealth";
 import SensorMetricCard from "@/components/cards/SensorMetricCard";
 import humidityIcon from "@/public/images/humidity.png";
 import temperatureIcon from "@/public/images/temperature.png";
@@ -122,6 +123,8 @@ export default function DeviceDetailPage({ params }: { params: Promise<{ id: str
           </Link>
         </div>
       </div>
+
+      <DeviceHealthPanel deviceId={device.id} />
 
       {/* Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">

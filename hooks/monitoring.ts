@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import {
   getDataQuality,
+  getDeviceHealth,
   getModelPerformance,
   getMqttErrors,
   getMqttStatus,
@@ -48,6 +49,16 @@ export const useDataQuality = (days: number) => {
     queryKey: ["monitoring", "data-quality", days],
     queryFn: () => getDataQuality(days),
     refetchOnWindowFocus: true,
+  })
+}
+
+export const useDeviceHealth = (deviceId?: number, enabled = true) => {
+  return useQuery({
+    queryKey: ["monitoring", "device-health", deviceId ?? "all"],
+    queryFn: () => getDeviceHealth(deviceId),
+    refetchOnWindowFocus: true,
+    staleTime: 60_000,
+    enabled,
   })
 }
 

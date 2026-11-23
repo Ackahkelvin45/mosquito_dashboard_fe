@@ -121,6 +121,46 @@ export async function getDataQuality(days: number): Promise<DataQualityReport> {
   return apiFetch(`/monitoring/data-quality?days=${days}`);
 }
 
+// Device health (ADMIN own cluster, SUPER_ADMIN all). Keys are the real JSON
+// keys — tests/test_device_health.py asserts the exact set. Null = not reported.
+export type HealthFault = { code: string; label: string; detail: string };
+
+export type DeviceHealthRow = {
+  id: number;
+  device_uuid: string | null;
+  name: string;
+  cluster_id: number | null;
+  cluster_name: string | null;
+  region: string | null;
+  /** last sensor_data; null = never sent */
+  last_seen: string | null;
+  last_activity: string | null;
+  is_active: boolean;
+  /** timestamp of the reading battery/detector_link come from; null = none */
+  reading_at: string | null;
+  battery_voltage: number | null;
+  /** null also when the device sent an impossible value (outside 0–100) */
+  battery_pct: number | null;
+  /** always null: devices do not send signal strength */
+  signal: null;
+  signal_reason: string;
+  detector_link: boolean | null;
+  gps_fix: boolean | null;
+  faults: HealthFault[];
+};
+
+export type DeviceHealthReport = {
+  days: number;
+  offline_threshold_min: number;
+  battery_low_v: number;
+  battery_low_pct: number;
+  devices: DeviceHealthRow[];
+};
+
+export async function getDeviceHealth(deviceId?: number): Promise<DeviceHealthReport> {
+  return apiFetch(`/monitoring/device-health${deviceId === undefined ? "" : `?device_id=${deviceId}`}`);
+}
+
 // Model performance (every signed-in non-guest role, scoped server-side).
 // Confidence = the model's own certainty, NOT accuracy. Agreement = manual vs
 // AI COUNTS per genus×sex group per collection, NOT per-detection accuracy.

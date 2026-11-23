@@ -6,7 +6,7 @@ import name from '../../public/images/name.png'
 import Image from 'next/image'
 import profile from '../../public/images/profile.png'
 import {
-  Activity, ClipboardCheck, House, Map, ChartNoAxesCombined, Satellite, CirclePile,
+  Activity, ClipboardCheck, HeartPulse, House, Map, ChartNoAxesCombined, Satellite, CirclePile,
   UserRoundPlus, ShieldUser, ChevronDown, ChevronRight,
   EllipsisVertical, FileBarChart, FileUp, FlaskConical, Gauge, KeyRound, LogIn, LogOut, Settings, Thermometer, User, X
 } from 'lucide-react'
@@ -88,6 +88,13 @@ const navItems: NavItem[] = [
     label: 'Data Quality',
     icon: <ClipboardCheck size={19} />,
     href: '/data-quality',
+    roles: ['SUPER_ADMIN', 'ADMIN'],
+  },
+  {
+    // Battery, detector link, GPS fix, fault flags. Same scope as Data Quality.
+    label: 'Device Health',
+    icon: <HeartPulse size={19} />,
+    href: '/device-health',
     roles: ['SUPER_ADMIN', 'ADMIN'],
   },
   {
