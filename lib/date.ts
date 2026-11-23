@@ -19,6 +19,18 @@ export function formatTimestamp(iso: string | null | undefined): string {
   });
 }
 
+/** "45s", "12m", "3h 5m", "2d 4h" — for measured durations (response times). */
+export function formatDuration(seconds: number | null | undefined): string {
+  if (seconds == null || seconds < 0) return "—";
+  if (seconds < 60) return `${Math.floor(seconds)}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return minutes % 60 ? `${hours}h ${minutes % 60}m` : `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return hours % 24 ? `${days}d ${hours % 24}h` : `${days}d`;
+}
+
 /**
  * Relative label for recent timestamps ("just now", "5m ago", "2h ago",
  * "3d ago"); anything older than a week falls back to the full timestamp.

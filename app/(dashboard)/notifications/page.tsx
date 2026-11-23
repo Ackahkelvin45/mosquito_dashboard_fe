@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Archive, ArchiveRestore, CheckCheck, CircleCheck, Loader2, Mail, MailOpen, Search, Trash2, Undo2, X } from 'lucide-react'
+import { Archive, ArchiveRestore, CheckCheck, CircleCheck, Eye, EyeOff, Loader2, Mail, MailOpen, Search, Trash2, Undo2, X } from 'lucide-react'
 import Skeleton from 'react-loading-skeleton'
 import 'react-loading-skeleton/dist/skeleton.css'
 import NotificationItem from '@/components/notifications/NotificationItem'
@@ -27,6 +27,16 @@ import type {
 } from '@/queries/notification/notificationQueries'
 
 type Tab = 'all' | 'unread' | 'archived'
+
+// '' = any; 'not_closed' uses the handled=false filter (opened + acknowledged).
+type StatusFilter = '' | 'not_closed' | 'opened' | 'acknowledged' | 'closed'
+
+const STATUS_FILTER_LABELS: Record<Exclude<StatusFilter, ''>, string> = {
+  not_closed: 'Not closed yet',
+  opened: 'Opened',
+  acknowledged: 'Acknowledged',
+  closed: 'Closed',
+}
 
 const TABS: { value: Tab; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -53,7 +63,7 @@ function NotificationsPage() {
   const [tab, setTab] = useState<Tab>('all')
   const [category, setCategory] = useState<NotificationCategory | ''>('')
   const [severity, setSeverity] = useState<NotificationSeverity | ''>('')
-  const [handled, setHandled] = useState<'' | 'handled' | 'unhandled'>('')
+  const [alertStatus, setAlertStatus] = useState<StatusFilter>('')
   const [searchValue, setSearchValue] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<Notification | null>(null)
@@ -71,8 +81,9 @@ function NotificationsPage() {
     severity: severity || undefined,
     search: debouncedSearch || undefined,
     sort: 'newest',
-    handled: handled ? handled === 'handled' : undefined,
-  }), [tab, category, severity, debouncedSearch, handled])
+    handled: alertStatus === 'not_closed' ? false : undefined,
+    status: alertStatus && alertStatus !== 'not_closed' ? alertStatus : undefined,
+  }), [tab, category, severity, debouncedSearch, alertStatus])
 
   // When the filters change the infinite query restarts from page 1 on its own
   // (new query key); the transient UI state tied to the old list is reset here
@@ -105,6 +116,10 @@ function NotificationsPage() {
   const unarchive = useUnarchive()
   const deleteNotification = useDeleteNotification()
   const setHandledMutation = useSetHandled()
+  // Same row-action error pattern as trap-counts: show the server's detail
+  // (e.g. 409 "Alert is closed; reopen it first").
+  const setAlertStep = (vars: Parameters<typeof setHandledMutation.mutate>[0]) =>
+    setHandledMutation.mutate(vars, { onError: (err) => window.alert(err.message) })
 
   // Infinite scroll: fetch the next page when the sentinel scrolls into view.
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -136,17 +151,17 @@ function NotificationsPage() {
     if (severity) {
       chips.push({ key: 'severity', label: `Severity: ${enumLabel(severity)}`, clear: () => setSeverity('') })
     }
-    if (handled) {
-      chips.push({ key: 'handled', label: `Status: ${enumLabel(handled)}`, clear: () => setHandled('') })
+    if (alertStatus) {
+      chips.push({ key: 'status', label: `Alert status: ${STATUS_FILTER_LABELS[alertStatus]}`, clear: () => setAlertStatus('') })
     }
     return chips
-  }, [searchValue, category, severity, handled])
+  }, [searchValue, category, severity, alertStatus])
 
   const clearAll = () => {
     setSearchValue('')
     setCategory('')
     setSeverity('')
-    setHandled('')
+    setAlertStatus('')
   }
 
   const handleRowClick = (notification: Notification) => {
@@ -263,14 +278,15 @@ function NotificationsPage() {
           </select>
 
           <select
-            value={handled}
-            onChange={(e) => setHandled(e.target.value as '' | 'handled' | 'unhandled')}
+            value={alertStatus}
+            onChange={(e) => setAlertStatus(e.target.value as StatusFilter)}
             aria-label='Filter by alert status'
             className='border border-gray bg-white text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-primary'
           >
             <option value=''>Any alert status</option>
-            <option value='unhandled'>Unhandled alerts</option>
-            <option value='handled'>Handled alerts</option>
+            {(Object.keys(STATUS_FILTER_LABELS) as Exclude<StatusFilter, ''>[]).map((s) => (
+              <option key={s} value={s}>{STATUS_FILTER_LABELS[s]}</option>
+            ))}
           </select>
         </div>
 
@@ -334,29 +350,53 @@ function NotificationsPage() {
                       onKeyDown={(e) => e.stopPropagation()}
                       className='flex items-center gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity'
                     >
-                      {notification.handleable && (notification.handled_at ? (
+                      {notification.status === 'opened' && (
                         <button
                           type='button'
-                          aria-label='Mark as not handled'
-                          title='Mark as not handled'
+                          aria-label='Acknowledge alert'
+                          title='Acknowledge (someone is on it)'
                           disabled={setHandledMutation.isPending}
-                          onClick={() => setHandledMutation.mutate({ id: notification.id, handled: false })}
+                          onClick={() => setAlertStep({ id: notification.id, handled: true, step: 'acknowledged' })}
+                          className='hover:bg-blue-500/10 p-2 rounded-md transition-colors disabled:opacity-50'
+                        >
+                          <Eye size={16} className='text-blue-600' />
+                        </button>
+                      )}
+                      {notification.status === 'acknowledged' && (
+                        <button
+                          type='button'
+                          aria-label='Undo acknowledge'
+                          title='Undo acknowledge'
+                          disabled={setHandledMutation.isPending}
+                          onClick={() => setAlertStep({ id: notification.id, handled: false, step: 'acknowledged' })}
+                          className='hover:bg-gray-100 p-2 rounded-md transition-colors disabled:opacity-50'
+                        >
+                          <EyeOff size={16} className='text-gray-500' />
+                        </button>
+                      )}
+                      {notification.status === 'closed' ? (
+                        <button
+                          type='button'
+                          aria-label='Reopen alert'
+                          title='Reopen'
+                          disabled={setHandledMutation.isPending}
+                          onClick={() => setAlertStep({ id: notification.id, handled: false })}
                           className='hover:bg-gray-100 p-2 rounded-md transition-colors disabled:opacity-50'
                         >
                           <Undo2 size={16} className='text-gray-500' />
                         </button>
-                      ) : (
+                      ) : notification.status && (
                         <button
                           type='button'
-                          aria-label='Mark as handled'
-                          title='Mark as handled'
+                          aria-label='Close alert'
+                          title='Close (dealt with)'
                           disabled={setHandledMutation.isPending}
-                          onClick={() => setHandledMutation.mutate({ id: notification.id, handled: true })}
+                          onClick={() => setAlertStep({ id: notification.id, handled: true })}
                           className='hover:bg-green-500/10 p-2 rounded-md transition-colors disabled:opacity-50'
                         >
                           <CircleCheck size={16} className='text-green-600' />
                         </button>
-                      ))}
+                      )}
                       {notification.read_at ? (
                         <button
                           type='button'

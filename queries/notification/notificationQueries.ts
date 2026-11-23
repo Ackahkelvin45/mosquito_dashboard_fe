@@ -33,9 +33,20 @@ export type Notification = {
     expires_at: string | null;
     /** Real-world alert that can be marked handled (shared by all recipients). */
     handleable: boolean;
+    /** Closed = handled. */
     handled_at: string | null;
     handled_by_name: string | null;
+    /** Null when the alert was closed without being acknowledged. */
+    acknowledged_at: string | null;
+    acknowledged_by_name: string | null;
+    /** Null for informational (non-alert) notifications. */
+    status: AlertStatus | null;
+    /** Seconds from created_at; null when that step didn't happen. */
+    time_to_acknowledge_s: number | null;
+    time_to_close_s: number | null;
 };
+
+export type AlertStatus = "opened" | "acknowledged" | "closed";
 
 export type NotificationPreferences = {
     species_alerts: boolean;
@@ -68,6 +79,7 @@ export type GetNotificationsFilters = {
     sort?: "newest" | "oldest";
     /** true = handled alerts, false = alerts awaiting action. */
     handled?: boolean;
+    status?: AlertStatus;
 };
 
 export type PushSubscriptionRecord = {
@@ -94,6 +106,7 @@ export async function getNotifications(
     if (filters?.search) params.set("search", filters.search);
     if (filters?.sort) params.set("sort", filters.sort);
     if (typeof filters?.handled === "boolean") params.set("handled", String(filters.handled));
+    if (filters?.status) params.set("status", filters.status);
     appendPagination(params, pagination);
 
     const query = params.toString();

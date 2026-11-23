@@ -64,9 +64,12 @@ export async function archiveNotification(id: number): Promise<Notification> {
     }
 }
 
-export async function setNotificationHandled(id: number, handled: boolean): Promise<Notification> {
+/** step "handled" = close / reopen; "acknowledged" = acknowledge / undo. */
+export async function setNotificationHandled(
+    id: number, handled: boolean, step: "handled" | "acknowledged" = "handled",
+): Promise<Notification> {
     try {
-        const res = await apiFetch(`/notifications/${id}/${handled ? "handled" : "unhandled"}`, {
+        const res = await apiFetch(`/notifications/${id}/${handled ? "" : "un"}${step}`, {
             method: "PATCH",
         });
         return res;

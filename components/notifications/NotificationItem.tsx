@@ -7,7 +7,6 @@ import {
   BatteryLow,
   Boxes,
   Bug,
-  CircleCheck,
   Cpu,
   Droplets,
   FlaskConical,
@@ -17,8 +16,9 @@ import {
   UserRound,
   WifiOff,
 } from "lucide-react";
-import { timeAgo } from "@/lib/date";
+import { formatDuration, formatTimestamp, timeAgo } from "@/lib/date";
 import type {
+  AlertStatus,
   Notification,
   NotificationCategory,
   NotificationSeverity,
@@ -62,6 +62,18 @@ const SEVERITY_LABELS: Record<NotificationSeverity, string> = {
   WARNING: "Warning",
   SUCCESS: "Success",
   INFO: "Info",
+};
+
+const STATUS_CLASSES: Record<AlertStatus, string> = {
+  opened: "bg-amber-100 text-amber-700",
+  acknowledged: "bg-blue-100 text-blue-700",
+  closed: "bg-green-100 text-green-700",
+};
+
+const STATUS_LABELS: Record<AlertStatus, string> = {
+  opened: "Opened",
+  acknowledged: "Acknowledged",
+  closed: "Closed",
 };
 
 function resolveIcon(notification: Notification): React.ReactNode {
@@ -143,12 +155,12 @@ export default function NotificationItem({
             {timeAgo(notification.created_at)}
           </span>
           {unread && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" aria-hidden />}
-          {notification.handled_at && (
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full min-w-0">
-              <CircleCheck size={12} className="shrink-0" />
-              <span className="truncate">
-                Handled by {notification.handled_by_name ?? "unknown"} · {timeAgo(notification.handled_at)}
-              </span>
+          {notification.status && (
+            <span
+              aria-label={`Alert status: ${STATUS_LABELS[notification.status]}`}
+              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${STATUS_CLASSES[notification.status]}`}
+            >
+              {STATUS_LABELS[notification.status]}
             </span>
           )}
           {!compact && notification.archived_at && (
@@ -157,6 +169,21 @@ export default function NotificationItem({
             </span>
           )}
         </div>
+
+        {!compact && notification.status && notification.status !== "opened" && (
+          <div className="flex flex-col gap-0.5 mt-1 text-xs text-gray-500 font-mulish">
+            <span>
+              {notification.acknowledged_at
+                ? `Acknowledged by ${notification.acknowledged_by_name ?? "—"}, ${formatTimestamp(notification.acknowledged_at)} (${formatDuration(notification.time_to_acknowledge_s)} after the alert)`
+                : "Acknowledged: —"}
+            </span>
+            {notification.handled_at && (
+              <span>
+                Closed by {notification.handled_by_name ?? "—"}, {formatTimestamp(notification.handled_at)} ({formatDuration(notification.time_to_close_s)} after the alert)
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {actions}

@@ -230,8 +230,8 @@ export const useUnarchive = () => {
 export const useSetHandled = () => {
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: ({ id, handled }: { id: number; handled: boolean }) =>
-            setNotificationHandled(id, handled),
+        mutationFn: ({ id, handled, step }: { id: number; handled: boolean; step?: "handled" | "acknowledged" }) =>
+            setNotificationHandled(id, handled, step),
         onSuccess: (updated) => {
             patchNotificationLists(queryClient, (items) =>
                 items.map((n) => (n.id === updated.id ? updated : n))
