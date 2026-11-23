@@ -4,11 +4,16 @@ import { Gauge } from 'lucide-react'
 import Skeleton from 'react-loading-skeleton'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useModelPerformance } from '@/hooks/monitoring'
+import { useRole } from '@/hooks/useRole'
 import { formatTimestamp } from '@/lib/date'
-import type { KeyConfidence } from '@/queries/monitoring/monitoringQueries'
+import type { KeyConfidence, SystemMeasure } from '@/queries/monitoring/monitoringQueries'
 
 const DAY_OPTIONS = [30, 90, 365]
-const TARGET_LABELS: Record<string, string> = { detection: 'Detection', sex: 'Sex', age: 'Age' }
+const STATUS: Record<SystemMeasure['status'], { label: string; cls: string }> = {
+  measured: { label: 'Measured', cls: 'bg-green-50 text-green-800 border-green-200' },
+  no_data: { label: 'No data in this period', cls: 'bg-gray-50 text-gray-700 border-gray-200' },
+  not_measured: { label: 'Not measured', cls: 'bg-amber-50 text-amber-800 border-amber-200' },
+}
 
 const pct = (v: number | null) => (v === null ? '—' : `${Math.round(v * 100)}%`)
 const num = (v: number | null, digits = 2) => (v === null ? '—' : v.toFixed(digits))
@@ -33,6 +38,44 @@ function ConfidenceCard({ title, s, note }: { title: string; s: KeyConfidence; n
   )
 }
 
+const withUnit = (v: number | null, unit: string | null) =>
+  v === null ? '—' : unit === '%' ? `${v}%` : unit ? `${v} ${unit}` : `${v}`
+
+function SystemMeasureItem({ m }: { m: SystemMeasure }) {
+  const s = STATUS[m.status]
+  // GPS rows are 1/0 flags; their detail already says it.
+  const showRowValue = m.key !== 'gps_fix'
+  return (
+    <li className="border border-gray-200 rounded-lg p-4 text-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-semibold text-gray-900">{m.name}</span>
+        {m.status === 'measured' && (
+          <span className="text-gray-900">{withUnit(m.value, m.unit)}</span>
+        )}
+        <span className={`text-xs px-2 py-0.5 rounded-full border ${s.cls}`}>{s.label}</span>
+        <span className="text-xs text-gray-400">{m.period}</span>
+      </div>
+      <p className="text-gray-500 mt-1">{m.how}</p>
+      {m.rows.length > 0 && (
+        <details className="mt-2">
+          <summary className="text-xs text-gray-600 cursor-pointer">
+            By {m.key === 'accuracy_per_site' ? 'site' : 'device'} ({m.rows.length})
+          </summary>
+          <ul className="mt-2 divide-y divide-gray-100">
+            {m.rows.map((r, i) => (
+              <li key={`${r.label}-${i}`} className="py-1.5 flex flex-wrap gap-x-3 text-xs">
+                <span className="text-gray-900">{r.label}</span>
+                {showRowValue && <span className="text-gray-700">{withUnit(r.value, m.unit)}</span>}
+                {r.detail && <span className="text-gray-500">{r.detail}</span>}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </li>
+  )
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-3">
@@ -45,6 +88,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function ModelPerformancePage() {
   const [days, setDays] = useState(30)
   const { data, isLoading, error } = useModelPerformance(days)
+  const { isSuperAdmin, isAdmin } = useRole()
 
   const th = 'px-4 py-3 text-left text-xs font-semibold text-gray-500 whitespace-nowrap'
   const td = 'px-4 py-3 align-top text-sm text-gray-700'
@@ -84,19 +128,15 @@ export default function ModelPerformancePage() {
         <p className="text-sm text-red-500">Failed to load the model-performance report.</p>
       ) : (
         <>
-          <Section title="Accuracy targets">
+          <Section title="System performance">
+            <p className="text-xs text-gray-500 max-w-3xl">
+              Every performance measure in the proposal, in one list.
+              {isSuperAdmin ? ' Device figures: all clusters.' : isAdmin ? ' Device figures: your cluster.' : ''}
+              {' '}A measure the system can&apos;t record yet says so and shows no number.
+            </p>
             <ul className="space-y-2">
-              {data.targets.map((t) => (
-                <li key={t.name} className="border border-gray-200 rounded-lg p-4 text-sm">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold text-gray-900">{TARGET_LABELS[t.name] ?? t.name}</span>
-                    <span className="text-gray-500">target &gt;{t.target_pct}%</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-                      Not measurable yet
-                    </span>
-                  </div>
-                  <p className="text-gray-500 mt-1">{t.reason}</p>
-                </li>
+              {data.system.map((m) => (
+                <SystemMeasureItem key={m.key} m={m} />
               ))}
             </ul>
           </Section>

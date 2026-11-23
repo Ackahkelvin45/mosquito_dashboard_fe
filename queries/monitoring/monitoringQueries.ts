@@ -223,6 +223,24 @@ export type ModelPerformanceReport = {
     by_genus: { genus: string; groups: number; manual: number; ai: number; abs_difference: number }[];
   };
   targets: { name: string; target_pct: number; status: "not_measurable_yet"; reason: string }[];
+  /** Every proposal measure. uptime / data_completeness / gps_fix only for
+   *  ADMIN (own cluster) and SUPER_ADMIN (all); absent for USER. */
+  system: SystemMeasure[];
+};
+
+export type SystemMeasure = {
+  key: string;
+  name: string;
+  /** null unless status is "measured" */
+  value: number | null;
+  unit: string | null;
+  /** no_data = measurable, but nothing in the period */
+  status: "measured" | "not_measured" | "no_data";
+  period: string;
+  /** how it is measured, or why it is not */
+  how: string;
+  /** per device / per site */
+  rows: { label: string; value: number | null; detail: string | null }[];
 };
 
 export async function getModelPerformance(days: number): Promise<ModelPerformanceReport> {
